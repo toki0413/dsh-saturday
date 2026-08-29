@@ -81,12 +81,13 @@ def relax_structure(structure: dict, params: dict) -> dict[str, Any]:
 
 
 def calculate_properties(structure: dict, params: dict) -> dict[str, Any]:
-    """静态单点：能量（LJ）。bandgap 等性质真实引擎才有，这里显式返回 None。"""
+    """静态单点：能量（LJ）。控制面门禁的第二道防线：
+    玩具势给不了的性质直接报错，绝不静默置空（诚实纪律）。"""
     positions, cell = _scaled(structure, 1.0)
     energy = _pair_energy(positions, cell)
     props = params.get("properties", ["energy"])
     out: dict[str, Any] = {"energy": float(energy), "calculator": "lj-mock"}
     for p in props:
         if p not in out:
-            out[p] = None  # 玩具势给不了的性质，显式置空而非编造
+            raise ValueError(f"lj-mock cannot compute property '{p}'")
     return out

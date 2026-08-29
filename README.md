@@ -125,7 +125,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 95 项）
+npm test                # 全部 workspace 测试（当前 155 项，15 个包）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 npm run demo:agent --workspace @saturday/bridge      # Agent 会话端到端（mock LLM，无需 API Key）

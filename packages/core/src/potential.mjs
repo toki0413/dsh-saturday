@@ -17,6 +17,18 @@ export class GranularityUnavailableError extends Error {
     this.code = 'GRANULARITY_UNAVAILABLE'
   }
 }
+export class PropertyUnsupportedError extends Error {
+  constructor(name, missing, declared) {
+    super(`Provider "${name}" cannot compute [${missing.join(', ')}] ` +
+          `(declared properties: [${declared.join(', ')}]); ` +
+          `electronic views must be explicitly rejected, never silently approximated with null`)
+    this.code = 'PROPERTY_UNSUPPORTED'
+  }
+}
+
+// calculate 原语的基线物理量：任何势函数计算器按定义都能给出；
+// 其余性质（stress / bandgap / dos …）必须在 capabilities[].properties 显式声明。
+export const BASELINE_PROPERTIES = ['energy', 'forces']
 
 const WEIGHT_PROFILES = {
   screening:  { accuracy: 0.2, speed: 0.5, cost: 0.3 },
@@ -72,6 +84,18 @@ export class PotentialRegistry {
     if (granularity === 'iteration' && declared === 'job') {
       throw new GranularityUnavailableError(provider.name, granularity, declared)
     }
+  }
+
+  /**
+   * 性质能力门禁（修订 #9 配套）：请求的性质必须被引擎能力声明覆盖。
+   * 基线物理量（energy/forces）隐式成立；电子结构等未声明者显式拒绝，
+   * 绝不静默返回 null（诚实纪律：与 §5.2 粒度门禁同款）。
+   */
+  assertCalculable(provider, properties = []) {
+    const caps = provider.manifest.capabilities.find(c => c.type === 'calculate')
+    const declared = [...BASELINE_PROPERTIES, ...(caps?.properties ?? [])]
+    const missing = properties.filter(p => !declared.includes(p))
+    if (missing.length) throw new PropertyUnsupportedError(provider.name, missing, declared)
   }
 
   /** 自动路由：任务画像决定权重 */

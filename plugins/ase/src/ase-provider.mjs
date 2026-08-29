@@ -21,7 +21,8 @@ export class AseProvider {
       // ASE 通用计算器：精度介于玩具势与 ML 势之间（LJ 低 / EMT 中），
       // 常驻进程 + 轻量优化，速度与成本都接近免费
       { type: 'relax', accuracy: 0.6, speed: 0.95, cost: 0.05, maxAtoms: 10_000 },
-      { type: 'calculate', accuracy: 0.6, speed: 0.97, cost: 0.05, maxAtoms: 10_000 },
+      // 势函数计算器：基线量之外只声明 stress；电子结构性质不在声明内（诚实纪律）
+      { type: 'calculate', accuracy: 0.6, speed: 0.97, cost: 0.05, maxAtoms: 10_000, properties: ['stress'] },
       // §4.5 遍历对账的时间平均侧：Langevin 恒温 MD（供工作流层对账工具消费）
       { type: 'md', accuracy: 0.6, speed: 0.9, cost: 0.05, maxAtoms: 10_000 },
     ],

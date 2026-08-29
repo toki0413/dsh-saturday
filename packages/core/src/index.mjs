@@ -5,6 +5,9 @@ export {
   NoCapableProviderError,
   LicenseUnavailableError,
   GranularityUnavailableError,
+  PropertyUnsupportedError,
+  BASELINE_PROPERTIES,
 } from './potential.mjs'
+export { makeCalculationRecord } from './calculation-record.mjs'
 export { PrototypeLibResolver, StructureNotFoundError } from './structure-resolver.mjs'
 export { Z, SYMBOL, composeFormula } from './elements.mjs'

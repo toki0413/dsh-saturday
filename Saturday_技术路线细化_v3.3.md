@@ -486,8 +486,8 @@ export class Material {
 - [ ] 从 CIF 创建 < 100ms；formula 创建必须经 Resolver 且记录来源
 - [ ] `Si` 经原型库解析为金刚石结构（2 原子原胞），谱系含 `structure-resolved`
 - [ ] 多晶型用例（如 `TiO2`）返回多个候选，调用方可指定 `polymorphRank`
-- [ ] ASE/Pymatgen 互转精度测试通过
-- [ ] 调用 `electronicView` 产生一条 CalculationRecord（而非同步返回）
+- [x] ASE 互转精度测试通过（2026-08-29：sidecar `roundtrip` 算子 + `@saturday/python-bridge` 测试，三斜晶胞/无理坐标逐位无损；pymatgen 腿待入依赖集）
+- [x] 调用 `electronicView` 产生一条 CalculationRecord（而非同步返回）（2026-08-29：记录 + 谱系 `electronic-calculated` 条目；未声明性质由 `assertCalculable` 门禁显式拒绝，绝不静默返回 null）
 
 #### Week 10-11: PotentialRegistry（seam 化，修正评分公式）
 

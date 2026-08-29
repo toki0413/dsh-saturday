@@ -5,6 +5,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { Z, composeFormula } from './elements.mjs'
+import { makeCalculationRecord } from './calculation-record.mjs'
 
 export class Material {
   constructor(data, graph) {
@@ -72,10 +73,26 @@ export class Material {
     }
   }
 
-  /** electronicView：DFT 计算产物，走异步计算管线（修订 #9） */
+  /**
+   * electronicView：DFT 计算产物，走异步计算管线（修订 #9）。
+   * 交付物 = CalculationRecord（计算产物引用）+ 谱系条目，而非同步字段：
+   *  - 能力门禁先行：引擎未声明的性质显式拒绝（绝不静默返回 null）
+   *  - 记录经谱系 'electronic-calculated' 条目反查（append-only 溯源）
+   */
   async electronicView(potential, params = {}) {
-    const calc = await potential.calculate(this, { properties: ['bandgap', 'dos'], ...params })
-    return { source: 'calculation', calculationId: calc.jobId, bandgap: calc.bandgap ?? null }
+    const requested = params.properties ?? ['bandgap', 'dos']
+    const provider = potential.resolveProvider(params, { type: 'calculate', nAtoms: this.nAtoms })
+    potential.assertCalculable(provider, requested)
+    const result = await provider.calculate(this, { properties: requested })
+    const record = makeCalculationRecord({
+      material: this, engine: provider.name, requested, result,
+    })
+    this._lineage.push({
+      operation: 'electronic-calculated',
+      detail: { calculationId: record.id, engine: record.engine, requested },
+      timestamp: Date.now(),
+    })
+    return { source: 'calculation', calculationId: record.id, record }
   }
 
   /**

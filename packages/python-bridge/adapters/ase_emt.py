@@ -65,7 +65,8 @@ def relax_structure(structure: dict, params: dict) -> dict[str, Any]:
 
 
 def calculate_properties(structure: dict, params: dict) -> dict[str, Any]:
-    """静态单点：能量 + 力。EMT 无电子结构，bandgap/dos 显式置 None。"""
+    """静态单点：能量 + 力。控制面门禁的第二道防线：
+    EMT 无电子结构，未声明性质直接报错，绝不静默置 None（诚实纪律）。"""
     atoms = _to_atoms(structure)
     atoms.calc = EMT()
     out: dict[str, Any] = {
@@ -75,5 +76,5 @@ def calculate_properties(structure: dict, params: dict) -> dict[str, Any]:
     }
     for p in params.get("properties", []):
         if p not in out:
-            out[p] = None
+            raise ValueError(f"ase-emt cannot compute property '{p}'")
     return out

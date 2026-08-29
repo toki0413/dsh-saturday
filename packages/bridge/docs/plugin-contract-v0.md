@@ -177,6 +177,9 @@ interface ProviderManifest {
     speed: number             // 0-1，越大越快（修订 #7：统一"越大越好"）
     cost: number              // 0-1，越大越贵
     maxAtoms?: number
+    /** calculate 专用：基线量（energy/forces）之外的可算性质声明。
+        未声明的性质请求必须被显式拒绝（PROPERTY_UNSUPPORTED），绝不静默返回 null */
+    properties?: ('stress' | 'bandgap' | 'dos' | string)[]
   }[]
   constraints: {
     requiresLicense?: boolean // 前置门禁（修订 #10）：激活前校验，失败抛 LICENSE_UNAVAILABLE
@@ -211,6 +214,12 @@ interface MdResult {
 ```
 
 **规则**：
+- **性质能力门禁（修订 #9 配套）**：基线物理量（energy/forces）对任何 calculate 能力隐式成立；
+  其余性质必须在 `capabilities[].properties` 显式声明。`PotentialRegistry.assertCalculable`
+  在计算前拦截未声明者（`PropertyUnsupportedError`，与 §5.2 粒度门禁同款诚实纪律）；
+  数据面对未声明性质报错是第二道防线，不得静默置 null。
+- **计算产物记录（CalculationRecord）**：`Material.electronicView` 等异步视图的交付物是记录而非同步字段：
+  谱系追加 `electronic-calculated` 条目（`detail.calculationId` 反查）；记录只收录引擎真实给出的性质（`values`）。
 - **结果不可变**：返回后即为事实，进入谱系与 Trajectory，不得就地修改；
 - **幂等**：相同 `material.graph + params` 应产生相同结果（允许经缓存命中）；
   `md` 例外：轨迹含随机积分，幂等仅在固定 `params.seed` 时成立（确定性采样纪律的延伸）；
