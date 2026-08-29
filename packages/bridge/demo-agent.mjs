@@ -4,12 +4,15 @@
 // agents / agent-loop / llm），LLM 侧用 @deepseek-ai/dsh-llm-mock-server 脚本化
 // 服务器 + 本文件内的最小 OpenAI 兼容适配器（MockAdapter）。
 //
-// 演示两段（mock server 的 toolName/toolArguments 为实例级全局单值，故分段重启；
+// 演示三段（mock server 的 toolName/toolArguments 为实例级全局单值，故分段重启；
 // 阶段 B 换新端口，避免 undici 全局连接池复用已销毁的 keep-alive 连接）：
-//   阶段 A：自然语言"加载铜的结构" → agent loop → tool_call(material.load) →
+//   阶段 A：自然语言“加载铜的结构” → agent loop → tool_call(material.load) →
 //           真实 Saturday 工具执行 → 工具结果回流 → success 收尾；
-//   阶段 B：自然语言"弛豫" → tool_call(potential.relax) → EMT/LJ 真实计算 →
-//           Trajectory 落盘（saturday/simulation/converged）。
+//   阶段 B：自然语言“弛豫” → tool_call(potential.relax) → EMT/LJ 真实计算 →
+//           Trajectory 落盘（saturday/simulation/converged）；
+//   阶段 C：自然语言“采样并联合排序” → tool_call(workflow.screen，args 携带
+//           OU 采样候选）→ 逐候选真实单点回算 + 能量证据×似然证据联合权重 →
+//           编排链谱系不断（§4.5：采样器交付的 {graph, source, logProb} 原样透传）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -23,6 +26,8 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import LlmRuntime, { LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { startMockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
 import saturdayPlugin from './src/saturday.plugin.mjs'
+import screeningPlugin from '@saturday/plugin-screening'
+import { ouSampler } from '@saturday/plugin-sampler-ou'
 
 // ── 最小 OpenAI 兼容适配器：fetch + SSE → dsh StreamChunk 协议 ────────
 class MockAdapter extends LlmAdapter {
@@ -194,6 +199,11 @@ async function main() {
   // 2. 挂 Saturday 主插件（material/potential 服务 + material.load / potential.relax 工具）
   const saturdayFiber = ctx.registry.plugin(saturdayPlugin)
   await saturdayFiber
+  // 筛选工作流插件（阶段 C：采样候选联合排序，编排链谱系不断）
+  const screeningFiber = await ctx.registry.plugin({
+    name: 'saturday-screening',
+    apply: (ctx) => screeningPlugin.apply(ctx, {}),
+  })
 
   // 3. 阶段 A：mock server 脚本 = [tool_call(material.load), success]
   let server = await startMockLlmServer({
@@ -268,9 +278,61 @@ async function main() {
   assert.ok(typeof relaxResult.energy === 'number', 'relax 应返回数值能量')
   console.log('[ok   ] 阶段 B：自然语言 → potential.relax → 真实计算 → 收尾 ✓\n')
 
-  // 5. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 5. 阶段 C：采样 → 联合排序（⑰ 编排链实证）。
+  //    mock 模型只能发单工具调用：编排层把 OU 采样交付（{graph, source, logProb}）
+  //    直接打包进 workflow.screen 的 sampled 参数——谱系在编排层不断（§4.5）；
+  //    工具内部逐候选真实单点回算（候选不自证）+ 能量证据 × 似然证据联合权重。
+  const cuMaterial = await ctx.reflect.get('material').get(loadResult.materialId)
+  const sampledCandidates = await ouSampler.sample(
+    { reference: cuMaterial }, { n: 4, seed: 7, uEq: 0.03, gammaDt: 1.0 },
+  )
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8233,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'workflow.screen',
+    toolArguments: JSON.stringify({
+      materialId: loadResult.materialId,
+      dopants: [],
+      sampled: sampledCandidates.map(c => ({ graph: c.graph, source: c.source, logProb: c.logProb })),
+      sampledSource: 'sampler.ou',
+      temperatureK: 300,
+    }),
+    successText: '采样候选已完成单点回算与联合排序。',
+  })
+  adapter.baseURL = server.baseURL
+
+  console.log('[user ] 对铜做热涨落采样，并按能量与似然联合排序')
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '对铜做热涨落采样，并按能量与似然联合排序' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const screenToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(screenToolMsg, '阶段 C 第二次请求应包含工具结果消息')
+  const screenResult = JSON.parse(screenToolMsg.content)
+  const joint = screenResult.sampledJoint
+  assert.ok(joint, 'workflow.screen 应返回 sampledJoint 段')
+  assert.equal(joint.entries.length, sampledCandidates.length, '全部采样候选回算成功')
+  const wSum = joint.entries.reduce((a, e) => a + e.weight, 0)
+  assert.ok(Math.abs(wSum - 1) < 1e-9, '联合权重归一')
+  assert.deepEqual(joint.sourceNames, ['boltzmann:emt-mock', 'proposal:sampler.ou'])
+  console.log('[tool ] workflow.screen 联合排序:',
+    JSON.stringify({
+      n: joint.entries.length,
+      top: { weight: +joint.entries[0].weight.toFixed(4), energy: +joint.entries[0].energy.toFixed(5) },
+      ess: +joint.essFraction.toFixed(3),
+      sources: joint.sourceNames,
+    }))
+  console.log('[ok   ] 阶段 C：自然语言 → 采样交付透传 → 真实单点回算 → 联合权重 → 收尾 ✓\n')
+
+  // 6. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   await handle.dispose()
+  await screeningFiber.dispose()
   await saturdayFiber.dispose()
   await ctx.dispose?.()
   console.log('═══ 演示完成：agent loop 全程真实（工具执行、结果回流、多轮请求），仅模型侧为 mock ═══')

@@ -41,9 +41,12 @@ const KB_EV_PER_K = 8.617333262145e-5
  *        采样候选（来自任意采样器，如 OU）：逐候选单点回算后与似然证据联合排序；
  *        候选可给 Material 或 §4.5 SampledStructure 形态（{graph, source}，谱系登记采样来源）；
  *        不弛豫（弛豫会抹掉待加权的涨落信息），不入凸包（成分点与基体重合）
- * @param {number} [opts.temperatureK] 联合排序的目标温度（K；提供 sampled 时必填——焓证据 −βE 无温度即无标度）
+ * @param {number} [opts.temperatureK] 联合排序的目标温度（K；提供 sampled 或 evidenceSources 时必填——焓证据 −βE 无温度即无标度）
+ * @param {string[]} [opts.evidenceSources] 枚举候选联合排序的额外证据源（显式启用，默认只按能量排）；
+ *        支持 ['hull']：凸包距离证据（需 references 已构包）——稳定性证据随候选呈现，
+ *        检验组合律的可扩展性（证据源可增，独立性声明随源数变化如实更新）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources }) {
   const maxSites = maxDopedSites ?? 1
   if (!Number.isInteger(maxSites) || maxSites < 1) {
     throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
@@ -209,6 +212,70 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     thermo = { level: 'unavailable', reason: thermoUnavailable }
   }
 
+  // 枚举候选联合排序（可选）：默认只按能量排（既有行为不变）；显式启用证据源时，
+  // 对全部回算成功的变体组合多源证据 → jointRanked。凸包距离是逐候选的稳定性证据：
+  // energyAboveHull = 0（包上/包内）声明为稳定相候选，包内（负值）无额外区分证据——
+  // 用 max(0,·) 掩码（不伪造“越稳越好”的证据）；独立性与退化事实如实声明。
+  let joint
+  const extraSources = evidenceSources ?? []
+  if (extraSources.length > 0) {
+    if (!Number.isFinite(temperatureK) || temperatureK <= 0) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT',
+        'temperatureK is required when evidenceSources are enabled: ' +
+        'Boltzmann evidence −βΔH_f has no scale without a declared temperature')
+    }
+    for (const src of extraSources) {
+      if (src !== 'hull') {
+        throw evidenceError('EVIDENCE_INVALID_INPUT',
+          `unknown evidence source "${src}" (supported: hull)——证据源须显式实现，不静默近似`)
+      }
+    }
+    if (!thermo || thermo.level === 'unavailable' || ranked.some(r => r.energyAboveHull === undefined)) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT',
+        'hull evidence requires references (convex hull must be built from ' +
+        'explicit reference states—no hull, no stability evidence)')
+    }
+    const betaE = 1 / (KB_EV_PER_K * temperatureK)
+    const jointSources = [
+      { name: `boltzmann:${provider.name}`, logWeights: ranked.map(r => -betaE * r.formationEnthalpy) },
+    ]
+    if (extraSources.includes('hull')) {
+      jointSources.push({
+        name: `hull:${thermo.mode}`,
+        logWeights: ranked.map(r => -betaE * Math.max(0, r.energyAboveHull)),
+      })
+    }
+    const combinedE = combineEvidence({
+      sources: jointSources,
+      independence: '焓证据 −βΔH_f 与凸包证据 −β·max(0,energyAboveHull) 均由同一批候选能量构造，' +
+                    '声明为**给定候选能量下条件独立**（凸包距离是候选能量的确定性函数，无额外随机性）；' +
+                    '两源存在退化关联（包上点凸包证据恒 0），组合仅在有区分度的包外点上实质生效——如实声明不冒充独立',
+    })
+    const jointEntries = ranked.map((r, i) => ({
+      label: r.label,
+      formula: r.formula,
+      materialId: r.materialId,
+      energyPerAtom: r.energyPerAtom,
+      formationEnthalpy: r.formationEnthalpy,
+      energyAboveHull: r.energyAboveHull,
+      weight: combinedE.weights[i],
+      logJointWeight: combinedE.logJointWeights[i],
+      coverage: combinedE.coverage[i],
+    }))
+    jointEntries.sort((a, b) => b.weight - a.weight)
+    joint = {
+      temperatureK,
+      betaEVInv: betaE,
+      entries: jointEntries,
+      essFraction: essFraction(combinedE.weights),
+      sourceNames: combinedE.sourceNames,
+      independence: combinedE.independence,
+      note: '枚举候选联合排序：凸包证据对包内点（energyAboveHull<0）按 max(0,·) 掩码——' +
+            '“已稳定”不再提供额外区分证据（禁止零填充伪造稳定性梯度）；' +
+            'energyAboveHull=0 为当前候选集内的稳定相候选',
+    }
+  }
+
   // 多证据源联合排序（Logits 组合律，纯层见 ./evidence.mjs）：
   // 采样候选 = 基体成分的热涨落快照，逐候选单点回算（候选不自证，§4.5）。
   // 能量证据 −βU × 提议似然 q → 重要性权重 log w = −βU − log q（与 ergodic 升档同形）；
@@ -300,6 +367,17 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         essFraction: essFraction(combined.weights),
         sourceNames: combined.sourceNames,
         independence: combined.independence,
+        // 温度联动诚实声明（⑳）：采样器若声明了自身温度且与目标温度不一致，
+        // 如实呈现（提议核的涨落幅度与玻尔兹曼目标的标度不匹配是消费方该知道的事），
+        // 不静默纠正（纠正 = 改变交付的证据语义，超出工作流权限）
+        ...(Number.isFinite(sampled.samplerTemperatureK) && sampled.samplerTemperatureK !== temperatureK
+          ? { temperatureMismatch: {
+              samplerTemperatureK: sampled.samplerTemperatureK,
+              targetTemperatureK: temperatureK,
+              note: '提议核按采样温度涨落，玻尔兹曼证据按目标温度加权：' +
+                    '重要性权重仍正确（修正因子已吸收温差），但两温度语义不同，如实声明',
+            } }
+          : {}),
         note: '采样候选是基体成分的热涨落快照：不入凸包（成分点与基体重合，判据以枚举候选为准）；' +
               '单点作业经 jobId 溯源；缺 logProb 的候选按覆盖子集组合并如实声明',
         ...(failedSampled.length > 0 ? { failed: failedSampled } : {}),
@@ -338,6 +416,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     failed: results.filter(r => r.status === 'failed'),
     ...(derivationRecord ? { derivation: derivationRecord } : {}),
     ...(thermo ? { thermo } : {}),
+    ...(joint ? { joint } : {}),
     ...(sampledJoint ? { sampledJoint } : {}),
     note: references
       ? '严格形成焓排序（formationEnthalpy，能量零点显式计算）；' +

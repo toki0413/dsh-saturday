@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-29T16:44:34.819Z
+生成时间：2026-08-29T18:21:40.810Z
 
-**回归基线：232/232**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：235/235**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -24,9 +24,9 @@
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 13/13 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
-| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 26/26 |
+| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 29/29 |
 
-## 实证条款（契约文档附录 A，42 条）
+## 实证条款（契约文档附录 A，44 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -70,6 +70,8 @@
 - **#40** 谐波锚点物理化（⑭）：sidecar 新增 harmonic 算子（弛豫→中心差分 Hessian→质量加权简正模；平动零模与真虚频分开计数，零模不进振动闭式，虚频拒绝锚点——两种情况都不静默修正）；量子谐振子闭式在 JS 纯层（单一闭式来源，低温→零点能/高温→经典极限/模间线性叠加/虚频拒收）；`anchorMode='harmonic'` 接线（引擎无原语显式报错，锚点来源声明物理化随交付呈现）；LJ 谱形对账：匹配晶格参数下横模 6 重/纵模 3 重简并（fcc 立方对称）+ ν_L/ν_T ≈ √2（中心力+张力对称比，实测 0.1% 内）（证据：plugin-free-energy 测试 10-12（纯层闭式 + 接线纪律 + 端到端对账）+ plugin-ase 测试 6（真实 sidecar 谱形）+ demo:freeenergy 升级（EMT Cu 谐波锚点端到端））
 - **#41** Logits 组合律纯层 + 联合排序接线（⑯）：`combineEvidence` 把仓库既有孤立 log 权重实例（ergodic 重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层——独立证据源 log 权重相加（独立性声明必填，缺失即拒 `EVIDENCE_INDEPENDENCE_UNDECLARED`）；候选级证据掩码：缺失即缺失，零填充禁止（log 权重 0 = 伪造中立证据），全源缺失候选拒排（`EVIDENCE_NO_COVERAGE`）；log-sum-exp 归一（整体偏移不变）+ 组合爆炸门禁 + 源名重复防证据重复计数；`screenDopants` 接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫——弛豫抹掉待加权的涨落信息；不入凸包——成分点与基体重合，候选不自证 §4.5），能量证据 −βU × 提议似然 q → 重要性权重（与 ergodic 升档同形），`sampledJoint` 段附逐候选覆盖/独立性/ESS 诊断；闭式对账：双源权重 2e/(1+2e)、log 权重差 βΔE+ΔlogProb；测试首跑抓出 β 算术错（kB·300≈1/38.7 非 1/1000，换 β=100 eV⁻¹ 良态条件）（证据：plugin-screening evidence 测试 1-8（组合律闭式 + 五条拒绝路径 + ESS）+ screening 测试 11-14（联合排序闭式 + 掩码 + 门禁 + 工具层解析））
 - **#42** 采样器 → 筛选真实接线（⑰，候选来自系综而非枚举）：`workflow.screen` 接受 `{materialId, logProb}` 或 `{graph, source, logProb}`（§4.5 SampledStructure 透传，纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错不静默丢弃）；OU 候选真实 EMT 单点回算 → 联合权重归一 + 逐候选双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码（覆盖子集组合，权重仍归一）；logProb 可由位移闭式独立重算（1e-9，exact 似然声明的实证）；Agent 编排链：sampler.ou → workflow.screen，谱系在编排层不断（证据：bridge sampled-screen 测试 1-3（真 OU + 真 EMT 完整工具链 + 混合覆盖 + 双门禁））
+- **#43** 组合律可扩展性实证（⑲⑳，第三证据源）：枚举候选联合排序显式启用 `evidenceSources: ['hull']`——凸包距离作为逐候选稳定性证据（−β·max(0,energyAboveHull)，包内点掩码 0：不伪造“越稳越好”的梯度），焓证据 + 凸包证据双源叠加把包外候选罚分翻倍（闭式 e⁻² 对账）；独立性声明如实含退化关联（包上点凸包证据恒 0，不冒充独立）；无参考态即无凸包即无稳定性证据（显式拒绝不静默近似）；缺省不启用行为与既有完全一致（既有消费方零影响）；温差诚实声明（⑳）：采样器声明自身温度与目标不一致时 `temperatureMismatch` 随交付呈现（声明而非拒绝，不静默纠正）（证据：plugin-screening 测试 15-17（闭式对账 + 三门禁 + 温差三态））
+- **#44** Agent 编排链扩展到采样→联合排序（㉑）：`demo:agent` 阶段 C——自然语言 → tool_call(workflow.screen，args 携带 OU 采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具三连坑实证入纪律：工作流插件需自行动态 import `defineTool`（否则工具落本地注册表对 dsh 不可见）、`output.render` 必填（工具出口投影）、object 型 `items` 必须显式 `additionalProperties`（UNSUPPORTED_SCHEMA）；根依赖补 `@deepseek-ai/dsh-timeout`（dsh-llm 导入但未声明的隐性依赖）（证据：demo:agent 阶段 C 端到端（真实 EMT，三阶段全绿））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

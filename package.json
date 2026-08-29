@@ -13,7 +13,8 @@
     "summary": "node scripts/summary/summarize.mjs"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1"
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-timeout": "^0.1.1-rc.2"
   },
   "engines": {
     "node": ">=22"

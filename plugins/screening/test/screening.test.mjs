@@ -424,6 +424,118 @@ test('14. 工具层采样候选解析：materialId 逐个解析，未知 ID 显�
   }
 })
 
+// ── 枚举候选第三证据源（⑲，组合律可扩展性检验）：凸包距离证据 ──
+// 能量模型（4 原子胞，ref 全 −3.0 → 端点全零，包络 = z=0 超平面）：
+// Cu: ΔH_f=0（hull=0）、Cu3Ag: ΔH_f=−0.01（稳定，hull 掩码 0）、Cu3Ni: ΔH_f=+0.01（hull=0.01）。
+// β = 100 eV⁻¹ → log 权重 [0, +1, −2]：凸包证据把包外候选的罚分翻倍（闭式可写）。
+test('15. 第三证据源：凸包距离接联合排序（权重闭式对账 + 掩码语义）', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.04, Cu3Ni: -11.96 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const result = await screenDopants({
+      material: cu, dopants: ['Ag', 'Ni'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+      evidenceSources: ['hull'],
+      temperatureK: 1 / (100 * 8.617333262145e-5),   // β = 100 eV⁻¹
+    })
+    const joint = result.joint
+    assert.ok(joint, 'joint 段随交付呈现（显式启用才出现，默认行为不变）')
+    assert.deepEqual(joint.sourceNames, ['boltzmann:stub-engine', 'hull:multi-component'])
+    assert.ok(Math.abs(joint.betaEVInv - 100) < 1e-9)
+    // 闭式：log 权重 [0, +1, −2] → 归一 ∝ [1, e, e⁻²]；降序 = Cu3Ag > Cu > Cu3Ni
+    assert.deepEqual(joint.entries.map(e => e.formula), ['Cu3Ag', 'Cu', 'Cu3Ni'])
+    const Z = 1 + Math.E + Math.exp(-2)
+    assert.ok(Math.abs(joint.entries[0].weight - Math.E / Z) < 1e-12, '稳定候选权重闭式')
+    assert.ok(Math.abs(joint.entries[1].weight - 1 / Z) < 1e-12, '基体（端点）权重闭式')
+    assert.ok(Math.abs(joint.entries[2].weight - Math.exp(-2) / Z) < 1e-12,
+      '包外候选：焓罚分 βΔH=1 + 凸包罚分 β·hull=1，双源叠加（闭式 e⁻²）')
+    // 掩码语义：稳定候选（ΔH_f<0）的凸包证据 = 0（包内无额外区分证据，不伪造梯度）
+    const ag = joint.entries.find(e => e.formula === 'Cu3Ag')
+    assert.ok(Math.abs(ag.logJointWeight - 1) < 1e-9, '稳定候选的凸包证据贡献恰为 0（只有焓证据 +1）')
+    assert.ok(joint.entries.every(e => e.coverage.length === 2), '枚举候选双源全覆盖')
+    assert.match(joint.independence, /条件独立/, '独立性声明随交付呈现')
+    assert.match(joint.independence, /退化/, '退化关联事实如实声明（不冒充独立）')
+    assert.ok(joint.essFraction > 0 && joint.essFraction <= 1)
+    // 默认行为回归：不启用证据源时无 joint 段（既有消费方零影响）
+    const baseline = await screenDopants({
+      material: cu, dopants: ['Ag', 'Ni'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+    })
+    assert.equal(baseline.joint, undefined, '缺省不启用：行为与既有完全一致')
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+test('16. 第三证据源门禁：缺温度 / 缺参考态（无凸包）/ 未知源均显式拒绝', async () => {
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: -12.0, n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const base = { material: cu, dopants: ['Ni'], potential: coreFiber.store.stub.potential, evidenceSources: ['hull'] }
+    await assert.rejects(() => screenDopants(base),
+      /temperatureK is required/, '无温度：焓证据无标度，拒绝组合')
+    await assert.rejects(
+      () => screenDopants({ ...base, temperatureK: 300 }),
+      /hull evidence requires references/, '无参考态：无凸包即无稳定性证据，不静默近似')
+    await assert.rejects(
+      () => screenDopants({
+        ...base, temperatureK: 300,
+        references: { Cu: -3.0, Ni: -3.0 }, evidenceSources: ['phonon'],
+      }),
+      /unknown evidence source "phonon"/, '未知证据源：须显式实现，不静默近似')
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+test('17. 温差诚实声明（⑳）：采样器声明温度与目标不一致时随交付呈现，不纠正', async () => {
+  let calcCount = 0
+  const coreFiber = await ctx.registry.plugin(stubCorePluginWithCalc(
+    () => async (material) => ({
+      jobId: `job-${material.formula}`, engine: 'stub-engine',
+      converged: true, energy: -12.0, n_steps: 5,
+    }),
+    () => async () => ({ jobId: `calc-${calcCount++}`, engine: 'stub-engine', energy: -12.0 }),
+  ))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    const s0 = await materialService.load('Cu')
+    const sampled = { candidates: [{ material: s0, logProb: 0 }], samplerName: 'stub-sampler' }
+    // 声明采样温度 600 K，目标 300 K：温差段必须呈现（提议核涨落幅度与目标标度不匹配）
+    const mismatched = await screenDopants({
+      material: cu, dopants: [], potential: coreFiber.store.stub.potential,
+      sampled: { ...sampled, samplerTemperatureK: 600 }, temperatureK: 300,
+    })
+    assert.ok(mismatched.sampledJoint.temperatureMismatch, '温差声明随交付呈现')
+    assert.equal(mismatched.sampledJoint.temperatureMismatch.samplerTemperatureK, 600)
+    assert.equal(mismatched.sampledJoint.temperatureMismatch.targetTemperatureK, 300)
+    assert.ok(mismatched.sampledJoint.entries.length === 1, '温差不阻断联合排序（声明而非拒绝）')
+    // 温度一致或未声明：不出现温差段（不制造噪声）
+    const aligned = await screenDopants({
+      material: cu, dopants: [], potential: coreFiber.store.stub.potential,
+      sampled: { ...sampled, samplerTemperatureK: 300 }, temperatureK: 300,
+    })
+    assert.equal(aligned.sampledJoint.temperatureMismatch, undefined)
+    const undeclared = await screenDopants({
+      material: cu, dopants: [], potential: coreFiber.store.stub.potential,
+      sampled, temperatureK: 300,
+    })
+    assert.equal(undeclared.sampledJoint.temperatureMismatch, undefined)
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
 //    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
 workflowContract({

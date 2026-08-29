@@ -48,7 +48,8 @@ for (const w of workspaces) {
   w.hasTests = true
   let out = ''
   try {
-    out = execFileSync('node', ['--test', ...files], { cwd: root, encoding: 'utf8', env: cleanEnv, stdio: ['ignore', 'pipe', 'pipe'] })
+    // --test-concurrency=1：包内串行——并发各拉 Python sidecar + OpenBLAS 线程会内存竞态（与回归脚本同款纪律）
+    out = execFileSync('node', ['--test', '--test-concurrency=1', ...files], { cwd: root, encoding: 'utf8', env: cleanEnv, stdio: ['ignore', 'pipe', 'pipe'] })
   } catch (e) {
     // node --test 在有失败用例时非零退出，但 stdout 仍是完整 TAP
     out = (e.stdout ?? '') + (e.stderr ?? '')

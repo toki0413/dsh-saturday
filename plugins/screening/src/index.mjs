@@ -12,7 +12,10 @@ export default {
   name: 'saturday-screening',
 
   async apply(ctx, config = {}) {
-    const rt = createCordisAdapter(ctx, config)
+    // dsh 静态插件路径需要 defineTool（@deepseek-ai/dsh-tools）；裸 cordis / CI
+    // 环境无此包，优雅降级到本地注册表（与 saturday 主插件同款写法）
+    const { defineTool } = await import('@deepseek-ai/dsh-tools').catch(() => ({}))
+    const rt = createCordisAdapter(ctx, { ...config, defineTool })
 
     rt.registerTool({
       name: 'workflow.screen',
@@ -34,12 +37,12 @@ export default {
         },
         codopants: {
           type: 'array',
-          items: { type: 'object' },
+          items: { type: 'object', additionalProperties: true },
           description: '共掺变体列表，如 [{"elements":["Pt","Ni"],"sites":[0,1]}]；落在稳定相连线上的物理内点',
         },
         sampled: {
           type: 'array',
-          items: { type: 'object' },
+          items: { type: 'object', additionalProperties: true },
           description: '采样候选（通常来自 sampler.ou 的交付）：每项 {"materialId":"...","logProb":-12.3}（已注册材料）' +
                        '或 {"graph":{...},"source":"...","logProb":-12.3}（§4.5 SampledStructure 透传）；' +
                        '逐候选单点回算后与似然证据联合排序（需提供 temperatureK）',
@@ -50,10 +53,25 @@ export default {
         },
         temperatureK: {
           type: 'number',
-          description: '联合排序目标温度（K；提供 sampled 时必填）',
+          description: '联合排序目标温度（K；提供 sampled 或 evidenceSources 时必填）',
+        },
+        samplerTemperatureK: {
+          type: 'number',
+          description: '采样器声明的自身温度（K，可选）；与 temperatureK 不一致时随交付诚实声明温差不纠正',
+        },
+        evidenceSources: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '枚举候选联合排序的额外证据源（显式启用，缺省只按能量排）；支持 ["hull"]（凸包距离，需参考态）',
         },
       },
-      output: { schema: { type: 'object', additionalProperties: true } },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        // dsh 工具出口要求：结果需经 render 投影为内容块（与主插件两个工具同款）
+        render(_args, value) {
+          return [{ type: 'text', text: JSON.stringify(value) }]
+        },
+      },
       async execute(args) {
         // 服务依赖在调用时解析：缺依赖显式报错，不静默降级（契约 §2 生命周期规则）
         const materialService = rt.getService('material')
@@ -108,7 +126,12 @@ export default {
                               '候选结构不得静默丢弃')
             }
           }
-          sampled = { candidates, samplerName: args.sampledSource ?? 'external-sampler', likelihood: 'declared-by-caller' }
+          sampled = {
+            candidates,
+            samplerName: args.sampledSource ?? 'external-sampler',
+            likelihood: 'declared-by-caller',
+            ...(Number.isFinite(args.samplerTemperatureK) ? { samplerTemperatureK: args.samplerTemperatureK } : {}),
+          }
         }
         return screenDopants({
           material,
@@ -124,6 +147,7 @@ export default {
           codopants: args.codopants,
           sampled,
           temperatureK: args.temperatureK,
+          evidenceSources: args.evidenceSources,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })

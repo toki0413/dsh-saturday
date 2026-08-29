@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-29T16:44:34.820Z",
-  "totalPass": 232,
+  "generatedAt": "2026-08-29T18:21:40.813Z",
+  "totalPass": 235,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -135,7 +135,7 @@
       "dir": "plugins\\screening",
       "name": "@saturday/plugin-screening",
       "version": "0.3.0",
-      "pass": 26,
+      "pass": 29,
       "fail": 0
     }
   ],
@@ -349,6 +349,16 @@
       "index": 42,
       "clause": "采样器 → 筛选真实接线（⑰，候选来自系综而非枚举）：`workflow.screen` 接受 `{materialId, logProb}` 或 `{graph, source, logProb}`（§4.5 SampledStructure 透传，纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错不静默丢弃）；OU 候选真实 EMT 单点回算 → 联合权重归一 + 逐候选双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码（覆盖子集组合，权重仍归一）；logProb 可由位移闭式独立重算（1e-9，exact 似然声明的实证）；Agent 编排链：sampler.ou → workflow.screen，谱系在编排层不断",
       "evidence": "bridge sampled-screen 测试 1-3（真 OU + 真 EMT 完整工具链 + 混合覆盖 + 双门禁）"
+    },
+    {
+      "index": 43,
+      "clause": "组合律可扩展性实证（⑲⑳，第三证据源）：枚举候选联合排序显式启用 `evidenceSources: ['hull']`——凸包距离作为逐候选稳定性证据（−β·max(0,energyAboveHull)，包内点掩码 0：不伪造“越稳越好”的梯度），焓证据 + 凸包证据双源叠加把包外候选罚分翻倍（闭式 e⁻² 对账）；独立性声明如实含退化关联（包上点凸包证据恒 0，不冒充独立）；无参考态即无凸包即无稳定性证据（显式拒绝不静默近似）；缺省不启用行为与既有完全一致（既有消费方零影响）；温差诚实声明（⑳）：采样器声明自身温度与目标不一致时 `temperatureMismatch` 随交付呈现（声明而非拒绝，不静默纠正）",
+      "evidence": "plugin-screening 测试 15-17（闭式对账 + 三门禁 + 温差三态）"
+    },
+    {
+      "index": 44,
+      "clause": "Agent 编排链扩展到采样→联合排序（㉑）：`demo:agent` 阶段 C——自然语言 → tool_call(workflow.screen，args 携带 OU 采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具三连坑实证入纪律：工作流插件需自行动态 import `defineTool`（否则工具落本地注册表对 dsh 不可见）、`output.render` 必填（工具出口投影）、object 型 `items` 必须显式 `additionalProperties`（UNSUPPORTED_SCHEMA）；根依赖补 `@deepseek-ai/dsh-timeout`（dsh-llm 导入但未声明的隐性依赖）",
+      "evidence": "demo:agent 阶段 C 端到端（真实 EMT，三阶段全绿）"
     }
   ]
 }
