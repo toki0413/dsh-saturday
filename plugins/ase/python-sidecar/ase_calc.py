@@ -67,16 +67,113 @@ def relax(spec: dict) -> dict:
     }
 
 
+def calculate(spec: dict) -> dict:
+    """静态单点：能量 + 力（遍历对账系综侧与常规分析共用）。"""
+    from ase import Atoms  # noqa: PLC0415
+
+    structure = spec["structure"]
+    atoms = Atoms(
+        numbers=structure["numbers"],
+        positions=structure["positions"],
+        cell=structure["cell"],
+        pbc=True,
+    )
+    try:
+        atoms.calc = make_calculator(spec.get("calculator", {"name": "lj"}))
+    except ImportError as exc:
+        raise EngineUnavailableError(str(exc)) from exc
+    return {
+        "energy": float(atoms.get_potential_energy()),
+        "forces": atoms.get_forces().tolist(),
+    }
+
+
+def md(spec: dict) -> dict:
+    """Langevin 恒温 MD（§4.5 遍历对账的时间平均侧）。
+
+    返回逐采样步的势能/动能/温度序列；积分器与计算器均由调用方显式指定，
+    不可用时报 EngineUnavailableError，不静默降级（契约 §4.2）。
+    """
+    import time as _time
+
+    from ase import Atoms  # noqa: PLC0415
+    from ase import units  # noqa: PLC0415
+    from ase.md.langevin import Langevin  # noqa: PLC0415
+
+    structure = spec["structure"]
+    atoms = Atoms(
+        numbers=structure["numbers"],
+        positions=structure["positions"],
+        cell=structure["cell"],
+        pbc=True,
+    )
+    try:
+        atoms.calc = make_calculator(spec.get("calculator", {"name": "lj"}))
+    except ImportError as exc:
+        raise EngineUnavailableError(str(exc)) from exc
+
+    params = spec.get("params", {}) or {}
+    temperature_K = float(params.get("temperature_K", 300.0))
+    steps = int(params.get("steps", 200))
+    dt_fs = float(params.get("dt_fs", 1.0))
+    sample_every = max(1, int(params.get("sample_every", 5)))
+    friction = float(params.get("friction", 0.01))
+    seed = params.get("seed")
+    if seed is not None:
+        import numpy as np  # noqa: PLC0415
+        np.random.seed(int(seed))
+
+    t0 = _time.time()
+    dyn = Langevin(
+        atoms,
+        timestep=dt_fs * units.fs,
+        temperature_K=temperature_K,
+        friction=friction,
+        logfile=None,
+        fixcm=False,  # 小体系下 fixcm=True 不严格采样 NVT（ASE ≥3.28 弃用警告）；
+                      # 遍历对账要求采样分布诚实，质心漂移由对账方自行约束（如周期性小盒）
+    )
+
+    def _kT() -> float:
+        v = atoms.get_velocities()
+        return float((0.5 * (atoms.get_masses()[:, None] * v * v).sum()) / (1.5 * len(atoms)) / units.kB)
+
+    energies, kinetics, temperatures = [], [], []
+    def sample():
+        energies.append(float(atoms.get_potential_energy()))
+        kinetics.append(float(atoms.get_kinetic_energy()))
+        temperatures.append(_kT())
+    sample()
+    for _ in range(steps):
+        dyn.run(sample_every)
+        sample()
+
+    return {
+        "energies": energies,
+        "kinetic": kinetics,
+        "temperatures": temperatures,
+        "temperature_K": temperature_K,
+        "n_steps": steps,
+        "wall_seconds": round(_time.time() - t0, 3),
+    }
+
+
 def handle(method: str, params: dict):
     if method == "hello":
         return {
             "sidecar": "saturday-ase-calc",
             "version": "0.1.0",
             "calculators": available(),
+            # 契约 §5.1：md 能力声明（遍历对账时间平均侧，§4.5）
+            "operations": {"relax": True, "calculate": True, "md": True},
             "eventGranularity": "iteration",
         }
     if method == "relax":
         return relax(params)
+    if method == "calculate":
+        return calculate(params)
+    if method == "md":
+        return md(params)
     if method == "shutdown":
         return {"bye": True}
     raise ValueError(f"Unknown method: {method}")

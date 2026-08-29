@@ -99,7 +99,7 @@ export function potentialProviderContract({
     const m = provider.manifest
     assert.ok(Array.isArray(m.capabilities) && m.capabilities.length >= 1)
     for (const c of m.capabilities) {
-      assert.ok(['relax', 'calculate'].includes(c.type), `capability type must be relax|calculate, got ${c.type}`)
+      assert.ok(['relax', 'calculate', 'md'].includes(c.type), `capability type must be relax|calculate|md, got ${c.type}`)  // md：§4.5 遍历对账（时间平均侧）
       for (const k of ['accuracy', 'speed', 'cost']) {
         assert.equal(typeof c[k], 'number')
         assert.ok(c[k] >= 0 && c[k] <= 1, `${k} must be in [0,1] (修订 #7：统一"越大越好")`)

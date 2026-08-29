@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**118/118 测试通过**（12 个含测试 workspace：bridge 14 项集成验收 + 契约测试套件自检 18 项 + 十个插件各自契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、首个采样器确定性验证与采样→回算闭环排序验证）
+- 裸 cordis：**128/128 测试通过**（13 个含测试 workspace：bridge 14 项集成验收 + 契约测试套件自检 18 项 + 十一个插件各自契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、首个采样器确定性验证、采样→回算闭环排序验证与遍历对账（Langevin MD 时间平均）真实链路）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
@@ -65,6 +65,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合：§4.4 第二个实证；显式 (V, E) 序列或按缩放体积静态单点自产，四参数联合辨识，收敛/rmse/r² 诚实声明（独立插件 `@saturday/plugin-eos`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样：§4.5 sampler seam 首个实证；采样语义强制声明、似然诚实（none）、种子确定性、候选带 `generative:` 谱系前缀且可回算构造 Material（独立插件 `@saturday/plugin-sampler-perturb`） |
 | 采样回算闭环 | `workflow.explore` | §4.5 oracle 条款首个实证：候选逐送入引擎回算验证后按能量排序，候选不自证；谱系标记 + 逐变体事件全程可溯源（独立插件 `@saturday/plugin-explore`） |
+| 遍历对账 | `workflow.ergodic` | §4.5 oracle 条款对账实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性）；依赖 `md` 能力（§4.2 契约化扩展，独立插件 `@saturday/plugin-ergodic`） |
 
 引擎插件矩阵（均接入 `@saturday/contract-tests` 标准套件）：
 `emt-mock`（核心，ASE EMT/LJ）、`lammps`（批处理，粒度 job）、`mace`（ML 势，可用性预检）、`ase`（通用 ASE 计算器，自带 sidecar）。
@@ -114,6 +115,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   eos/                        #   @saturday/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合（§4.4 第二实证）
   sampler-perturb/            #   @saturday/plugin-sampler-perturb —— 采样：参考结构微扰（§4.5 首个实证）
   explore/                    #   @saturday/plugin-explore —— 工作流：采样→回算闭环（§4.5 oracle 首个实证）
+  ergodic/                    #   @saturday/plugin-ergodic —— 工作流：遍历对账（采样系综 对 MD 时间平均，§4.5）
 ```
 
 ## 运行
@@ -149,7 +151,7 @@ Agent 会话演示（无真实 API Key）：可配 `dsh-llm-mock-server@0.0.1-rc
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
 - **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider / workflow / sampler 四条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
-- **sampler seam（§4.5，首个实证落地）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；`samplerContract` 套件已随首个实现（plugin-sampler-perturb 微扰采样）入包，闭环由 `workflow.explore` 首个实证（候选不自证，引擎是唯一 oracle）；Boltzmann 生成器 / 潜空间 normalizing flow 后续挂载于此
+- **sampler seam（§4.5，首个实证落地）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；`samplerContract` 套件已随首个实现（plugin-sampler-perturb 微扰采样）入包，闭环由 `workflow.explore` 首个实证（候选不自证，引擎是唯一 oracle），遍历对账由 `workflow.ergodic` 补齐（采样系综平均 对 同一能量函数恒温 MD 时间平均，判定强度随似然声明诚实分级）；Boltzmann 生成器 / 潜空间 normalizing flow 后续挂载于此
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
 - **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）；`trajectory.replay` 从事件流重建计算索引，回放事件带防回灌前缀（可逆的是决策不是物理）
 - **原子化操作**：relax/calculate 原语同时暴露给工具与编程 API；substitute 为不可变 fork（测试 10）

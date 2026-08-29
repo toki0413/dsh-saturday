@@ -22,6 +22,8 @@ export class AseProvider {
       // 常驻进程 + 轻量优化，速度与成本都接近免费
       { type: 'relax', accuracy: 0.6, speed: 0.95, cost: 0.05, maxAtoms: 10_000 },
       { type: 'calculate', accuracy: 0.6, speed: 0.97, cost: 0.05, maxAtoms: 10_000 },
+      // §4.5 遍历对账的时间平均侧：Langevin 恒温 MD（供工作流层对账工具消费）
+      { type: 'md', accuracy: 0.6, speed: 0.9, cost: 0.05, maxAtoms: 10_000 },
     ],
     constraints: { requiresLicense: false },
     eventGranularity: 'iteration',   // 常驻 sidecar：逐调用同步形态
@@ -64,6 +66,57 @@ export class AseProvider {
       energy: result.energy,
       n_steps: result.n_steps ?? 0,
       calculator: `ase:${this.calculator}`,
+      wall_seconds: (Date.now() - t0) / 1000,
+    }
+  }
+
+  /**
+   * 静态单点（能量 + 力）：遍历对账系综侧与常规分析共用。
+   */
+  async calculate(material, params = {}) {
+    const jobId = randomUUID()
+    let result
+    try {
+      result = await this.bridge.call('calculate', {
+        structure: material.toDict(),
+        calculator: { name: this.calculator, params: this.calculatorParams },
+        params,
+      })
+    } catch (err) {
+      if (/EngineUnavailableError|ImportError|ModuleNotFoundError/.test(err.message)) {
+        throw new EngineUnavailableError(this.calculator, err.message)
+      }
+      throw err
+    }
+    return { jobId, engine: this.name, calculator: `ase:${this.calculator}`, ...result }
+  }
+
+  /**
+   * Langevin 恒温 MD（§4.5 遍历对账时间平均侧）。
+   * @param {Material} material
+   * @param {Object}   params { temperature_K, steps, dt_fs, sample_every, friction, seed }
+   */
+  async md(material, params = {}) {
+    const jobId = randomUUID()
+    const t0 = Date.now()
+    let result
+    try {
+      result = await this.bridge.call('md', {
+        structure: material.toDict(),
+        calculator: { name: this.calculator, params: this.calculatorParams },
+        params,
+      })
+    } catch (err) {
+      if (/EngineUnavailableError|ImportError|ModuleNotFoundError/.test(err.message)) {
+        throw new EngineUnavailableError(this.calculator, err.message)
+      }
+      throw err
+    }
+    return {
+      jobId,
+      engine: this.name,
+      calculator: `ase:${this.calculator}`,
+      ...result,
       wall_seconds: (Date.now() - t0) / 1000,
     }
   }

@@ -157,7 +157,9 @@ interface AtomGraph {
 
 ### 4.2 potential-provider —— 计算引擎插件
 
-**职责**：实现 `relax` / `calculate` 原语，并以 manifest 声明能力供路由。
+**职责**：实现 `relax` / `calculate` / `md` 原语，并以 manifest 声明能力供路由。
+`md` 为可选能力（§4.5 遍历对账的时间平均侧）：`capabilities` 里声明 `md`
+即承诺提供 `md()` 原语；未声明则工作流层对账工具对该引擎不可用（显式错误，不静默降级）。
 
 ```typescript
 interface PotentialProvider {
@@ -170,7 +172,7 @@ interface PotentialProvider {
 
 interface ProviderManifest {
   capabilities: {
-    type: 'relax' | 'calculate'
+    type: 'relax' | 'calculate' | 'md'   // md：§4.5 遍历对账（时间平均侧）
     accuracy: number          // 0-1，越大越准
     speed: number             // 0-1，越大越快（修订 #7：统一"越大越好"）
     cost: number              // 0-1，越大越贵
@@ -194,14 +196,27 @@ interface RelaxResult {
   cell?: [number, number, number][]
   wall_seconds?: number
 }
+
+interface MdResult {
+  jobId: string
+  engine: string
+  energies: number[]          // 逐采样步势能（eV），对账的原始观测
+  kinetic: number[]           // 逐采样步动能（eV）
+  temperatures: number[]      // 逐采样步瞬时温度（K）
+  temperature_K: number       // 目标温度（thermostat 设定，非实测均值）
+  n_steps: number
+  calculator?: string
+  wall_seconds?: number
+}
 ```
 
 **规则**：
 - **结果不可变**：返回后即为事实，进入谱系与 Trajectory，不得就地修改；
 - **幂等**：相同 `material.graph + params` 应产生相同结果（允许经缓存命中）；
+  `md` 例外：轨迹含随机积分，幂等仅在固定 `params.seed` 时成立（确定性采样纪律的延伸）；
 - **路由契约**：路由权在 `PotentialRegistry`（autoRoute 按任务画像评分），
   Provider 不得自行挑选替身；显式 `engine` 指定优先于路由；
-- **长任务**：`relax`/`calculate` 是异步原语，Promise 在计算完成时 settle；
+- **长任务**：`relax`/`calculate`/`md` 是异步原语，Promise 在计算完成时 settle；
   超时 / 取消语义由任务域承载，Provider 必须支持取消且不留孤儿进程。
 
 ### 4.3 workflow —— 工作流插件
@@ -437,9 +452,9 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 不吞错 / 缺依赖显式报错）与 `samplerContract`（§4.5：manifest 自洽（采样语义 /
 似然三选一 / invertible 与 encode 一致）/ generative: 谱系前缀 / 似然诚实（none 禁伪造）/
 种子确定性 / 两码显式失败 / 候选可回算构造 Material）；`workflowContract` 另支持可选 `failWhen(material)`
-断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；新插件在自己的测试文件里调用套件即完成接入（当前基线：
+断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 18 项 + bridge 14 项 + 七个插件各自套件 + 其余插件各自契约测试，
-全仓 118/118）。映射见附录 A。
+全仓 128/128）。映射见附录 A。
 
 ---
 
@@ -468,12 +483,13 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 19 | 跨引擎画像路由：validation 选高精度（mace），screening 选低成本（lammps） | plugin-mace 测试 5 |
 | 20 | 插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换 | plugin-ase 测试 1-3（含真实 sidecar） |
 | 21 | 时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹 | plugin-replay 测试 1-5（含真实筛选对账） |
-| 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | plugin-sampler-perturb 测试 1-8（首个实证：微扰采样器；MD 对账仍待能量模型接入后补） |
+| 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | plugin-sampler-perturb 测试 1-8（首个实证：微扰采样器；MD 对账已由 #28 补齐） |
 | 23 | analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默 | plugin-neb 测试 6-8（含真实挂载与卸载回收） |
 | 24 | analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析 | plugin-eos 测试 1-8（含真实桥 Cu EOS 集成） |
 | 25 | workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错 | `workflowContract`（套件自检 + plugin-screening 测试 5-8） |
 | 26 | sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material | `samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4） |
 | 27 | §4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null | plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者） |
+| 28 | §4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性） | plugin-ergodic 测试 1-10（纯层统计判定 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路） |
 
 ## 附录 B：插件骨架模板
 
