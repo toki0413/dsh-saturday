@@ -1,0 +1,22 @@
+{
+  "name": "@saturday/plugin-ase",
+  "version": "0.3.0",
+  "description": "Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/core": "^0.3.0",
+    "@saturday/kernel": "^0.3.0",
+    "@saturday/python-bridge": "^0.3.0"
+  },
+  "devDependencies": {
+    "@saturday/contract-tests": "^0.3.0"
+  },
+  "license": "MIT"
+}
