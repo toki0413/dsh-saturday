@@ -4,7 +4,9 @@ __pycache__/
 *.pyc
 
 # 运行产物（测试/演示生成的轨迹数据）
-saturday-mvp/data/
+packages/bridge/data/
+packages/data/
+plugins/*/data/
 
 # 环境与本地配置
 .env
