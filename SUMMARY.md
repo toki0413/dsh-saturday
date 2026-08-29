@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-29T14:03:07.970Z
+生成时间：2026-08-29T14:22:55.159Z
 
-**回归基线：207/207**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：209/209**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -24,9 +24,9 @@
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 13/13 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
-| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 8/8 |
+| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 10/10 |
 
-## 实证条款（契约文档附录 A，36 条）
+## 实证条款（契约文档附录 A，37 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -64,6 +64,7 @@
 - **#34** 热力学第二档（§9 从焓到自由能）：`workflow.freeEnergy` 温度网格逐点恒温 MD（复用 `md` 原语）得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线（d(βF_conf)/dβ = ⟨U⟩）；自由能零点延续第一档纪律——锚点必须显式注入（缺锚点 `THERMO_REFERENCE_MISSING`），锚点物理来源声明随交付呈现；诚实声明不含动量部分、逐点附统计标准误；解析对账双核（线性核梯形精确闭式 1e-9 + 谐波核密网格截断收敛），测试首跑即抓出定向积分符号 bug（锚点升温侧不得取绝对值）；曲线型工作流不接 `workflowContract`（变体排序形态不适配，强套会扭曲契约，诚实声明而非冒充合规）（证据：plugin-free-energy 测试 1-9（锚点门禁 + 双核解析对账 + 统计诚实 + 挂载/缺服务/端到端/真实 ASE 冒烟））
 - **#35** 多组分凸包（第 1.5 档，二元→d 维推广）：成分空间维度 d = 元素数−1，显式穷举 d-单形（d+1 点仿射无关子集）构造下包络，重心坐标插值 + 最小包络；二元退化与既有实现数值一致（1e-12 对账）；非轴对齐单形闭式核验；端点纪律延续（缺纯元素端点 `THERMO_REFERENCE_MISSING`，不外推）；组合上限显式门禁（`THERMO_TOO_MANY_COMBINATIONS`，不静默换近似算法）；包络单形只用包上点构造（包外点不得参与包络，测试首跑抓出）；包外成分查询显式报错（证据：core thermo 测试 9-14（二元退化对账 + 三元四边形 + 重心闭式 + 端点纪律 + 门禁））
 - **#36** 摘要层（可再生产物而非手写文档）：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；计数对账门禁（有测试但缺结果显式报错）；无独立测试的包（防腐层）诚实标记不计数；失败用例显式标记不隐藏；子进程不继承 `NODE_TEST_*` 环境（嵌套 runner 防御）；摘要只含来源可追溯字段（证据：scripts/summary 测试 1-7（TAP 解析 + 附录 A 表解析 + 组装门禁/确定性 + 真实小包冒烟））
+- **#37** 多组分凸包接真实工作流 + 自由能端到端演示 + 分析事件溯源闭环：筛选注入参考态后元素数 ≥ 3 自动升级为统一成分空间凸包（每个元素参考态是端点——形成焓按定义 = 0，是定义事实而非外推），`thermo.mode/hullDimension` 声明判据形态；端点全零时包络即 z=0 超平面，判据与二元弦数值一致（闭式对账）；≤2 元素保持二元 0-0 弦路径不变；自由能端到端演示（真实 ASE/EMT Langevin，`demo:freeenergy`）F(T) 曲线物理一致（⟨U⟩ 随温单调升、ΔF 单调降）；分析事件 `saturday/analysis/complete` 落 Trajectory（`analysis_complete`，与计算事件同一溯源链）；dsh profile 示例补齐工作流插件挂载行（工具自动暴露给 Agent）（证据：plugin-screening 测试 5-6（三元升级闭式对账 + 二元路径保持）+ bridge thermo 测试 3（真实 EMT 多组分）+ demo:freeenergy 端到端验证）
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

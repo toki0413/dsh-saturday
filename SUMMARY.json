@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-29T14:03:07.971Z",
-  "totalPass": 207,
+  "generatedAt": "2026-08-29T14:22:55.162Z",
+  "totalPass": 209,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -135,7 +135,7 @@
       "dir": "plugins\\screening",
       "name": "@saturday/plugin-screening",
       "version": "0.3.0",
-      "pass": 8,
+      "pass": 10,
       "fail": 0
     }
   ],
@@ -319,6 +319,11 @@
       "index": 36,
       "clause": "摘要层（可再生产物而非手写文档）：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；计数对账门禁（有测试但缺结果显式报错）；无独立测试的包（防腐层）诚实标记不计数；失败用例显式标记不隐藏；子进程不继承 `NODE_TEST_*` 环境（嵌套 runner 防御）；摘要只含来源可追溯字段",
       "evidence": "scripts/summary 测试 1-7（TAP 解析 + 附录 A 表解析 + 组装门禁/确定性 + 真实小包冒烟）"
+    },
+    {
+      "index": 37,
+      "clause": "多组分凸包接真实工作流 + 自由能端到端演示 + 分析事件溯源闭环：筛选注入参考态后元素数 ≥ 3 自动升级为统一成分空间凸包（每个元素参考态是端点——形成焓按定义 = 0，是定义事实而非外推），`thermo.mode/hullDimension` 声明判据形态；端点全零时包络即 z=0 超平面，判据与二元弦数值一致（闭式对账）；≤2 元素保持二元 0-0 弦路径不变；自由能端到端演示（真实 ASE/EMT Langevin，`demo:freeenergy`）F(T) 曲线物理一致（⟨U⟩ 随温单调升、ΔF 单调降）；分析事件 `saturday/analysis/complete` 落 Trajectory（`analysis_complete`，与计算事件同一溯源链）；dsh profile 示例补齐工作流插件挂载行（工具自动暴露给 Agent）",
+      "evidence": "plugin-screening 测试 5-6（三元升级闭式对账 + 二元路径保持）+ bridge thermo 测试 3（真实 EMT 多组分）+ demo:freeenergy 端到端验证"
     }
   ]
 }

@@ -28,3 +28,16 @@
         #   python: python3
         # 裸 cordis 环境下 Trajectory 落盘路径；dsh 内优先写 sessions 服务
         trajectoryPath: ./data/trajectory.jsonl
+
+# 工作流插件独立挂载（契约 §4.3：工作流不进核心）：与核心插件同一组合树，
+# 工具自动暴露给 Agent（workflow.screen / workflow.freeEnergy / workflow.ergodic 等）。
+# 依赖的 @saturday/plugin-* 包同样先声明到 profile 的 package.json dependencies。
+# - insert:
+#     - id: saturday-screening
+#       name: '@saturday/plugin-screening'
+#     - id: saturday-free-energy   # 热力学第二档：构型自由能曲线（需引擎支持 md）
+#       name: '@saturday/plugin-free-energy'
+#     - id: saturday-ergodic
+#       name: '@saturday/plugin-ergodic'
+#     - id: saturday-derivation    # 可选：活性上下文/失效传播登记簿
+#       name: '@saturday/plugin-derivation'

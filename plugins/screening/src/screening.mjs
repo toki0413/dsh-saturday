@@ -12,7 +12,11 @@
 // 排序从"近似形成焓"升级为严格形成焓 + 形成焓空间凸包判据；缺参考态诚实降级。
 
 import { randomUUID } from 'node:crypto'
-import { formationEnthalpy, convexHull, energyAboveHull, compositionFromNumbers } from '@saturday/core'
+import {
+  formationEnthalpy, convexHull, energyAboveHull,
+  multiConvexHull, energyAboveHullMulti,
+  compositionFromNumbers,
+} from '@saturday/core'
 
 /**
  * @param {Object}   opts
@@ -88,8 +92,11 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     .sort((a, b) => a.energyPerAtom - b.energyPerAtom)
 
   // 热力学第一档：参考态显式注入 → 严格形成焓 + 凸包判据。
-  // 每个二元系（基体-掺杂）目前只有一个内点候选，凸包退化为两端点 0-0 弦，
-  // energyAboveHull = max(0, ΔH_f)；成分增多时（多浓度采样）凸包自然变严格。
+  // 元素数 ≤ 2（单掺杂二元系）：凸包退化为两端点 0-0 弦，
+  // energyAboveHull = max(0, ΔH_f)。
+  // 元素数 ≥ 3（多掺杂/三元及以上）：升为多组分凸包——每个元素参考态是成分空间
+  // 端点（形成焓按定义 = 0，是定义事实而非外推），与全部候选在统一 d 维空间构包；
+  // 端点全零时包络即 z=0 超平面，判据与二元弦数值一致（core 对账 1e-12）。
   // 缺参考态诚实降级：保留"近似"声明，不伪造严格量。
   let thermo
   if (references) {
@@ -97,20 +104,52 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       r.formationEnthalpy = formationEnthalpy({
         energy: r.energy, composition: r.composition, references,
       })
-      if (r.kind === 'pristine') {
-        r.energyAboveHull = 0
-      } else {
-        const total = Object.values(r.composition).reduce((a, b) => a + b, 0)
-        const point = { x: r.composition[r.dopant] / total, y: r.formationEnthalpy }
-        const hullResult = convexHull([{ x: 0, y: 0 }, point, { x: 1, y: 0 }])
-        r.energyAboveHull = energyAboveHull(point, hullResult)
-      }
     }
-    thermo = {
-      level: provider.name,
-      references,
-      note: '形成焓能量零点 = 各元素参考态经本引擎显式弛豫计算；' +
-            'energyAboveHull 为形成焓空间凸包判据（单内点时退化为 0-0 弦）',
+    const elements = Object.keys(references)
+    if (elements.length >= 3) {
+      // 多组分凸包：端点（每元素纯元素点）+ 候选点（归一成分，能量 = 形成焓）
+      const normalize = (composition) => {
+        const total = Object.values(composition).reduce((a, b) => a + b, 0)
+        return Object.fromEntries(
+          Object.entries(composition).map(([el, n]) => [el, n / total]),
+        )
+      }
+      const points = [
+        ...elements.map(el => ({ composition: { [el]: 1 }, energy: 0 })),
+        ...ranked.map(r => ({ composition: normalize(r.composition), energy: r.formationEnthalpy })),
+      ]
+      const hull = multiConvexHull(points)
+      for (const r of ranked) {
+        r.energyAboveHull = energyAboveHullMulti(
+          { composition: normalize(r.composition), energy: r.formationEnthalpy }, hull,
+        )
+      }
+      thermo = {
+        level: provider.name,
+        mode: 'multi-component',
+        hullDimension: hull.d,
+        references,
+        note: `多组分凸包判据（${elements.length} 元素，d=${hull.d} 单形下包络 + 重心插值）；` +
+              '端点 = 各元素参考态（形成焓零点经本引擎显式弛豫计算）',
+      }
+    } else {
+      for (const r of ranked) {
+        if (r.kind === 'pristine') {
+          r.energyAboveHull = 0
+        } else {
+          const total = Object.values(r.composition).reduce((a, b) => a + b, 0)
+          const point = { x: r.composition[r.dopant] / total, y: r.formationEnthalpy }
+          const hullResult = convexHull([{ x: 0, y: 0 }, point, { x: 1, y: 0 }])
+          r.energyAboveHull = energyAboveHull(point, hullResult)
+        }
+      }
+      thermo = {
+        level: provider.name,
+        mode: 'binary',
+        references,
+        note: '形成焓能量零点 = 各元素参考态经本引擎显式弛豫计算；' +
+              'energyAboveHull 为形成焓空间凸包判据（单内点时退化为 0-0 弦）',
+      }
     }
   } else if (thermoUnavailable) {
     thermo = { level: 'unavailable', reason: thermoUnavailable }

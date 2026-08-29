@@ -111,6 +111,14 @@ export default {
       })
     })
 
+    // 分析类事件同样落 Trajectory（薄载荷）：自由能曲线等分析结果与计算事件同一溯源链
+    rt.on('saturday/analysis/complete', async event => {
+      await rt.appendTrajectory({
+        type: 'analysis_complete',
+        ...event.payload,
+      })
+    })
+
     // 活性上下文（§8.2）：势函数热替换是失效源。若同 Context 挂了推导登记簿，
     // 沿 engine:<旧引擎> 传播失效（依赖它的所有导出量——候选能量、筛选排序——全链置 invalid）；
     // 未挂载时静默跳过（derivation 是可选插件，不构成本插件依赖）。

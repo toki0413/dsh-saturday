@@ -67,19 +67,23 @@ test('2. 严格形成焓：基体近零 + 掺杂变体物理方向正确（Cu-Ni
   assert.ok(ag.formationEnthalpy > 0, 'Cu3Ag 形成焓应为正（相分离）')
 })
 
-test('3. 凸包判据：单内点退化为 0-0 弦，energyAboveHull = max(0, ΔH_f)', async t => {
+test('3. 多组分凸包判据：3 元素统一成分空间，端点全零 → energyAboveHull = max(0, ΔH_f)', async t => {
   if (!HAS_ASE) t.skip('ASE unavailable in this environment')
   const material = await ctx.reflect.get('material').load('Cu')
   const result = await screenRt.tools.call('workflow.screen', {
     materialId: material.id, dopants: ['Ni', 'Ag'],
   })
+  assert.equal(result.thermo.mode, 'multi-component', '3 元素体系必须走多组分凸包')
+  assert.equal(result.thermo.hullDimension, 2, '3 元素 → d=2 成分空间')
   const pristine = result.ranked.find(r => r.kind === 'pristine')
-  assert.equal(pristine.energyAboveHull, 0, '基体端点必在包上')
+  assert.ok(pristine.energyAboveHull < 1e-3, '基体端点在包上（弛豫噪声容差内）')
+  // 容差 = 基体形成焓噪声（若基体候选轻微低于端点会进包，扰动包络量级 ≤ |ΔH_f(base)|）
+  const tol = 1e-9 + Math.abs(pristine.formationEnthalpy)
   for (const r of result.ranked.filter(x => x.kind === 'doped')) {
     assert.ok(r.energyAboveHull >= 0)
     assert.ok(
-      Math.abs(r.energyAboveHull - Math.max(0, r.formationEnthalpy)) < 1e-12,
-      '单内点二元系：凸包退化为端点弦，判据与形成焓同号同量',
+      Math.abs(r.energyAboveHull - Math.max(0, r.formationEnthalpy)) < tol,
+      '端点全零 → 包络 ≈ z=0 超平面，判据与形成焓同号同量',
     )
   }
   assert.match(result.note, /严格形成焓/, '有参考态时声明必须从"近似"升级为"严格"')

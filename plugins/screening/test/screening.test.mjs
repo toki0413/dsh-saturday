@@ -47,7 +47,7 @@ function stubCorePlugin(getRelaxImpl) {
       ctx.events.on('saturday/simulation/converged', e => events.push(e))
       ctx.reflect.provide('material', materialService)
       ctx.reflect.provide('potential', potential)
-      ctx.fiber.store.stub = { materialService, events }
+      ctx.fiber.store.stub = { materialService, potential, events }
     },
   }
 }
@@ -118,6 +118,54 @@ test('4. 单变体失败计入 failed，不中断整体（不吞错）', async (
   assert.equal(result.failed.length, 1)
   assert.equal(result.failed[0].dopant, 'Ni')
   assert.match(result.failed[0].error, /故意失败/)
+  await coreFiber.dispose()
+})
+
+// ── 多组分凸包接线（第 1.5 档）：注入 references 后元素数 ≥ 3 升级为统一成分空间凸包 ──
+// 能量模型：refCu/refAg/refNi 均 -3.0 → ΔH_f(Cu3Ag) = −0.05（稳定，低于包络），
+// ΔH_f(Cu3Ni) = +0.05（不稳定）；端点全零 → 包络即 z=0 超平面，判据闭式可写。
+test('5. 多组分凸包：三元系升级（mode=multi-component，闭式判据对账）', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.2, Cu3Ni: -11.8 } // 4 原子：每原子 −3.0 / −3.05 / −2.95
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  const { materialService } = coreFiber.store.stub
+  const cu = await materialService.load('Cu')
+
+  const result = await screenDopants({
+    material: cu, dopants: ['Ag', 'Ni'],
+    potential: coreFiber.store.stub.potential,
+    references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+  })
+  assert.equal(result.thermo.mode, 'multi-component', '三元系必须走多组分凸包')
+  assert.equal(result.thermo.hullDimension, 2, '3 元素 → d=2 成分空间')
+  assert.equal(result.thermo.level, 'stub-engine')
+  const byFormula = Object.fromEntries(result.ranked.map(r => [r.formula, r]))
+  // 端点全零 → 包络 = z=0 超平面：energyAboveHull = max(0, ΔH_f) 闭式
+  assert.ok(Math.abs(byFormula.Cu3Ni.energyAboveHull - 0.05) < 1e-12, '不稳定候选：距离恰为 ΔH_f')
+  assert.equal(byFormula.Cu3Ag.energyAboveHull, 0, '稳定候选（ΔH_f<0）：低于包络，钳到 0')
+  assert.equal(byFormula.Cu.energyAboveHull, 0, '基体端点在包上')
+  await coreFiber.dispose()
+})
+
+test('6. 二元路径保持：单掺杂时 mode=binary，判据不变', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.2 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  const { materialService } = coreFiber.store.stub
+  const cu = await materialService.load('Cu')
+
+  const result = await screenDopants({
+    material: cu, dopants: ['Ag'],
+    potential: coreFiber.store.stub.potential,
+    references: { Cu: -3.0, Ag: -3.0 },
+  })
+  assert.equal(result.thermo.mode, 'binary')
+  const ag = result.ranked.find(r => r.formula === 'Cu3Ag')
+  assert.ok(Math.abs(ag.energyAboveHull - Math.max(0, ag.formationEnthalpy)) < 1e-12)
   await coreFiber.dispose()
 })
 
