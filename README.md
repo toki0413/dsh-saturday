@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**175/175 测试通过**（16 个含测试包：bridge 27 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 8 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、首个采样器确定性验证、采样→回算闭环排序验证、遍历对账（Langevin MD 时间平均）真实链路、活性上下文失效传播（含势函数热替换→筛选候选全链失效）、严格形成焓+凸包判据与互转精度/电子结构门禁验证）
+- 裸 cordis：**188/188 测试通过**（17 个含测试包：bridge 27 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 8 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、首个采样器确定性验证、OU 采样器精确似然升档（闭式转移核统计验证）、采样→回算闭环排序验证、遍历对账（Langevin MD 时间平均）真实链路、活性上下文失效传播（含势函数热替换→筛选候选全链失效）、严格形成焓+凸包判据与互转精度/电子结构门禁验证）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
@@ -64,6 +64,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 势垒分析 | `analysis.neb` | NEB 最小能量路径与过渡态势垒：§4.4 analysis seam 首个实证，纯 Node、能量/梯度注入式，内置 LJ 双阱玩具体系（独立插件 `@saturday/plugin-neb`） |
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合：§4.4 第二个实证；显式 (V, E) 序列或按缩放体积静态单点自产，四参数联合辨识，收敛/rmse/r² 诚实声明（独立插件 `@saturday/plugin-eos`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样：§4.5 sampler seam 首个实证；采样语义强制声明、似然诚实（none）、种子确定性、候选带 `generative:` 谱系前缀且可回算构造 Material（独立插件 `@saturday/plugin-sampler-perturb`） |
+| OU 候选采样 | `sampler.ou` | OU（Ornstein-Uhlenbeck）参考结构采样：§4.5 第二实证；闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，逐候选附 `logProb`）；均值回归锚定参考的受控扩散，诚实声明提议核≠玻尔兹曼、局部采样器定位、γΔ 有效性窗口（独立插件 `@saturday/plugin-sampler-ou`） |
 | 采样回算闭环 | `workflow.explore` | §4.5 oracle 条款首个实证：候选逐送入引擎回算验证后按能量排序，候选不自证；谱系标记 + 逐变体事件全程可溯源（独立插件 `@saturday/plugin-explore`） |
 | 遍历对账 | `workflow.ergodic` | §4.5 oracle 条款对账实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性）；依赖 `md` 能力（§4.2 契约化扩展，独立插件 `@saturday/plugin-ergodic`） |
 | 活性上下文 | `derivation.*` | §8.2 首个实证：推导登记簿——导出量声明推导来源，失效沿推导图向下游传播（幂等），冻结结果只追加修正不重算（§7），重算惰性且预算受控（独立插件 `@saturday/plugin-derivation`） |
@@ -115,6 +116,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   neb/                        #   @saturday/plugin-neb —— 分析：NEB 最小能量路径与势垒（§4.4 首个实证）
   eos/                        #   @saturday/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合（§4.4 第二实证）
   sampler-perturb/            #   @saturday/plugin-sampler-perturb —— 采样：参考结构微扰（§4.5 首个实证）
+  sampler-ou/                 #   @saturday/plugin-sampler-ou —— 采样：OU 受控扩散 + 精确提议似然（§4.5 第二实证）
   explore/                    #   @saturday/plugin-explore —— 工作流：采样→回算闭环（§4.5 oracle 首个实证）
   ergodic/                    #   @saturday/plugin-ergodic —— 工作流：遍历对账（采样系综 对 MD 时间平均，§4.5）
   derivation/                 #   @saturday/plugin-derivation —— 活性上下文：失效传播与惰性重算（§8.2 首个实证）
@@ -125,7 +127,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 175 项，16 个包）
+npm test                # 全部 workspace 测试（当前 188 项，17 个包）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 npm run demo:agent --workspace @saturday/bridge      # Agent 会话端到端（mock LLM，无需 API Key）
@@ -154,7 +156,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
 - **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider / workflow / sampler / derivation 五条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
-- **sampler seam（§4.5，首个实证落地）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；`samplerContract` 套件已随首个实现（plugin-sampler-perturb 微扰采样）入包，闭环由 `workflow.explore` 首个实证（候选不自证，引擎是唯一 oracle），遍历对账由 `workflow.ergodic` 补齐（采样系综平均 对 同一能量函数恒温 MD 时间平均，判定强度随似然声明诚实分级）；Boltzmann 生成器 / 潜空间 normalizing flow 后续挂载于此
+- **sampler seam（§4.5，两个实证落地）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；`samplerContract` 套件已随首个实现（plugin-sampler-perturb 微扰采样）入包，第二实证（plugin-sampler-ou）把似然声明从 'none' 升档到 'exact'（OU 闭式转移核，逐候选附可独立重算的 `logProb`；诚实声明提议核≠玻尔兹曼、局部采样器定位）；闭环由 `workflow.explore` 首个实证（候选不自证，引擎是唯一 oracle），遍历对账由 `workflow.ergodic` 补齐（判定强度随似然声明诚实分级，OU 接入后可升档）；Boltzmann 生成器 / 潜空间 normalizing flow 后续挂载于此
 - **活性上下文地基（§8.2，首个实证落地）**：plugin-derivation 把“响应式谱系图”从目标形态变成测试——每个导出量登记推导来源，上游失效沿推导图向下游传播（重复失效幂等），冻结结果（实验数据/已交付，§7）只追加修正不重算，重算惰性且预算受控（超预算显式报错）；不可变 fork（§6）不是失效源；`derivationContract` 第五套件同步入包；**已接真实工作流：排序 = f(基体, 引擎)——`workflow.screen` 完成即登记两层推导，势函数热替换（`activate` 事件）沿 `engine:<id>` 全链失效**；响应式依赖声明（`getService` 下沉）仍为演进方向
 - **热力学第一档（§9 欠账清偿）**：能量零点显式化——筛选排序从“近似形成焓”升级为严格形成焓（能量零点 = 各元素参考态经引擎显式弛豫，数据面 `reference_energy` 算子）+ 形成焓空间凸包判据（`energyAboveHull`）；`thermo.level` 声明凸包精度等级（不冒充更高精度），参考态不可得时诚实降级保留“近似”声明；纯层 `formationEnthalpy/convexHull/energyAboveHull` 入 `@saturday/core`（缺参考态/超成分范围显式报错）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
