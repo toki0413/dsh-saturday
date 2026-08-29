@@ -1,7 +1,7 @@
-// 套件自检：用完全满足契约的内存 mock 跑一遍四条套件。
+// 套件自检：用完全满足契约的内存 mock 跑一遍五条套件。
 // 若套件断言本身有缺陷（漏检/误检），这里先行暴露。
 
-import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract } from '../src/index.mjs'
+import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract, derivationContract } from '../src/index.mjs'
 import { Material, PrototypeLibResolver } from '@saturday/core'
 
 // ── 合规 mock：structure-resolver（§4.1）──
@@ -158,4 +158,77 @@ samplerContract({
   createReference: () => Material.create(
     { modalities: { formula: 'Cu' } }, new PrototypeLibResolver(),
   ),
+})
+
+// ── 合规 mock：derivation（§8.2，独立简版实现：推导图 + 失效传播 + 冻结语义）──
+function mockDerivationRegistry() {
+  const records = []
+  return {
+    record({ inputs, output, producer, frozen = false }) {
+      const d = { inputs, output, producer, frozen, status: 'valid', corrections: [], recomputedAt: null }
+      records.push(d)
+      return d
+    },
+    status(ref) {
+      const d = records.find(r => r.output === ref)
+      if (!d) {
+        const err = new Error('not registered: ' + ref)
+        err.code = 'DERIVATION_NOT_FOUND'
+        throw err
+      }
+      return { ref, status: d.status, frozen: d.frozen, producer: d.producer, corrections: [...d.corrections], recomputedAt: d.recomputedAt }
+    },
+    async invalidate(ref, reason) {
+      const invalidated = []
+      const corrections = []
+      const queue = [ref]
+      const seen = new Set([ref])
+      while (queue.length) {
+        const cur = queue.shift()
+        for (const d of records.filter(r => r.inputs.includes(cur))) {
+          if (d.frozen) {
+            d.corrections.push({ reason })
+            corrections.push(d.output)
+          } else if (d.status !== 'invalid') {
+            d.status = 'invalid'
+            invalidated.push(d.output)
+          }
+          if (!seen.has(d.output)) { seen.add(d.output); queue.push(d.output) }
+        }
+      }
+      return { source: ref, reason, invalidated, corrections }
+    },
+    async recompute({ recompute, budget = Infinity }) {
+      const pending = records.filter(d => d.status === 'invalid' && !d.frozen)
+      if (pending.length > budget) {
+        const err = new Error(`pending ${pending.length} > budget ${budget}`)
+        err.code = 'BUDGET_EXCEEDED'
+        throw err
+      }
+      const recomputed = []
+      let progressed = true
+      while (progressed) {
+        progressed = false
+        for (const d of records) {
+          if (d.status !== 'invalid' || d.frozen) continue
+          const ready = d.inputs.every(r => {
+            const up = records.find(x => x.output === r)
+            return !up || up.status === 'valid'
+          })
+          if (!ready) continue
+          await recompute(d)
+          d.status = 'valid'
+          d.recomputedAt = Date.now()
+          recomputed.push(d.output)
+          progressed = true
+        }
+      }
+      return { recomputed }
+    },
+  }
+}
+
+derivationContract({
+  subject: 'mock-derivation',
+  createRegistry: () => mockDerivationRegistry(),
 })

@@ -351,6 +351,42 @@ interface SampledStructure {
 且双射流是本契约下真正可逆的计算——呼应 §1.2：Trajectory 记账保存物理丢弃的比特，
 flow 双射则在构型空间内保持比特。
 
+### 4.6 derivation —— 推导登记簿（活性上下文地基）
+
+**职责**：让材料上下文成为响应式谱系图——每个导出量声明推导来源，
+上游失效沿推导图向下游传播，重算惰性且预算受控（§8.2 首个实证）。
+独立插件 `@saturday/plugin-derivation`，不依赖其他服务（纯提供方）。
+
+```typescript
+/** ref 形如 'material:<id>' | 'job:<id>' | 'result:<id>'（事件薄、数据厚，§7.2） */
+interface DerivationRegistry {
+  /** 登记推导：导出量由哪些输入经哪个生产者得出；冻结结果传 frozen（§7） */
+  record(d: { inputs: string[], output: string, producer: string, frozen?: boolean }): Derivation
+  /** 查活性状态；未登记显式抛 DERIVATION_NOT_FOUND */
+  status(ref: string): { ref: string, status: 'valid' | 'invalid', frozen: boolean,
+                         producer: string, corrections: Correction[],
+                         invalidatedBy: object | null, recomputedAt: number | null }
+  /** 失效传播：沿推导图向下游传递；一次传播发一条事件（薄载荷） */
+  invalidate(ref: string, reason: string): Promise<{
+    source: string, reason: string, invalidated: string[], corrections: string[] }>
+  /** 惰性重算：只重算失效且未冻结的推导，拓扑序推进；超预算显式抛 BUDGET_EXCEEDED */
+  recompute(o: { recompute: (d: Derivation) => Promise<void>, budget?: number }): Promise<{ recomputed: string[] }>
+}
+```
+
+**规则**：
+- **冻结语义（§7 冻结标记）**：`frozen` 推导失效时只追加修正记录（`corrections`）、
+  状态不改、永不进入重算集；传播越过冻结节点继续向下游（不吞失效）；
+- **登记簿 append-only**：失效过的记录永不删除；重算以状态迁移 + `recomputedAt`
+  时间戳追加表达，不改写历史；
+- **失效源只有显式 `invalidate`**：不可变 fork（§6）不是失效源——`substitute`
+  产生新对象，原结构及其推导不受影响，新结构要进入活性上下文须自行登记；
+- **预算是资源承诺**：超预算显式抛 `BUDGET_EXCEEDED`，不静默部分执行（惰性语义：预算不足就不动）；
+- **重复失效幂等**：已失效节点不重复传播，不重复发事件；
+- 事件 `saturday/derivation/invalidated` 薄载荷：只放 `source` / `reason` /
+  失效与修正的引用清单，不放推导记录本体。
+错误码：`DERIVATION_NOT_FOUND`（查无）/ `INVALID_REF`（引用形非法）/ `BUDGET_EXCEEDED`（超预算）。
+
 ---
 
 ## 5. 能力握手与事件粒度
@@ -438,10 +474,10 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
   但每次变更必须：更新本文档 → 更新契约测试 → 在 CHANGELOG 声明迁移路径；
 - 1.0 后：接口冻结，扩展走**新 seam**或**可选字段**，禁止修改既有字段语义。
 
-### 8.2 演进方向（不构成本版承诺）
+### 8.2 演进方向（部分已实证）
 
-- 响应式协效应下沉：`getService` → 依赖声明 + 激活/去激活（活性上下文的地基）；
-- 谱系驱动的失效传播与惰性重算（含重算预算控制）。
+- 谱系驱动的失效传播与惰性重算（含重算预算控制）：**首个实证已落地**，见 §4.6 derivation seam（`@saturday/plugin-derivation`：登记/失效传播/冻结修正/预算重算）；
+- 响应式协效应下沉：`getService` → 依赖声明 + 激活/去激活（活性上下文的另一块地基，仍不构成本版承诺）。
 
 ### 8.3 契约测试套件（@saturday/contract-tests）
 
@@ -451,10 +487,12 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 幂等 / 显式失败）、`workflowContract`（§4.3：结果形状与排序 / 逐变体事件 /
 不吞错 / 缺依赖显式报错）与 `samplerContract`（§4.5：manifest 自洽（采样语义 /
 似然三选一 / invertible 与 encode 一致）/ generative: 谱系前缀 / 似然诚实（none 禁伪造）/
-种子确定性 / 两码显式失败 / 候选可回算构造 Material）；`workflowContract` 另支持可选 `failWhen(material)`
+种子确定性 / 两码显式失败 / 候选可回算构造 Material）与 `derivationContract`（§4.6/§8.2：
+登记与状态 / 失效向下游传递传播与幂等 / 冻结只追加修正且传播不吞 / 查无显式错 /
+惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 18 项 + bridge 14 项 + 七个插件各自套件 + 其余插件各自契约测试，
-全仓 128/128）。映射见附录 A。
+套件自检 23 项 + bridge 14 项 + 八个插件各自套件 + 其余插件各自契约测试，
+全仓 147/147）。映射见附录 A。
 
 ---
 
@@ -490,6 +528,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 26 | sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material | `samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4） |
 | 27 | §4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null | plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者） |
 | 28 | §4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性） | plugin-ergodic 测试 1-10（纯层统计判定 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路） |
+| 29 | §8.2 活性上下文地基首个实证：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞（§7）/ 查无显式错 / 惰性重算预算受控 + 拓扑序 + append-only / substitute fork 非失效源（§6） | `derivationContract`（套件自检 mock-derivation + plugin-derivation 测试 1-14） |
 
 ## 附录 B：插件骨架模板
 

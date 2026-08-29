@@ -335,3 +335,79 @@ export function samplerContract({ subject, createSampler, createReference }) {
     assert.equal(material.nAtoms, s.graph.nodes.length)
   })
 }
+
+// ────────────────────────────────────────────────────────────
+// 套件 5：derivation（契约 §8.2 首个实证：活性上下文地基）
+// 登记即声明推导来源 / 失效沿推导图向下游传递传播 / 冻结只追加修正 /
+// 查无显式错 / 惰性重算预算受控。
+// ────────────────────────────────────────────────────────────
+
+/**
+ * @param {Object}   opts
+ * @param {string}   opts.subject        被测登记簿标识（测试名前缀）
+ * @param {Function} opts.createRegistry () => DerivationRegistry（可 async）
+ */
+export function derivationContract({ subject, createRegistry }) {
+  test(`[contract:${subject}] §8.2 登记与状态：导出量声明推导来源，初始 valid`, async () => {
+    const reg = await createRegistry()
+    reg.record({ inputs: ['material:m1'], output: 'result:e1', producer: 'contract-mock' })
+    const s = reg.status('result:e1')
+    assert.equal(s.status, 'valid')
+    assert.equal(s.frozen, false)
+    assert.equal(s.producer, 'contract-mock', 'producer 必须保留（谁产出的导出量）')
+  })
+
+  test(`[contract:${subject}] §8.2 失效传播：沿推导图向下游传递，重复失效幂等`, async () => {
+    const reg = await createRegistry()
+    reg.record({ inputs: ['material:m1'], output: 'result:e1', producer: 'contract-mock' })
+    reg.record({ inputs: ['result:e1'], output: 'result:e2', producer: 'contract-mock' })
+    const r1 = await reg.invalidate('material:m1', 'contract: 结构源撤回')
+    assert.deepEqual(r1.invalidated.sort(), ['result:e1', 'result:e2'], '下游全链失效')
+    assert.equal(reg.status('result:e1').status, 'invalid')
+    assert.equal(reg.status('result:e2').status, 'invalid')
+    const r2 = await reg.invalidate('material:m1', 'contract: 重复失效')
+    assert.equal(r2.invalidated.length, 0, '已失效不得重复传播（幂等）')
+  })
+
+  test(`[contract:${subject}] §8.2 冻结标记：只追加修正记录不改状态，传播越过冻结节点继续`, async () => {
+    const reg = await createRegistry()
+    reg.record({ inputs: ['material:m1'], output: 'result:e1', producer: 'contract-mock', frozen: true })
+    reg.record({ inputs: ['result:e1'], output: 'result:e2', producer: 'contract-mock' })
+    const r = await reg.invalidate('material:m1', 'contract: 参数勘误')
+    const s1 = reg.status('result:e1')
+    assert.equal(s1.status, 'valid', '冻结结果不得置 invalid（§7：不重算）')
+    assert.equal(s1.corrections.length, 1, '只追加修正记录')
+    assert.deepEqual(r.corrections, ['result:e1'])
+    assert.equal(reg.status('result:e2').status, 'invalid', '传播越过冻结节点继续向下游（不吞失效）')
+  })
+
+  test(`[contract:${subject}] §8.2 查无显式错：未登记的导出量 DERIVATION_NOT_FOUND`, async () => {
+    const reg = await createRegistry()
+    assert.throws(
+      () => reg.status('result:never-recorded'),
+      err => err.code === 'DERIVATION_NOT_FOUND',
+      '不得静默返回默认状态',
+    )
+  })
+
+  test(`[contract:${subject}] §8.2 惰性重算：预算受控 + 拓扑序 + append-only`, async () => {
+    const reg = await createRegistry()
+    reg.record({ inputs: ['material:m1'], output: 'result:e1', producer: 'contract-mock' })
+    reg.record({ inputs: ['result:e1'], output: 'result:e2', producer: 'contract-mock' })
+    await reg.invalidate('material:m1', 'contract: 重算前失效')
+    await assert.rejects(
+      () => reg.recompute({ recompute: async () => {}, budget: 1 }),
+      err => err.code === 'BUDGET_EXCEEDED',
+      '超预算显式报错，不静默部分执行',
+    )
+    const order = []
+    const { recomputed } = await reg.recompute({
+      recompute: async d => order.push(d.output),
+      budget: 2,
+    })
+    assert.deepEqual(recomputed.sort(), ['result:e1', 'result:e2'])
+    assert.deepEqual(order, ['result:e1', 'result:e2'], '依赖在前：先重算输入再重算下游')
+    assert.equal(reg.status('result:e1').status, 'valid')
+    assert.ok(reg.status('result:e1').recomputedAt, '重算时间戳追加（历史可查）')
+  })
+}
