@@ -5,8 +5,9 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import plugin from '../src/index.mjs'
+import plugin, { screenDopants } from '../src/index.mjs'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
+import { workflowContract } from '@saturday/contract-tests'
 
 // ── stub 核心插件：只提供 material / potential 两个服务 ──────────
 // 注：before() 钩子晚于模块体执行，relaxImpl 必须延迟捕获，不能直接闭包模块级变量
@@ -118,4 +119,28 @@ test('4. 单变体失败计入 failed，不中断整体（不吞错）', async (
   assert.equal(result.failed[0].dopant, 'Ni')
   assert.match(result.failed[0].error, /故意失败/)
   await coreFiber.dispose()
+})
+
+// ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
+//    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
+workflowContract({
+  subject: 'screen',
+  formula: 'Cu',
+  dopants: ['Ag', 'Ni'],
+  runTest: async ({ relaxImpl, dopants, emit }) => {
+    const material = await Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
+    const potential = new PotentialRegistry({ on() {}, emit() {} })
+    potential.register({
+      name: 'contract-stub',
+      manifest: {
+        capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
+        constraints: {},
+        eventGranularity: 'job',
+      },
+      relax: relaxImpl,
+    })
+    await potential.activate('contract-stub')
+    return screenDopants({ material, dopants, potential, emit })
+  },
+  missingDeps: () => screenRt.tools.call('workflow.screen', { materialId: 'x', dopants: ['Ag'] }),
 })

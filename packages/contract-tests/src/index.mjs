@@ -161,3 +161,85 @@ export function potentialProviderContract({
     })
   }
 }
+
+// ────────────────────────────────────────────────────────────
+// 套件 3：workflow（契约 §4.3）
+// 契约冻结的是纯编排层：事件由调用方路由（注入 emit），
+// 故套件不触碰 cordis，调用方把 relaxImpl 接进自己依赖的引擎即可。
+// ────────────────────────────────────────────────────────────
+
+/**
+ * @param {Object}   opts
+ * @param {string}   opts.subject    被测工作流标识（测试名前缀）
+ * @param {Function} opts.runTest    ({ relaxImpl, dopants, emit }) => Promise<结果>；
+ *                                   调用方负责构造基体、把 relaxImpl 接进引擎、
+ *                                   并把 emit 透传给编排函数（纯函数形态）
+ * @param {string}   opts.formula    基体化学式（原型库可解析）
+ * @param {string[]} opts.dopants    掺杂元素列表（至少 1 个）
+ * @param {Function} [opts.missingDeps] 工具层可选断言：缺核心服务时的调用，
+ *                                   必须 reject（不得静默降级，契约 §2）
+ */
+export function workflowContract({ subject, runTest, formula, dopants, missingDeps }) {
+  const stubRelax = (energies) => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'contract-stub', converged: true,
+    energy: energies[material.formula], n_steps: 3,
+  })
+
+  if (missingDeps) {
+    test(`[contract:${subject}] §4.3 缺依赖必须显式报错，不得静默降级（契约 §2）`, async () => {
+      await assert.rejects(
+        () => missingDeps(),
+        /requires|must be mounted|services/i,
+      )
+    })
+  }
+
+  test(`[contract:${subject}] §4.3 结果形状与排序：ranked 按 energyPerAtom 升序`, async () => {
+    // 确定性能量：按 dopants 顺序递减，验证“排序”而非“透传”
+    const energies = { [formula]: -12.0 }
+    dopants.forEach((d, i) => { energies[`${formula}3${d}`] = -12.4 - i * 0.2 })
+    const result = await runTest({ relaxImpl: stubRelax(energies), dopants })
+
+    assert.ok(Array.isArray(result.ranked), 'ranked must be an array')
+    assert.ok(Array.isArray(result.failed), 'failed must be an array')
+    assert.equal(typeof result.note, 'string', 'note 诚实声明物理口径')
+    assert.equal(result.ranked.length, dopants.length + 1, '基体 + 全部掺杂变体')
+    for (const r of result.ranked) {
+      assert.equal(typeof r.label, 'string')
+      assert.ok(Number.isFinite(r.energy), 'energy must be finite (eV)')
+      assert.ok(Number.isFinite(r.energyPerAtom))
+    }
+    const e = result.ranked.map(r => r.energyPerAtom)
+    assert.deepEqual(e, [...e].sort((a, b) => a - b), '必须按 energyPerAtom 升序')
+    assert.equal(result.ranked.at(-1).formula, formula, '能量最高的基体排在最后（验证排序而非透传）')
+  })
+
+  test(`[contract:${subject}] §4.3 逐变体事件：每个成功变体独立一条，薄载荷含引用`, async () => {
+    const events = []
+    await runTest({
+      relaxImpl: stubRelax({ [formula]: -12.0 }),
+      dopants,
+      emit: async (type, event) => { events.push(event) },
+    })
+    assert.equal(events.length, dopants.length + 1, '每个成功变体一条事件（可逐条溯源）')
+    for (const e of events) {
+      assert.ok(e.payload?.jobId, '薄载荷：事件带 jobId 引用')
+      assert.ok(e.payload?.material?.id, '薄载荷：事件带材料引用')
+    }
+  })
+
+  test(`[contract:${subject}] §4.3 单变体失败计入 failed，不中断整体（不吞错）`, async () => {
+    const failFormula = `${formula}3${dopants[0]}`
+    const relaxImpl = async (material) => {
+      if (material.formula === failFormula) throw new Error('contract-stub: 故意失败')
+      return {
+        jobId: `job-${material.formula}`, engine: 'contract-stub',
+        converged: true, energy: -12.0, n_steps: 3,
+      }
+    }
+    const result = await runTest({ relaxImpl, dopants })
+    assert.equal(result.ranked.length, dopants.length, '成功变体照常排序返回')
+    assert.equal(result.failed.length, 1)
+    assert.match(result.failed[0].error, /故意失败/, '失败原因必须保留，不得吞错')
+  })
+}

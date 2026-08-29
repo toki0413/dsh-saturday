@@ -428,12 +428,13 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 
 ### 8.3 契约测试套件（@saturday/contract-tests）
 
-兼容性由测试而非文档承诺。两条核心 seam 的标准断言集已独立成包：
-`structureResolverContract`（§4.1：候选形状 / 多晶型排序 / 查无显式错 / 幂等）与
+兼容性由测试而非文档承诺。三条核心 seam 的标准断言集已独立成包：
+`structureResolverContract`（§4.1：候选形状 / 多晶型排序 / 查无显式错 / 幂等）、
 `potentialProviderContract`（§4.2 + §5.2：manifest 形状 / 粒度门禁 / 结果形状 /
-幂等 / 显式失败）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 9 项 + bridge 14 项 + 四个引擎/结构源插件套件 + 其余插件各自契约测试，
-全仓 87/87）。映射见附录 A。
+幂等 / 显式失败）与 `workflowContract`（§4.3：结果形状与排序 / 逐变体事件 /
+不吞错 / 缺依赖显式报错）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
+套件自检 13 项 + bridge 14 项 + 五个插件各自套件 + 其余插件各自契约测试，
+全仓 95/95）。映射见附录 A。
 sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地后进入套件。
 
 ---
@@ -466,6 +467,7 @@ sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地
 | 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | 待首个 sampler 插件实证（先在 LJ/EMT 小体系对账 MD；`samplerContract` 同期进套件） |
 | 23 | analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默 | plugin-neb 测试 6-8（含真实挂载与卸载回收） |
 | 24 | analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析 | plugin-eos 测试 1-8（含真实桥 Cu EOS 集成） |
+| 25 | workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错 | `workflowContract`（套件自检 + plugin-screening 测试 5-8） |
 
 ## 附录 B：插件骨架模板
 

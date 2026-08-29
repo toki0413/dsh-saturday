@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**87/87 测试通过**（10 个含测试 workspace：bridge 14 项集成验收 + 契约测试套件自检 9 项 + 八个插件各自契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账与 Cu EOS 拟合集成）
+- 裸 cordis：**95/95 测试通过**（10 个含测试 workspace：bridge 14 项集成验收 + 契约测试套件自检 13 项 + 八个插件各自契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账与 Cu EOS 拟合集成）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
@@ -93,8 +93,8 @@ packages/
   python-bridge/              # @saturday/python-bridge —— 通用 Python sidecar 客户端
     src/bridge.mjs            #   stdio JSON-lines，握手/超时/批量（可换 ZeroMQ）
     sidecar.py + adapters/    #   主 sidecar：按元素逐调用路由 ASE EMT / LJ 兜底
-  contract-tests/             # @saturday/contract-tests —— 契约测试套件（§8.3：兼容性由测试承诺）
-    src/index.mjs             #   structureResolverContract / potentialProviderContract
+  contract-tests/             # @saturday/contract-tests —— 契约测试套件（§8.3：兼容性由测试承诺，三条 seam）
+    src/index.mjs             #   structureResolverContract / potentialProviderContract / workflowContract
   bridge/                     # @saturday/bridge —— dsh Bundle（saturday 主插件）
     src/saturday.plugin.mjs   #   cordis 插件入口 { name, apply }（2 个工具）
     src/compute/emt-provider.mjs#  EMT Provider（零 license 依赖）
@@ -117,7 +117,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 87 项）
+npm test                # 全部 workspace 测试（当前 95 项）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 ```
@@ -144,7 +144,7 @@ Agent 会话演示（无真实 API Key）：可配 `dsh-llm-mock-server@0.0.1-rc
 - **修订 #7**：autoRoute 评分修正，screening 画像选快引擎（测试 5 固化）
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
-- **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider 两条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
+- **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider / workflow 三条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
 - **sampler seam（§4.5，条款冻结）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；Boltzmann 生成器 / 潜空间 normalizing flow 挂载于此，待首个实现实证
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
 - **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）；`trajectory.replay` 从事件流重建计算索引，回放事件带防回灌前缀（可逆的是决策不是物理）

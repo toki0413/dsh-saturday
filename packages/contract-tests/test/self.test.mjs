@@ -1,7 +1,8 @@
-// 套件自检：用完全满足契约的内存 mock 跑一遍两条套件。
+// 套件自检：用完全满足契约的内存 mock 跑一遍三条套件。
 // 若套件断言本身有缺陷（漏检/误检），这里先行暴露。
 
-import { structureResolverContract, potentialProviderContract } from '../src/index.mjs'
+import { workflowContract, structureResolverContract, potentialProviderContract } from '../src/index.mjs'
+import { Material, PrototypeLibResolver } from '@saturday/core'
 
 // ── 合规 mock：structure-resolver（§4.1）──
 const mockResolver = {
@@ -56,4 +57,51 @@ potentialProviderContract({
     }),
     code: 'ENGINE_UNAVAILABLE',
   },
+})
+
+// ── 合规 mock：workflow（§4.3，纯编排：逐变体事件 + 排序 + 不吞错）──
+async function mockScreen({ material, dopants, relaxImpl, emit }) {
+  const variants = [
+    { kind: 'pristine', dopant: null, material },
+    ...dopants.map(d => ({ kind: 'doped', dopant: d, material: material.substitute(0, d) })),
+  ]
+  const results = []
+  for (const v of variants) {
+    const label = v.kind === 'pristine'
+      ? `${material.formula} (pristine)`
+      : `${material.formula} → ${v.material.formula}`
+    try {
+      const r = await relaxImpl(v.material)
+      results.push({
+        label, kind: v.kind, dopant: v.dopant, formula: v.material.formula, status: 'ok',
+        energy: r.energy, energyPerAtom: r.energy / v.material.nAtoms,
+      })
+      await emit?.('saturday/simulation/converged', {
+        type: 'saturday/simulation/converged',
+        payload: {
+          jobId: r.jobId,
+          material: { id: v.material.id, formula: v.material.formula },
+          result: { energy: r.energy },
+        },
+      })
+    } catch (err) {
+      results.push({ label, kind: v.kind, dopant: v.dopant, formula: v.material.formula, status: 'failed', error: err.message })
+    }
+  }
+  return {
+    ranked: results.filter(r => r.status === 'ok').sort((a, b) => a.energyPerAtom - b.energyPerAtom),
+    failed: results.filter(r => r.status === 'failed'),
+    note: 'mock workflow: 排序值仅验证编排语义',
+  }
+}
+
+workflowContract({
+  subject: 'mock-screen',
+  formula: 'Cu',
+  dopants: ['Ag', 'Ni'],
+  runTest: async ({ relaxImpl, dopants, emit }) => {
+    const material = await Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
+    return mockScreen({ material, dopants, relaxImpl, emit })
+  },
+  missingDeps: async () => { throw new Error('workflow.mock requires services "material" and "potential"') },
 })
