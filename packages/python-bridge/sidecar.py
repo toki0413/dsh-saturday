@@ -17,6 +17,7 @@ try:
     from adapters.ase_emt import (
         relax_structure as ase_relax,
         calculate_properties as ase_calc,
+        roundtrip_structure as ase_roundtrip,
         EMT_ELEMENTS,
     )
     HAS_ASE = True
@@ -48,11 +49,16 @@ def handle(method: str, params: dict):
     if method == "hello":
         return {
             "sidecar": "saturday-python-bridge",
-            "version": "0.2.0",
+            "version": "0.3.0",
             "calculators": {"ase-emt": HAS_ASE, "lj-mock": True},
             # 契约 §5.1：事件粒度声明（逐调用同步形态，均为迭代级）
             "eventGranularity": {"ase-emt": "iteration", "lj-mock": "iteration"},
         }
+    if method == "roundtrip":
+        # 互转精度自检：必须走真 ASE，无 ASE 时诚实报错而非静默降级
+        if not HAS_ASE:
+            raise RuntimeError("roundtrip requires ASE (data-plane identity check)")
+        return ase_roundtrip(params["structure"], params.get("params", {}))
     if method == "relax":
         backend = pick_backend(params["structure"])
         fn = ase_relax if backend == "ase-emt" else lj_relax

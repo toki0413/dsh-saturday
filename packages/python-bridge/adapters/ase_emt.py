@@ -26,6 +26,21 @@ def _to_atoms(structure: dict) -> Atoms:
     )
 
 
+def roundtrip_structure(structure: dict, params: dict) -> dict[str, Any]:
+    """互转精度自检：dict → ASE Atoms → dict（不挂计算器）。
+
+    用于验证 Saturday graph ↔ ASE 表示往返无损（float64 全精度）；
+    验收条款“ASE 互转精度测试”（路线 Week 9）的数据面实现。
+    """
+    atoms = _to_atoms(structure)
+    return {
+        "numbers": [int(z) for z in atoms.numbers],
+        "positions": atoms.positions.tolist(),
+        "cell": atoms.cell.tolist(),
+        "pbc": [bool(p) for p in atoms.pbc],
+    }
+
+
 def relax_structure(structure: dict, params: dict) -> dict[str, Any]:
     """原子位置 + 晶胞联合弛豫（BFGS on UnitCellFilter）。"""
     t0 = time.time()
