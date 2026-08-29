@@ -15,6 +15,9 @@
     "@saturday/core": "^0.3.0",
     "@saturday/kernel": "^0.3.0"
   },
+  "devDependencies": {
+    "@saturday/contract-tests": "^0.3.0"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"
   },

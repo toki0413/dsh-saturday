@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { MaterialsProjectResolver } from '../src/mp-resolver.mjs'
 import { Material } from '@saturday/core'
+import { structureResolverContract } from '@saturday/contract-tests'
 
 // ── MP 风格响应夹具（真实 API 的 JSON 结构，裁剪到契约所需字段）──
 const MP_FIXTURES = {
@@ -112,4 +113,11 @@ test('4. 插件挂载：服务与工具就位，工具输出只含引用信息',
   assert.deepEqual(picked.candidates.map(c => c.source), ['mp-390'])
   await fiber.dispose()
   assert.equal(ctx.reflect.get('structure-resolver.materials-project'), undefined)
+})
+
+// ── 标准契约套件（§4.1，传输用 stub，无需真实 API Key）───────────
+structureResolverContract({
+  subject: 'materials-project',
+  createResolver: () => new MaterialsProjectResolver({ apiKey: 'stub-key', fetchImpl: stubFetch() }),
+  knownFormula: 'TiO2',
 })

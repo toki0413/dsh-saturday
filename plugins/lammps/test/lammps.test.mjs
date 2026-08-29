@@ -9,6 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { LammpsProvider, toLammpsData, parseFinalEnergy } from '../src/lammps-provider.mjs'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
+import { potentialProviderContract } from '@saturday/contract-tests'
 
 /** 伪子进程：可控地发 stdout / error / close */
 function fakeChild({ stdout = '', exitCode = 0, spawnError = null } = {}) {
@@ -130,4 +131,22 @@ test('6. 激活引擎被注销：激活指针自动重置', async () => {
   await fiber.dispose()
   assert.equal(potential.activeProvider, null, 'active pointer reset when provider withdrawn')
   await coreFiber.dispose()
+})
+
+// ── 标准契约套件（§4.2 + §5.2，伪二进制驱动）───────────────────
+potentialProviderContract({
+  subject: 'lammps',
+  createProvider: () => new LammpsProvider({
+    potentialFile: 'Cu.eam.alloy',
+    spawnImpl: () => fakeChild({ stdout: 'LAMMPS output...\nSATURDAY_ENERGY -14.0832\n' }),
+  }),
+  runnable: true,
+  runFormula: 'Cu',
+  unavailable: {
+    createProvider: () => new LammpsProvider({
+      potentialFile: 'Cu.eam.alloy',
+      spawnImpl: () => fakeChild({ spawnError: Object.assign(new Error('spawn lmp ENOENT'), { code: 'ENOENT' }) }),
+    }),
+    code: 'ENGINE_UNAVAILABLE',
+  },
 })

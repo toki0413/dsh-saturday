@@ -1,0 +1,17 @@
+{
+  "name": "@saturday/contract-tests",
+  "version": "0.3.0",
+  "description": "Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/core": "^0.3.0"
+  },
+  "license": "MIT"
+}
