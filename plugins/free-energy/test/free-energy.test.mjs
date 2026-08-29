@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import plugin, { freeEnergyByIntegration, KB_EV_PER_K } from '../src/index.mjs'
+import plugin, { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, KB_EV_PER_K, H_EV_S } from '../src/index.mjs'
 
 // ── 纯层：输入门禁（第一档纪律延续：零点不得静默假设）────────
 
@@ -294,6 +294,106 @@ test('9. 集成（真实 ASE sidecar）：LJ 两点网格冒烟——曲线形�
   } finally {
     await fiber.dispose()
     await aseFiber.dispose()
+    await coreFiber.dispose()
+  }
+})
+
+// ── 谐波锚点（⑭）：量子谐振子纯层闭式 + 接线纪律 ──────────────
+// 闭式：F_i(T) = ℏω/2 + kT·ln(1−e^{−ℏω/kT})；低温极限 → 零点能，
+// 高温极限 → kT·ln(ℏω/kT)（经典极限）；模间线性叠加。
+
+test('10. 谐波纯层闭式：低温→零点能，高温→经典极限，线性叠加，虚频拒收', () => {
+  const f = 10 // THz
+  const quanta = H_EV_S * f * 1e12 // ℏω (eV)
+  const lowT = harmonicVibrationalFreeEnergy({ frequenciesTHz: [f], temperatureK: 1 })
+  assert.ok(Math.abs(lowT.vibrationalFreeEnergyEV - 0.5 * quanta) < 1e-9,
+    '低温极限：F → 零点能 ℏω/2（热激发项指数压低）')
+  assert.ok(Math.abs(lowT.zeroPointEnergyEV - 0.5 * quanta) < 1e-12)
+
+  const highT = harmonicVibrationalFreeEnergy({ frequenciesTHz: [f], temperatureK: 1e6 })
+  const kT = KB_EV_PER_K * 1e6
+  const classic = kT * Math.log(quanta / kT) // ln(1−e^{−x}) ≈ ln x（x≪1）
+  assert.ok(Math.abs(highT.vibrationalFreeEnergyEV - classic) / Math.abs(classic) < 1e-4,
+    '高温极限：F → kT·ln(ℏω/kT)（经典谐振子）')
+
+  const doubled = harmonicVibrationalFreeEnergy({ frequenciesTHz: [f, f], temperatureK: 300 })
+  const single = harmonicVibrationalFreeEnergy({ frequenciesTHz: [f], temperatureK: 300 })
+  assert.ok(Math.abs(doubled.vibrationalFreeEnergyEV - 2 * single.vibrationalFreeEnergyEV) < 1e-12,
+    '模间独立：自由能线性叠加')
+
+  assert.throws(() => harmonicVibrationalFreeEnergy({ frequenciesTHz: [-1], temperatureK: 300 }),
+    err => err.code === 'THERMO_INVALID_INPUT' && /imaginary/.test(err.message),
+    '虚频拒收：谐波锚点对鞍点无物理意义，必须声明而非静默修正')
+  assert.throws(() => harmonicVibrationalFreeEnergy({ frequenciesTHz: [f], temperatureK: -1 }),
+    err => err.code === 'THERMO_INVALID_INPUT')
+})
+
+test('11. 锚点接线纪律：引擎无 harmonic 原语/显式模式缺 F₀ 均显式报错', async () => {
+  const ctx = new Context()
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(linearMdEngine(C_LINEAR)))
+  const fiber = await ctx.registry.plugin({
+    name: 'saturday-free-energy',
+    apply: (ctx) => plugin.apply(ctx, {}),
+  })
+  try {
+    const { rt } = fiber.store.saturdayFreeEnergy
+    const loaded = await rt.getService('material').load('Cu')
+    await assert.rejects(
+      () => rt.tools.call('workflow.freeEnergy', {
+        referenceId: loaded.id, temperatures: [200, 300],
+        anchorTemperatureK: 200, anchorMode: 'harmonic',
+      }),
+      err => err.code === 'THERMO_INVALID_INPUT' && /harmonic.*primitive/.test(err.message),
+      '引擎未声明 harmonic 原语：不得静默退化为零锚点',
+    )
+    await assert.rejects(
+      () => rt.tools.call('workflow.freeEnergy', {
+        referenceId: loaded.id, temperatures: [200, 300], anchorTemperatureK: 200,
+      }),
+      err => err.code === 'THERMO_REFERENCE_MISSING',
+      '显式模式缺 anchorF0：零点必须声明',
+    )
+  } finally {
+    await fiber.dispose()
+    await coreFiber.dispose()
+  }
+})
+
+test('12. 端到端谐波锚点：stub 引擎定频 → 锚点 = u0 + 闭式振动自由能', async () => {
+  // stub 引擎：harmonic 返回定频 8 THz ×2 模 + u0；md 同线性核。
+  // 对账：交付的 anchor.F0 必须精确等于 u0 + 纯层闭式重算值（同一闭式来源）。
+  const U0 = -13.2
+  const FREQS = [8, 8]
+  const engine = {
+    ...linearMdEngine(C_LINEAR),
+    name: 'harmonic-analytic',
+    async harmonic() {
+      return { jobId: 'harm-1', engine: 'harmonic-analytic', u0_eV: U0, frequencies_thz: FREQS, imaginary_modes: 0 }
+    },
+  }
+  const ctx = new Context()
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(engine))
+  const fiber = await ctx.registry.plugin({
+    name: 'saturday-free-energy',
+    apply: (ctx) => plugin.apply(ctx, {}),
+  })
+  try {
+    const { rt } = fiber.store.saturdayFreeEnergy
+    const { events } = coreFiber.store.stub
+    const loaded = await rt.getService('material').load('Cu')
+    const out = await rt.tools.call('workflow.freeEnergy', {
+      referenceId: loaded.id, temperatures: [200, 300],
+      anchorTemperatureK: 200, anchorMode: 'harmonic', mdSteps: 5,
+    })
+    const vib = harmonicVibrationalFreeEnergy({ frequenciesTHz: FREQS, temperatureK: 200 })
+    assert.ok(Math.abs(out.anchor.F0 - (U0 + vib.vibrationalFreeEnergyEV)) < 1e-12,
+      '锚点 = u0 + 量子谐振子闭式（纯层重算对账）')
+    assert.match(out.anchor.source, /谐波近似/, '锚点来源声明必须物理化且随交付呈现')
+    assert.equal(out.harmonicDetail.nModes, 2)
+    assert.equal(events[0].payload.anchorMode, 'harmonic', '事件载荷声明锚点模式')
+    assert.ok(Math.abs(out.curve[0].dF) < 1e-12, '锚点处 ΔF 归零')
+  } finally {
+    await fiber.dispose()
     await coreFiber.dispose()
   }
 })

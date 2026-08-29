@@ -15,6 +15,9 @@ def make_calculator(spec: dict):
     params = spec.get("params", {}) or {}
     if name == "lj":
         from ase.calculators.lj import LennardJones  # noqa: PLC0415
+        # pbc 默认关：周期晶胞中粒子互不相作用（全零 Hessian），与结构 pbc=True 对齐显式开启；
+        # 调用方可用 params 覆盖（含关回 pbc 的孤立团簇场景）
+        params = {"pbc": True, **params}
         return LennardJones(**params)
     if name == "emt":
         from ase.calculators.emt import EMT  # noqa: PLC0415
@@ -158,14 +161,96 @@ def md(spec: dict) -> dict:
     }
 
 
+def harmonic(spec: dict) -> dict:
+    """谐波锚点数据面：弛豫到局部极小 → 中心差分 Hessian → 质量加权简正模频率。
+
+    只返回 u0 与全量频率表；振动自由能闭式在 JS 纯层（单一闭式来源）。
+    周期小胞的声学模是真实声学模，不擅自剔除；虚频如实计数上报，
+    由调用方声明而非静默修正（同参考态纪律：不假设零点）。
+    """
+    import math  # noqa: PLC0415
+    import time as _time  # noqa: PLC0415
+
+    import numpy as np  # noqa: PLC0415
+    from ase import Atoms  # noqa: PLC0415
+    from ase.optimize import BFGS  # noqa: PLC0415
+
+    structure = spec["structure"]
+    atoms = Atoms(
+        numbers=structure["numbers"],
+        positions=structure["positions"],
+        cell=structure["cell"],
+        pbc=True,
+    )
+    try:
+        atoms.calc = make_calculator(spec.get("calculator", {"name": "lj"}))
+    except ImportError as exc:
+        raise EngineUnavailableError(str(exc)) from exc
+
+    params = spec.get("params", {}) or {}
+    t0 = _time.time()
+
+    # 1) 锚点 = 机械平衡点：先弛豫到局部极小（BFGS，与 relax 算子同一参数族）
+    opt = BFGS(atoms)
+    converged = opt.run(
+        fmax=params.get("fmax", 0.05),
+        steps=params.get("max_steps", 200),
+    )
+    u0 = float(atoms.get_potential_energy())
+
+    # 2) Hessian：力对位移的中心差分，H_{ia,jb} = -dF_{ia}/dx_{jb}
+    h = float(params.get("displacement_angstrom", 0.01))
+    n3 = 3 * len(atoms)
+    pos0 = atoms.get_positions().copy()
+    hess = np.zeros((n3, n3))
+    for j in range(n3):
+        f_plus = f_minus = None
+        for sign in (1.0, -1.0):
+            pos = pos0.copy()
+            pos[j // 3, j % 3] += sign * h
+            atoms.set_positions(pos)
+            f = atoms.get_forces().ravel()
+            if sign > 0:
+                f_plus = f
+            else:
+                f_minus = f
+        hess[:, j] = -(f_plus - f_minus) / (2.0 * h)
+        atoms.set_positions(pos0)
+    hess = 0.5 * (hess + hess.T)  # 数值噪声对称化（解析 Hessian 本身对称）
+
+    # 3) 质量加权对角化：λ 单位 eV/(Å²·amu) → ν_THz = sqrt(λ)·sqrt(16.02176634/1.66053906892e-27)/(2π·1e12)
+    masses = np.repeat(atoms.get_masses(), 3)
+    hess_mw = hess / np.sqrt(np.outer(masses, masses))
+    eigvals = np.linalg.eigvalsh(hess_mw)
+    freq_factor = math.sqrt(16.02176634 / 1.66053906892e-27) / (2.0 * math.pi * 1e12)
+    # 平动零模（周期晶胞 Γ 点声学模）与真虚频分开计数：零模不进振动闭式（如实声明），
+    # 真虚频拒绝锚点（鞍点）——两种情况都不静默修正。
+    tol = float(params.get("zero_mode_tol", 1e-4))
+    real_freqs = sorted(math.sqrt(lam) * freq_factor for lam in eigvals if lam > tol)
+    zero_modes = int(((eigvals >= -tol) & (eigvals <= tol)).sum())
+    n_imag = int((eigvals < -tol).sum())
+
+    return {
+        "converged": bool(converged),
+        "u0_eV": u0,
+        "n_atoms": len(atoms),
+        "n_modes": n3,
+        "frequencies_thz": real_freqs,
+        "zero_modes": zero_modes,
+        "imaginary_modes": n_imag,
+        "displacement_angstrom": h,
+        "wall_seconds": round(_time.time() - t0, 3),
+    }
+
+
 def handle(method: str, params: dict):
     if method == "hello":
         return {
             "sidecar": "saturday-ase-calc",
             "version": "0.1.0",
             "calculators": available(),
-            # 契约 §5.1：md 能力声明（遍历对账时间平均侧，§4.5）
-            "operations": {"relax": True, "calculate": True, "md": True},
+            # 契约 §5.1：md 能力声明（遍历对账时间平均侧，§4.5）；harmonic：谐波锚点数据面（§9 第二档锚点物理化）
+            "operations": {"relax": True, "calculate": True, "md": True, "harmonic": True},
             "eventGranularity": "iteration",
         }
     if method == "relax":
@@ -174,6 +259,8 @@ def handle(method: str, params: dict):
         return calculate(params)
     if method == "md":
         return md(params)
+    if method == "harmonic":
+        return harmonic(params)
     if method == "shutdown":
         return {"bye": True}
     raise ValueError(f"Unknown method: {method}")

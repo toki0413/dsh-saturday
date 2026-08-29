@@ -30,12 +30,45 @@ import {
  * @param {string}  [opts.batchId]   筛选批次号（缺省自动生成）
  * @param {Object}  [opts.references] 元素参考态每原子能量（如 {Cu: -0.001}），注入则算严格形成焓+凸包
  * @param {string}  [opts.thermoUnavailable] 参考态不可得的原因（诚实记录，不静默降级）
+ * @param {number}  [opts.maxDopedSites] 每掺杂的最大取代位数（浓度扫描：k=1..max 各一个变体，默认 1）
+ * @param {Array<{elements: string[], sites?: number[]}>} [opts.codopants]
+ *        共掺变体：多个不同元素占据不同位点（混合共掺；落在稳定相连线上的物理内点）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable }) {
-  const variants = [
-    { kind: 'pristine', dopant: null, material },
-    ...dopants.map(d => ({ kind: 'doped', dopant: d, material: material.substitute(0, d) })),
-  ]
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants }) {
+  const maxSites = maxDopedSites ?? 1
+  if (!Number.isInteger(maxSites) || maxSites < 1) {
+    throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
+  }
+  if (maxSites > material.nAtoms - 1) {
+    throw new Error(
+      `maxDopedSites ${maxSites} 超出基体可取代位点数 ${material.nAtoms - 1}` +
+      '（全取代 = 纯掺杂端点，属参考态而非候选）',
+    )
+  }
+  // 变体集：基体 + 每掺杂的浓度系列（取代位点 0..k-1，k=1..maxSites）+ 共掺变体（可选）
+  const variants = [{ kind: 'pristine', dopant: null, sites: 0, material }]
+  for (const d of dopants) {
+    for (let k = 1; k <= maxSites; k++) {
+      let m = material
+      for (let s = 0; s < k; s++) m = m.substitute(s, d)
+      variants.push({ kind: 'doped', dopant: d, sites: k, material: m })
+    }
+  }
+  for (const cd of codopants ?? []) {
+    if (!Array.isArray(cd.elements) || cd.elements.length < 2) {
+      throw new Error('codopants 每项须含 ≥2 个不同元素（单元素请用 dopants）')
+    }
+    if (new Set(cd.elements).size !== cd.elements.length) {
+      throw new Error(`codopants 元素重复（${cd.elements.join(',')}）：同一元素多次取代无物理意义`)
+    }
+    const sites = cd.sites ?? cd.elements.map((_, i) => i)
+    if (new Set(sites).size !== sites.length || sites.some(s => s < 0 || s >= material.nAtoms)) {
+      throw new Error(`codopants 位点非法（${sites.join(',')}）：须互异且在基体位点范围内`)
+    }
+    let m = material
+    cd.elements.forEach((el, i) => { m = m.substitute(sites[i], el) })
+    variants.push({ kind: 'codoped', dopant: cd.elements.join('+'), sites: cd.elements.length, material: m })
+  }
 
   const provider = potential.resolveProvider(
     { engine },
@@ -53,6 +86,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         label,
         kind: v.kind,
         dopant: v.dopant,
+        sites: v.sites ?? (v.kind === 'doped' ? 1 : 0),
         formula: v.material.formula,
         materialId: v.material.id,
         composition: compositionFromNumbers(v.material.graph.nodes.map(n => n.number)),
@@ -81,7 +115,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       })
     } catch (err) {
       results.push({
-        label, kind: v.kind, dopant: v.dopant, formula: v.material.formula,
+        label, kind: v.kind, dopant: v.dopant, sites: v.sites ?? 0,
+        formula: v.material.formula,
         status: 'failed', error: err.message,
       })
     }
@@ -92,8 +127,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     .sort((a, b) => a.energyPerAtom - b.energyPerAtom)
 
   // 热力学第一档：参考态显式注入 → 严格形成焓 + 凸包判据。
-  // 元素数 ≤ 2（单掺杂二元系）：凸包退化为两端点 0-0 弦，
-  // energyAboveHull = max(0, ΔH_f)。
+  // 元素数 ≤ 2（单掺杂二元系）：每个掺杂系用两端点 + 该掺杂的全部浓度候选构包；
+  // 单内点时退化为 0-0 弦（energyAboveHull = max(0, ΔH_f)），多浓度内点时包络非退化。
   // 元素数 ≥ 3（多掺杂/三元及以上）：升为多组分凸包——每个元素参考态是成分空间
   // 端点（形成焓按定义 = 0，是定义事实而非外推），与全部候选在统一 d 维空间构包；
   // 端点全零时包络即 z=0 超平面，判据与二元弦数值一致（core 对账 1e-12）。
@@ -133,15 +168,25 @@ export async function screenDopants({ material, dopants, potential, topK, engine
               '端点 = 各元素参考态（形成焓零点经本引擎显式弛豫计算）',
       }
     } else {
+      // 二元分支：逐掺杂系构包（两端点 + 该掺杂的全部浓度候选），逐候选查询。
+      // 单内点退化为 0-0 弦；多浓度内点时包络由最低内点撑起（非退化判据）。
+      const toX = (r) => {
+        const total = Object.values(r.composition).reduce((a, b) => a + b, 0)
+        return r.composition[r.dopant] / total
+      }
       for (const r of ranked) {
         if (r.kind === 'pristine') {
           r.energyAboveHull = 0
-        } else {
-          const total = Object.values(r.composition).reduce((a, b) => a + b, 0)
-          const point = { x: r.composition[r.dopant] / total, y: r.formationEnthalpy }
-          const hullResult = convexHull([{ x: 0, y: 0 }, point, { x: 1, y: 0 }])
-          r.energyAboveHull = energyAboveHull(point, hullResult)
+          continue
         }
+        const cands = ranked.filter(x => x.kind === 'doped' && x.dopant === r.dopant)
+        const pts = [
+          { x: 0, y: 0 },
+          ...cands.map(c => ({ x: toX(c), y: c.formationEnthalpy })),
+          { x: 1, y: 0 },
+        ]
+        const hullResult = convexHull(pts)
+        r.energyAboveHull = energyAboveHull({ x: toX(r), y: r.formationEnthalpy }, hullResult)
       }
       thermo = {
         level: provider.name,

@@ -1,6 +1,8 @@
 // 构型自由能曲线演示（热力学第二档）：
 // Cu 原胞 + 真实 ASE 引擎（EMT 计算器 / Langevin 恒温 MD）→ 逐温度网格点恒温 MD 得 ⟨U⟩(β)
-// → 沿 β 热力学积分出构型自由能曲线。锚点显式声明（演示零点，非物理计算）。
+// → 沿 β 热力学积分出构型自由能曲线。
+// 锚点物理化（⑭）：anchorMode='harmonic' → 引擎 harmonic 原语（弛豫+有限差分 Hessian
+// 简正模）+ 量子谐振子闭式给出 F₀；经典 TI 采样与量子锚点混合为声明的近似。
 // 运行：npm run demo:freeenergy
 
 import { Context } from '@deepseek-ai/cordis'
@@ -34,20 +36,24 @@ console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calcul
 
 const cu = await rt.tools.call('material.load', { query: 'Cu' })
 console.log(`参考结构: ${cu.formula} (${cu.nAtoms} 原子, id=${cu.materialId.slice(0, 8)}…)`)
-console.log('温度网格: 150 / 300 / 450 / 600 K（锚点 300 K，逐点 500 步恒温 MD）\n')
+console.log('温度网格: 300 / 600 K（锚点 300 K，谐波近似物理化；逐点 200 步恒温 MD）\n')
 
 const t0 = Date.now()
 const result = await feRt.tools.call('workflow.freeEnergy', {
   referenceId: cu.materialId,
-  temperatures: [150, 300, 450, 600],
+  temperatures: [300, 600],
   anchorTemperatureK: 300,
-  anchorF0: 0,
-  anchorSource: '演示锚点：300 K 零点显式声明（非物理计算；只承诺 ΔF 的积分正确性）',
-  mdSteps: 500,
+  anchorMode: 'harmonic',
+  mdSteps: 200,
   dtFs: 1,
   sampleEvery: 5,
   seed: 42,
 })
+
+const hd = result.harmonicDetail
+console.log(`谐波锚点: u0=${hd.u0EV.toFixed(5)} eV，实模 ${hd.nModes} 个` +
+            `（平动零模 ${hd.zeroModes} 不计入），零点能 ${hd.zeroPointEnergyEV.toFixed(5)} eV`)
+console.log(`频率范围: 省略——见交付；锚点 F0 = ${result.anchor.F0.toFixed(5)} eV\n`)
 
 console.log('T (K)   ⟨U⟩ (eV/atom)      SEM          F (eV/atom)    ΔF vs 锚点')
 console.log('─────   ──────────────     ──────────   ─────────────  ──────────')

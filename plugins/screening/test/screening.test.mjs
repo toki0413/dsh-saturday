@@ -169,6 +169,105 @@ test('6. 二元路径保持：单掺杂时 mode=binary，判据不变', async ()
   await coreFiber.dispose()
 })
 
+// ── 多浓度扫描（⑯）：同掺杂多内点 → 包络非退化，判据闭式可写 ──
+// 能量模型：Cu2Ni2 的 ΔH_f=−0.05 撑起包络；Cu3Ni（x=0.25）在 (0,0)-(0.5,−0.05) 弦上方，
+// 插值 −0.025 → 距离闭式 = 0.05 − (−0.025) = 0.075（非退化判据的最小实证）。
+test('7. 多浓度扫描：二元多内点非退化判据（闭式 0.075 对账）', async () => {
+  // 4 原子胞：Cu=-12.0（-3.0/atom）、Cu3Ni=-11.8（+0.05）、Cu2Ni2=-12.2（-0.05）
+  const energies = { Cu: -12.0, Cu3Ni: -11.8, Cu2Ni2: -12.2 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  const { materialService } = coreFiber.store.stub
+  const cu = await materialService.load('Cu')
+
+  const result = await screenDopants({
+    material: cu, dopants: ['Ni'], maxDopedSites: 2,
+    potential: coreFiber.store.stub.potential,
+    references: { Cu: -3.0, Ni: -3.0 },
+  })
+  assert.equal(result.thermo.mode, 'binary')
+  assert.deepEqual(result.ranked.map(r => r.formula), ['Cu2Ni2', 'Cu', 'Cu3Ni'], '浓度系列全量入选')
+  assert.deepEqual(result.ranked.map(r => r.sites), [2, 0, 1], 'sites 字段随候选携带')
+  const byFormula = Object.fromEntries(result.ranked.map(r => [r.formula, r]))
+  assert.ok(Math.abs(byFormula.Cu2Ni2.energyAboveHull) < 1e-12, '最低内点在包上')
+  assert.ok(Math.abs(byFormula.Cu3Ni.energyAboveHull - 0.075) < 1e-12,
+    '高浓度候选的判据由弦插值撑起（闭式 0.075，非退化）')
+  await coreFiber.dispose()
+})
+
+test('8. maxDopedSites 越界显式报错：全取代 = 纯掺杂端点，属参考态而非候选', async () => {
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: -12.0, n_steps: 5,
+  })))
+  const { materialService } = coreFiber.store.stub
+  const cu = await materialService.load('Cu')
+  await assert.rejects(
+    () => screenDopants({ material: cu, dopants: ['Ni'], maxDopedSites: 4, potential: coreFiber.store.stub.potential }),
+    /超出基体可取代位点数 3/,
+  )
+  await assert.rejects(
+    () => screenDopants({ material: cu, dopants: ['Ni'], maxDopedSites: 0, potential: coreFiber.store.stub.potential }),
+    /必须是正整数/,
+  )
+  await coreFiber.dispose()
+})
+
+// ── 共掺变体（⑯）：落在稳定相连线以外的成分空间内部 → 非退化判据闭式可写 ──
+// 几何：Cu2PtNi=(0.5,0.25,0.25) 由单形 (Cu3Pt,Pt,Ni) 包含：
+// λ = (2/3, 1/12, 1/4)；包络插值 = (2/3)·(−0.08) = −4/75 → 距离 = 0.04+4/75 = 7/75。
+test('9. 共掺候选：稳定相顶点拉低包络 → 非退化判据（闭式 7/75 对账）', async () => {
+  // 4 原子胞：pristine 公式 Cu（省略数字 1）=-12.0、Cu3Pt=-12.32（ΔH_f=-0.08）、Cu2PtNi=-11.84（ΔH_f=+0.04）
+  // 注：共掺产物的 formula 元素顺序不保证，用元素-计数签名归一后查能量表（键按元素名排序）
+  const sig = (formula) => Object.fromEntries(
+    [...formula.matchAll(/([A-Z][a-z]*)(\d*)/g)].map(([, el, n]) => [el, Number(n || 1)]),
+  )
+  const bySig = new Map([
+    [JSON.stringify({ Cu: 1 }), -12.0],
+    [JSON.stringify({ Cu: 3, Pt: 1 }), -12.32],
+    [JSON.stringify({ Cu: 2, Ni: 1, Pt: 1 }), -11.84],
+  ])
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => {
+    const entries = Object.entries(sig(material.formula)).sort(([a], [b]) => a.localeCompare(b))
+    return {
+      jobId: `job-${material.formula}`, engine: 'stub-engine',
+      converged: true, energy: bySig.get(JSON.stringify(Object.fromEntries(entries))), n_steps: 5,
+    }
+  }))
+  const cu = await coreFiber.store.stub.materialService.load('Cu')
+  const r2 = await screenDopants({
+    material: cu, dopants: ['Pt'], maxDopedSites: 1,
+    codopants: [{ elements: ['Pt', 'Ni'], sites: [0, 1] }],
+    potential: coreFiber.store.stub.potential,
+    references: { Cu: -3.0, Pt: -3.0, Ni: -3.0 },
+  })
+  assert.equal(r2.thermo.mode, 'multi-component')
+  const byFormula = Object.fromEntries(r2.ranked.map(r => [r.formula, r]))
+  const co = r2.ranked.find(r => r.kind === 'codoped')
+  assert.ok(co, '共掺变体入选')
+  assert.match(co.formula, /^Cu2(NiPt|PtNi)$/, '成分推导正确（元素顺序不保证）')
+  assert.equal(co.dopant, 'Pt+Ni')
+  assert.ok(Math.abs(byFormula.Cu3Pt.energyAboveHull) < 1e-12, '稳定相顶点在包络上')
+  assert.ok(Math.abs(co.energyAboveHull - 7 / 75) < 1e-9,
+    `非退化判据：距离 = ΔH_f − 包络插值 = 0.04 + 4/75 = 7/75（实际 ${co.energyAboveHull}）`)
+  await coreFiber.dispose()
+})
+
+test('10. codopants 参数校验：元素重复/位点冲突/单元素均显式报错', async () => {
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: -12.0, n_steps: 5,
+  })))
+  const cu = await coreFiber.store.stub.materialService.load('Cu')
+  const base = { material: cu, dopants: [], potential: coreFiber.store.stub.potential }
+  await assert.rejects(() => screenDopants({ ...base, codopants: [{ elements: ['Pt', 'Pt'] }] }), /元素重复/)
+  await assert.rejects(() => screenDopants({ ...base, codopants: [{ elements: ['Pt'] }] }), /≥2 个不同元素/)
+  await assert.rejects(() => screenDopants({ ...base, codopants: [{ elements: ['Pt', 'Ni'], sites: [0, 0] }] }), /位点非法/)
+  await coreFiber.dispose()
+})
+
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
 //    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
 workflowContract({

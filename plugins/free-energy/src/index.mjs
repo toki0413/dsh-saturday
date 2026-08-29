@@ -6,9 +6,9 @@
 // 诚实声明记录在契约文档附录 A。
 
 import { createCordisAdapter } from '@saturday/kernel'
-import { freeEnergyByIntegration, thermoError } from './free-energy.mjs'
+import { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, thermoError } from './free-energy.mjs'
 
-export { freeEnergyByIntegration, thermoError, KB_EV_PER_K } from './free-energy.mjs'
+export { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, thermoError, KB_EV_PER_K, H_EV_S } from './free-energy.mjs'
 
 export default {
   name: 'saturday-free-energy',
@@ -25,7 +25,12 @@ export default {
         referenceId: { type: 'string', required: true, description: '参考结构材料 ID（MD 起点）' },
         temperatures: { type: 'array', required: true, description: '温度网格（K，升序，≥2 点）' },
         anchorTemperatureK: { type: 'number', required: true, description: '锚点温度（必须是网格点）' },
-        anchorF0: { type: 'number', required: true, description: '锚点自由能 F₀（eV，由调用方显式声明）' },
+        anchorMode: {
+          type: 'string', default: 'explicit',
+          description: '锚点模式：explicit = 调用方显式声明 anchorF0；' +
+                       'harmonic = 引擎 harmonic 原语计算（弛豫+Hessian 简正模，量子谐振子闭式）',
+        },
+        anchorF0: { type: 'number', description: '锚点自由能 F₀（eV；anchorMode=explicit 时必填）' },
         anchorSource: { type: 'string', description: '锚点物理来源声明（如"谐波近似"/"实验值"）' },
         engine: { type: 'string', default: 'auto', description: '能量函数（引擎名，须支持 md）' },
         mdSteps: { type: 'integer', default: 100, description: '每网格点 MD 步数' },
@@ -49,6 +54,41 @@ export default {
           { type: 'md', nAtoms: reference.nAtoms, profile: 'validation' },
         )
 
+        // 锚点解析：explicit 由调用方声明；harmonic 由引擎原语计算（锚点物理化）。
+        // 两种模式同一纪律：零点来源显式记录进交付，绝不静默假设为零。
+        let anchorF0 = args.anchorF0
+        let anchorSource = args.anchorSource
+        let harmonicDetail
+        if ((args.anchorMode ?? 'explicit') === 'harmonic') {
+          if (typeof mdProvider.harmonic !== 'function') {
+            throw thermoError('THERMO_INVALID_INPUT',
+              `engine ${mdProvider.name} does not declare the "harmonic" primitive; ` +
+              'declare the anchor explicitly instead of assuming one')
+          }
+          const hres = await mdProvider.harmonic(reference, {})
+          if (hres.imaginary_modes > 0) {
+            throw thermoError('THERMO_REFERENCE_MISSING',
+              `harmonic anchor refused: ${hres.imaginary_modes} imaginary mode(s) — ` +
+              'the relaxed point is a saddle, not a minimum; declare the anchor honestly instead')
+          }
+          const vib = harmonicVibrationalFreeEnergy({
+            frequenciesTHz: hres.frequencies_thz,
+            temperatureK: args.anchorTemperatureK,
+          })
+          anchorF0 = hres.u0_eV + vib.vibrationalFreeEnergyEV
+          harmonicDetail = {
+            u0EV: hres.u0_eV, ...vib,
+            zeroModes: hres.zero_modes ?? 0,   // 平动零模不进振动闭式（如实声明）
+            imaginaryModes: hres.imaginary_modes,
+          }
+          anchorSource = `谐波近似：弛豫平衡点 + 有限差分 Hessian 简正模（${vib.nModes} 实模，` +
+                         `${hres.zero_modes ?? 0} 平动零模不计入）+ 量子谐振子闭式；` +
+                         '经典 TI 采样与量子锚点混合为声明的近似'
+        } else if (!Number.isFinite(anchorF0)) {
+          throw thermoError('THERMO_REFERENCE_MISSING',
+            'anchorF0 is required when anchorMode=explicit: the free-energy zero must be declared')
+        }
+
         // 逐网格点恒温 MD（种子确定性）：势能轨迹是积分的唯一数据源
         const temperatures = args.temperatures ?? []
         const potentialEnergies = []
@@ -68,8 +108,8 @@ export default {
         const result = freeEnergyByIntegration({
           temperaturesK: temperatures,
           potentialEnergies,
-          anchor: { temperatureK: args.anchorTemperatureK, F0: args.anchorF0 },
-          anchorSource: args.anchorSource,
+          anchor: { temperatureK: args.anchorTemperatureK, F0: anchorF0 },
+          anchorSource,
         })
 
         // 分析结果落 Trajectory（薄载荷：引用 + 标量锚点与端点 ΔF）
@@ -81,7 +121,8 @@ export default {
             material: { id: reference.id, formula: reference.formula },
             engine: mdProvider.name,
             nGrid: temperatures.length,
-            anchor: { temperatureK: args.anchorTemperatureK, F0: args.anchorF0 },
+            anchor: { temperatureK: args.anchorTemperatureK, F0: anchorF0 },
+            anchorMode: args.anchorMode ?? 'explicit',
             endpointDF: endpoint.dF,
           },
         })
@@ -90,6 +131,7 @@ export default {
           reference: reference.formula,
           engine: mdProvider.name,
           mdJobIds,
+          ...(harmonicDetail ? { harmonicDetail } : {}),
           ...result,
         }
       },

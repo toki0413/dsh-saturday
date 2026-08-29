@@ -11,6 +11,8 @@
     "test": "node --test \"test/*.test.mjs\"",
     "demo": "node demo.mjs",
     "demo:screening": "node demo-screening.mjs",
+    "demo:screening-ternary": "node demo-screening-ternary.mjs",
+    "demo:concentrations": "node demo-concentrations.mjs",
     "demo:freeenergy": "node demo-free-energy.mjs",
     "demo:agent": "node demo-agent.mjs"
   },

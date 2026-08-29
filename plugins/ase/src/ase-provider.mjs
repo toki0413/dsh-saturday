@@ -121,4 +121,35 @@ export class AseProvider {
       wall_seconds: (Date.now() - t0) / 1000,
     }
   }
+
+  /**
+   * 谐波锚点数据面（§9 第二档锚点物理化）：弛豫 → 有限差分 Hessian → 简正模频率。
+   * 只交付 u0 与频率表；振动自由能闭式在 JS 纯层（单一闭式来源）。
+   * @param {Material} material
+   * @param {Object}   params { fmax, max_steps, displacement_angstrom }
+   */
+  async harmonic(material, params = {}) {
+    const jobId = randomUUID()
+    const t0 = Date.now()
+    let result
+    try {
+      result = await this.bridge.call('harmonic', {
+        structure: material.toDict(),
+        calculator: { name: this.calculator, params: this.calculatorParams },
+        params,
+      })
+    } catch (err) {
+      if (/EngineUnavailableError|ImportError|ModuleNotFoundError/.test(err.message)) {
+        throw new EngineUnavailableError(this.calculator, err.message)
+      }
+      throw err
+    }
+    return {
+      jobId,
+      engine: this.name,
+      calculator: `ase:${this.calculator}`,
+      ...result,
+      wall_seconds: (Date.now() - t0) / 1000,
+    }
+  }
 }

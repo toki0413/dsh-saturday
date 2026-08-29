@@ -23,6 +23,47 @@ export function thermoError(code, message) {
 /** 玻尔兹曼常数（eV/K） */
 export const KB_EV_PER_K = 8.617333262145e-5
 
+/** 普朗克常数（eV·s）：1 THz 普通频率 ↔ 4.135667696e-3 eV 量子 */
+export const H_EV_S = 4.135667696e-15
+
+/**
+ * 量子谐振子的振动自由能（谐波锚点闭式，纯统计不触碰引擎）。
+ * 每模：F_i(T) = ℏω_i/2 + kT·ln(1 − e^{−ℏω_i/kT})；低频/高温极限 → kT·ln(ℏω/kT)，
+ * 高频/低温极限 → 零点能 ℏω/2。虚频（f≤0）拒绝入包：谐波锚点对鞍点无物理意义，
+ * 调用方必须先由 Hessian 诊断声明（同第一档"不静默假设零点"纪律）。
+ * @param {Object}   opts
+ * @param {number[]} opts.frequenciesTHz  简正模普通频率（THz，全正）
+ * @param {number}   opts.temperatureK    温度（K，正有限）
+ */
+export function harmonicVibrationalFreeEnergy({ frequenciesTHz, temperatureK } = {}) {
+  if (!Array.isArray(frequenciesTHz) || frequenciesTHz.length === 0) {
+    throw thermoError('THERMO_INVALID_INPUT', 'frequenciesTHz must be a non-empty array')
+  }
+  if (!Number.isFinite(temperatureK) || temperatureK <= 0) {
+    throw thermoError('THERMO_INVALID_INPUT', `temperatureK must be positive finite; got ${temperatureK}`)
+  }
+  const kT = KB_EV_PER_K * temperatureK
+  let freeEnergyEV = 0
+  let zeroPointEV = 0
+  for (const f of frequenciesTHz) {
+    if (!Number.isFinite(f) || f <= 0) {
+      throw thermoError('THERMO_INVALID_INPUT',
+        `imaginary or invalid mode ${f}: harmonic anchor requires all-real frequencies; ` +
+        'declare the saddle point honestly instead of fabricating an anchor')
+    }
+    const quantaEV = H_EV_S * f * 1e12 // h·f = ℏω
+    zeroPointEV += 0.5 * quantaEV
+    freeEnergyEV += 0.5 * quantaEV + kT * Math.log1p(-Math.exp(-quantaEV / kT))
+  }
+  return {
+    method: 'quantum-harmonic-oscillator',
+    nModes: frequenciesTHz.length,
+    temperatureK,
+    vibrationalFreeEnergyEV: freeEnergyEV,
+    zeroPointEnergyEV: zeroPointEV,
+  }
+}
+
 /**
  * 构型自由能的热力学积分（纯统计，不触碰引擎）。
  * @param {Object}   opts

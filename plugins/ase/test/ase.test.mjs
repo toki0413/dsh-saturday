@@ -110,6 +110,53 @@ test('5. 插件入口：缺 "potential" 服务即挂载失败（契约 §2）', 
   )
 })
 
+test('6. 真实 sidecar：harmonic 算子（弛豫+Hessian→简正模；缺环境跳过）', async t => {
+  const bridge = new PythonBridge({ sidecar: SIDECAR })
+  try {
+    await bridge.connect()
+  } catch {
+    t.skip('python unavailable in this environment')
+    return
+  }
+  try {
+    if (!bridge.sidecarInfo.calculators.includes('lj')) {
+      t.skip('ASE not installed: no constructable calculator')
+      return
+    }
+    assert.equal(bridge.sidecarInfo.operations.harmonic, true, 'hello 声明必须含 harmonic')
+
+    // LJ 参数匹配晶格（最近邻 3.72 Å ≈ 2^{1/6}σ → σ≈3.31）：起点即平衡点。
+    // rc=5 截断在次近邻（5.26 Å）以外 → 最近邻中心力模型；ASE 平滑截断使有效势偏离
+    // 裸 LJ 极小，引入张力 → 立方对称下纵/横模弹性常数比给出 ν_L/ν_T ≈ √2。
+    const provider = new AseProvider({
+      bridge, calculator: 'lj', calculatorParams: { sigma: 3.31, epsilon: 0.02, rc: 5 },
+    })
+    const material = await Material.create({ modalities: { formula: 'Ar' } }, new PrototypeLibResolver())
+    const result = await provider.harmonic(material, {})
+    assert.equal(result.calculator, 'ase:lj')
+    assert.equal(typeof result.converged, 'boolean')
+    assert.ok(Number.isFinite(result.u0_eV) && result.u0_eV < 0, '锚点能量有限且为束缚态')
+    assert.equal(result.n_modes, 3 * material.nAtoms, '模式数 = 3N')
+    assert.equal(result.imaginary_modes, 0, 'fcc LJ 平衡点不得有真虚频（否则暴露而非掩盖）')
+    assert.equal(result.zero_modes, 3, '周期晶胞平动零模恰 3 个')
+    assert.equal(result.frequencies_thz.length, 9, '实模 = 3N − 3 平动')
+    const freqs = result.frequencies_thz
+    for (let i = 1; i < freqs.length; i++) {
+      assert.ok(freqs[i] >= freqs[i - 1], '频率升序')
+    }
+    // 谱形对账：横模 6 重简并 + 纵模 3 重简并（fcc 立方对称，有限差分下 1e-3 内），
+    // ν_L/ν_T 对 √2（实测 ~0.1% 偏差，来自 σ 舍入与平滑截断细节；容差 0.5%）
+    const nuT = freqs[0]
+    const nuL = freqs[8]
+    assert.ok(freqs.slice(0, 6).every(f => Math.abs(f - nuT) / nuT < 1e-3), '横模 6 重简并')
+    assert.ok(freqs.slice(6).every(f => Math.abs(f - nuL) / nuL < 1e-3), '纵模 3 重简并')
+    assert.ok(Math.abs(nuL / nuT - Math.SQRT2) / Math.SQRT2 < 5e-3,
+      `中心力+张力立方对称比 ν_L/ν_T ≈ √2（实测 ${(nuL / nuT).toFixed(4)}）`)
+  } finally {
+    await bridge.disconnect()
+  }
+})
+
 // ── 标准契约套件（§4.2 + §5.2，伪桥驱动）────────────────────────
 potentialProviderContract({
   subject: 'ase',

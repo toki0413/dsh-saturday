@@ -28,6 +28,15 @@ export default {
         topK: { type: 'integer', description: '只返回能量最低的前 K 个' },
         engine: { type: 'string', default: 'auto' },
         batchId: { type: 'string', description: '筛选批次号（活性上下文登记用，缺省自动生成）' },
+        maxDopedSites: {
+          type: 'integer', default: 1,
+          description: '每掺杂的最大取代位数（浓度扫描：1..max 各一个变体；不得超过基体可取代位数）',
+        },
+        codopants: {
+          type: 'array',
+          items: { type: 'object' },
+          description: '共掺变体列表，如 [{"elements":["Pt","Ni"],"sites":[0,1]}]；落在稳定相连线上的物理内点',
+        },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -48,6 +57,7 @@ export default {
         const elementSet = new Set([
           ...Object.keys(compositionFromNumbers(material.graph.nodes.map(n => n.number))),
           ...args.dopants,
+          ...(args.codopants ?? []).flatMap(cd => cd.elements),
         ])
         let references
         let thermoUnavailable
@@ -77,6 +87,8 @@ export default {
           batchId: args.batchId,
           references,
           thermoUnavailable,
+          maxDopedSites: args.maxDopedSites,
+          codopants: args.codopants,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })
