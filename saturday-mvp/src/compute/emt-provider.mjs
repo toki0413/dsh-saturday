@@ -1,0 +1,54 @@
+// EMT-mock Provider —— 零 license 依赖的占位引擎
+// 计算实体在 Python sidecar（MVP 用 numpy/scipy 实现的 LJ 玩具势；
+// 生产环境替换为 ASE EMT，接口不变）。
+// 价值：除真实引擎适配外的全部开发、CI、演示都不依赖 VASP/LAMMPS。
+
+import { randomUUID } from 'node:crypto'
+
+export class EmtMockProvider {
+  constructor(bridge) {
+    this.bridge = bridge
+    this.name = 'emt-mock'
+    this.version = '0.1.0'
+    this.manifest = {
+      capabilities: [
+        { type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.05, maxAtoms: 200 },
+        { type: 'calculate', accuracy: 0.5, speed: 0.99, cost: 0.05, maxAtoms: 200 },
+      ],
+      constraints: { requiresLicense: false },
+    }
+  }
+
+  async relax(material, params = {}) {
+    const jobId = randomUUID()
+    const result = await this.bridge.call('relax', {
+      structure: material.toDict(),
+      params,
+    })
+    return {
+      jobId,
+      engine: this.name,
+      material: { id: material.id, formula: material.formula },
+      ...result,
+    }
+  }
+
+  async calculate(material, params = {}) {
+    const jobId = randomUUID()
+    const result = await this.bridge.call('calculate', {
+      structure: material.toDict(),
+      params,
+    })
+    return { jobId, engine: this.name, ...result }
+  }
+}
+
+/** 注册表条目：仅用于验证 autoRoute 画像逻辑（不产生真实计算） */
+export const VASP_LIKE_MANIFEST = {
+  name: 'vasp',
+  manifest: {
+    capabilities: [{ type: 'calculate', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 },
+                   { type: 'relax', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 }],
+    constraints: { requiresLicense: true },
+  },
+}
