@@ -7,8 +7,12 @@
 // 活性上下文（§8.2）：排序 = f(基体, 引擎)。注入 derivation 时登记两层推导：
 // 候选能量 result:energy-<jobId> ← [材料, 任务, 引擎]；排序 result:screen-<batchId> ←
 // [基体, 各候选能量]。引擎是推导输入，势函数热替换即失效源（三级传播链）。
+//
+// 热力学第一档（§9 欠账）：注入 references（元素参考态每原子能量，显式计算所得）时，
+// 排序从"近似形成焓"升级为严格形成焓 + 形成焓空间凸包判据；缺参考态诚实降级。
 
 import { randomUUID } from 'node:crypto'
+import { formationEnthalpy, convexHull, energyAboveHull, compositionFromNumbers } from '@saturday/core'
 
 /**
  * @param {Object}   opts
@@ -20,8 +24,10 @@ import { randomUUID } from 'node:crypto'
  * @param {Function}[opts.emit]      事件发射器 (type, event) => Promise
  * @param {DerivationRegistry} [opts.derivation] 推导登记簿（注入则登记活性推导）
  * @param {string}  [opts.batchId]   筛选批次号（缺省自动生成）
+ * @param {Object}  [opts.references] 元素参考态每原子能量（如 {Cu: -0.001}），注入则算严格形成焓+凸包
+ * @param {string}  [opts.thermoUnavailable] 参考态不可得的原因（诚实记录，不静默降级）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable }) {
   const variants = [
     { kind: 'pristine', dopant: null, material },
     ...dopants.map(d => ({ kind: 'doped', dopant: d, material: material.substitute(0, d) })),
@@ -45,6 +51,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         dopant: v.dopant,
         formula: v.material.formula,
         materialId: v.material.id,
+        composition: compositionFromNumbers(v.material.graph.nodes.map(n => n.number)),
         status: 'ok',
         energy: r.energy,
         energyPerAtom: r.energy / v.material.nAtoms,
@@ -80,6 +87,35 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     .filter(r => r.status === 'ok')
     .sort((a, b) => a.energyPerAtom - b.energyPerAtom)
 
+  // 热力学第一档：参考态显式注入 → 严格形成焓 + 凸包判据。
+  // 每个二元系（基体-掺杂）目前只有一个内点候选，凸包退化为两端点 0-0 弦，
+  // energyAboveHull = max(0, ΔH_f)；成分增多时（多浓度采样）凸包自然变严格。
+  // 缺参考态诚实降级：保留"近似"声明，不伪造严格量。
+  let thermo
+  if (references) {
+    for (const r of ranked) {
+      r.formationEnthalpy = formationEnthalpy({
+        energy: r.energy, composition: r.composition, references,
+      })
+      if (r.kind === 'pristine') {
+        r.energyAboveHull = 0
+      } else {
+        const total = Object.values(r.composition).reduce((a, b) => a + b, 0)
+        const point = { x: r.composition[r.dopant] / total, y: r.formationEnthalpy }
+        const hullResult = convexHull([{ x: 0, y: 0 }, point, { x: 1, y: 0 }])
+        r.energyAboveHull = energyAboveHull(point, hullResult)
+      }
+    }
+    thermo = {
+      level: provider.name,
+      references,
+      note: '形成焓能量零点 = 各元素参考态经本引擎显式弛豫计算；' +
+            'energyAboveHull 为形成焓空间凸包判据（单内点时退化为 0-0 弦）',
+    }
+  } else if (thermoUnavailable) {
+    thermo = { level: 'unavailable', reason: thermoUnavailable }
+  }
+
   // 活性上下文（§8.2）：登记两层推导；引擎入输入，热替换即失效源。
   // 只对成功变体登记；未注入登记簿时行为不变（纯编排层零依赖）。
   let derivationRecord
@@ -110,8 +146,12 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     ranked: topK ? ranked.slice(0, topK) : ranked,
     failed: results.filter(r => r.status === 'failed'),
     ...(derivationRecord ? { derivation: derivationRecord } : {}),
-    note: 'ASE EMT 能量零点为各元素平衡 fcc 晶体，故 energyPerAtom 近似形成焓排序' +
-          '（Cu3Pt/Cu3Au 负值=有序化倾向，Cu-Ni/Cu-Ag 正值=相分离倾向，与实验冶金学一致）；' +
-          '严格筛选需相对凸包的形成焓',
+    ...(thermo ? { thermo } : {}),
+    note: references
+      ? '严格形成焓排序（formationEnthalpy，能量零点显式计算）；' +
+        'energyAboveHull=0 为当前候选集内的热力学稳定相候选'
+      : 'ASE EMT 能量零点为各元素平衡 fcc 晶体，故 energyPerAtom 近似形成焓排序' +
+        '（Cu3Pt/Cu3Au 负值=有序化倾向，Cu-Ni/Cu-Ag 正值=相分离倾向，与实验冶金学一致）；' +
+        '严格筛选需相对凸包的形成焓',
   }
 }

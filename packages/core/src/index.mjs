@@ -9,5 +9,12 @@ export {
   BASELINE_PROPERTIES,
 } from './potential.mjs'
 export { makeCalculationRecord } from './calculation-record.mjs'
+export {
+  formationEnthalpy,
+  convexHull,
+  energyAboveHull,
+  compositionFromNumbers,
+  thermoError,
+} from './thermo.mjs'
 export { PrototypeLibResolver, StructureNotFoundError } from './structure-resolver.mjs'
 export { Z, SYMBOL, composeFormula } from './elements.mjs'

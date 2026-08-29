@@ -96,3 +96,32 @@ test('3. 三斜晶胞 + 无理坐标：苛刻数值下仍逐位往返', async t 
     await bridge.disconnect()
   }
 })
+
+test('4. 元素参考态（热力学第一档）：Cu fcc 全弛豫收敛，零点有限且不伪造', async t => {
+  const bridge = await connectOrSkip(t)
+  if (!bridge) return
+  try {
+    const ref = await bridge.call('reference_energy', { symbol: 'Cu' })
+    assert.equal(ref.symbol, 'Cu')
+    assert.equal(ref.calculator, 'ase-emt')
+    assert.equal(ref.converged, true, '参考态必须弛豫收敛（能量零点是资源承诺）')
+    assert.ok(Number.isFinite(ref.energy_per_atom), '每原子能量必须是有限数')
+    // EMT 零点定义：平衡 fcc 每原子能量 ≈ 0（小量来自数值弛豫容差，断言只卡量级）
+    assert.ok(Math.abs(ref.energy_per_atom) < 0.05, 'EMT 平衡 fcc 每原子能量应接近零点')
+  } finally {
+    await bridge.disconnect()
+  }
+})
+
+test('5. 元素参考态：超范围元素显式报错（诚实拒绝，不伪造零点）', async t => {
+  const bridge = await connectOrSkip(t)
+  if (!bridge) return
+  try {
+    await assert.rejects(
+      () => bridge.call('reference_energy', { symbol: 'Fe' }),
+      err => /no reference state/.test(String(err.message ?? err)),
+    )
+  } finally {
+    await bridge.disconnect()
+  }
+})

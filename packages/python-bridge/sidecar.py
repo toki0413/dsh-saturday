@@ -18,6 +18,7 @@ try:
         relax_structure as ase_relax,
         calculate_properties as ase_calc,
         roundtrip_structure as ase_roundtrip,
+        reference_energy as ase_reference_energy,
         EMT_ELEMENTS,
     )
     HAS_ASE = True
@@ -59,6 +60,12 @@ def handle(method: str, params: dict):
         if not HAS_ASE:
             raise RuntimeError("roundtrip requires ASE (data-plane identity check)")
         return ase_roundtrip(params["structure"], params.get("params", {}))
+    if method == "reference_energy":
+        # 元素参考态（热力学第一档）：能量零点必须来自真 EMT 弛豫，
+        # LJ 玩具势无此承诺，无 ASE 时诚实报错而非静默降级
+        if not HAS_ASE:
+            raise RuntimeError("reference_energy requires ASE (elemental reference state needs real EMT)")
+        return ase_reference_energy(params["symbol"], params.get("params", {}))
     if method == "relax":
         backend = pick_backend(params["structure"])
         fn = ase_relax if backend == "ase-emt" else lj_relax

@@ -243,9 +243,19 @@ function screenDopants(opts: {
   engine?: string
   /** 事件回调：工作流不直接触碰运行时，事件由调用方路由（可测试性） */
   emit?: (type: string, event: object) => Promise<void>
+  /** 可选注入：推导登记簿（活性上下文，§8.2）/ 批次号 */
+  derivation?: DerivationRegistry
+  batchId?: string
+  /** 可选注入：元素参考态每原子能量（热力学第一档，显式计算所得） */
+  references?: Record<string, number>
+  /** 参考态不可得的原因（诚实记录，不静默降级） */
+  thermoUnavailable?: string
 }): Promise<{
-  ranked: ScreenEntry[]       // 按 energyPerAtom 升序，全部含谱系引用
+  ranked: ScreenEntry[]       // 按 energyPerAtom 升序，全部含谱系引用；
+                              // 注入 references 时附 formationEnthalpy / energyAboveHull
   failed: { label: string, kind: string, error: string }[]
+  derivation?: { batchId: string, rankRef: string, energyRefs: string[] }
+  thermo?: { level: string, references?: object, note?: string, reason?: string }
   note: string
 }>
 ```
@@ -253,7 +263,12 @@ function screenDopants(opts: {
 **规则**：
 - **逐变体事件**：批量任务的每个变体发独立事件 → 各自落 Trajectory（可逐条溯源）；
 - **不得吞错**：单变体失败计入 `failed`，不中断整体；整体性错误才抛出；
-- 工作流暴露为工具时，工具层负责 schema 与描述，编排逻辑保持在纯函数中。
+- 工作流暴露为工具时，工具层负责 schema 与描述，编排逻辑保持在纯函数中；
+- **热力学诚实（第一档）**：排序类工作流的能量比较必须声明零点来源——
+  注入 `references` 时升级为严格形成焓 + 形成焓空间凸包判据（`thermo.level` = 实际引擎，
+  不冒充更高精度）；参考态不可得时保留“近似”声明并记录 `thermo.reason`，
+  绝不静默假设零点；参考态由引擎辅助原语 `provider.referenceEnergy(symbol)` 显式计算
+  （数据面算子 `reference_energy`，无承诺的后端诚实报错）。
 
 ### 4.4 analysis —— 分析插件（v0 占位，接口冻结于 v0.3）
 
@@ -506,8 +521,8 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 引擎引用合法（热替换即失效源）/
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 24 项 + bridge 23 项 + 八个插件各自套件 + 其余插件各自契约测试，
-全仓 161/161）。映射见附录 A。
+套件自检 24 项 + bridge 27 项 + core 8 项 + 八个插件各自套件 + 其余插件各自契约测试，
+全仓 175/175）。映射见附录 A。
 
 ---
 
@@ -545,6 +560,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 28 | §4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性） | plugin-ergodic 测试 1-10（纯层统计判定 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路） |
 | 29 | §8.2 活性上下文地基首个实证：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞（§7）/ 查无显式错 / 惰性重算预算受控 + 拓扑序 + append-only / substitute fork 非失效源（§6） | `derivationContract`（套件自检 mock-derivation + plugin-derivation 测试 1-14） |
 | 30 | §8.2 活性上下文接真实工作流：排序 = f(基体, 引擎)——筛选完成即登记两层推导（候选能量/排序，`engine:<id>` 契约化入推导输入）；势函数热替换（`activate` 发 `saturday/potential/activated`）即失效源，全链失效 + 重算拓扑序；推导插件可选（未挂载优雅降级） | `derivationContract` 引擎条款 + bridge live-context 测试 1-4 |
+| 31 | 热力学第一档（§9 欠账清偿）：能量零点显式化——数据面 `reference_energy` 算子（fcc 单胞全弛豫，无承诺后端诚实报错）+ 纯层严格形成焓/二元凸包（缺参考态/超范围显式错，不静默假设零点）；筛选接严格形成焓 + `energyAboveHull` 凸包判据，`thermo.level` 声明精度等级；参考态不可得时诚实降级保留“近似”声明 | core thermo 测试 1-8 + python-bridge 参考态 4-5 + bridge thermo 端到端 1-4 |
 
 ## 附录 B：插件骨架模板
 

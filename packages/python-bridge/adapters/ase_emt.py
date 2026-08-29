@@ -78,3 +78,24 @@ def calculate_properties(structure: dict, params: dict) -> dict[str, Any]:
         if p not in out:
             raise ValueError(f"ase-emt cannot compute property '{p}'")
     return out
+
+
+def reference_energy(symbol: str, params: dict) -> dict[str, Any]:
+    """元素参考态每原子能量（热力学第一档）：fcc 单胞 + BFGS 全弛豫到 EMT 自身平衡态。
+    形成焓的能量零点必须显式计算，不得静默假设为零；不支持的元素直接报错。"""
+    if symbol not in EMT_ELEMENTS:
+        raise ValueError(f"ase-emt has no reference state for element '{symbol}'")
+    from ase.build import bulk
+    t0 = time.time()
+    atoms = bulk(symbol, "fcc", cubic=True)
+    atoms.calc = EMT()
+    opt = BFGS(UnitCellFilter(atoms), logfile=None)
+    converged = opt.run(fmax=float(params.get("fmax", 0.02)), steps=int(params.get("max_steps", 200)))
+    return {
+        "symbol": symbol,
+        "energy_per_atom": float(atoms.get_potential_energy() / len(atoms)),
+        "converged": bool(converged),
+        "n_steps": int(opt.get_number_of_steps()),
+        "wall_seconds": round(time.time() - t0, 3),
+        "calculator": "ase-emt",
+    }

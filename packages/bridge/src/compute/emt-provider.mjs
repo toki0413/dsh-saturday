@@ -43,6 +43,15 @@ export class EmtMockProvider {
     })
     return { jobId, engine: this.name, ...result }
   }
+
+  /**
+   * 元素参考态每原子能量（热力学第一档）：形成焓的显式能量零点。
+   * 数据面承诺：真 EMT fcc 单胞全弛豫；无 ASE 或元素不支持时错误原样传播，
+   * 调用方诚实降级（不附热力学字段），绝不静默假设零点。
+   */
+  async referenceEnergy(symbol, params = {}) {
+    return this.bridge.call('reference_energy', { symbol, params })
+  }
 }
 
 /** 注册表条目：仅用于验证 autoRoute 画像逻辑（不产生真实计算） */

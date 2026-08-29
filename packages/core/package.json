@@ -9,7 +9,11 @@
     "./material": "./src/material.mjs",
     "./potential": "./src/potential.mjs",
     "./structure-resolver": "./src/structure-resolver.mjs",
-    "./elements": "./src/elements.mjs"
+    "./elements": "./src/elements.mjs",
+    "./thermo": "./src/thermo.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
   },
   "license": "MIT"
 }
