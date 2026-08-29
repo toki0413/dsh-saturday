@@ -1,7 +1,7 @@
-// 套件自检：用完全满足契约的内存 mock 跑一遍三条套件。
+// 套件自检：用完全满足契约的内存 mock 跑一遍四条套件。
 // 若套件断言本身有缺陷（漏检/误检），这里先行暴露。
 
-import { workflowContract, structureResolverContract, potentialProviderContract } from '../src/index.mjs'
+import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract } from '../src/index.mjs'
 import { Material, PrototypeLibResolver } from '@saturday/core'
 
 // ── 合规 mock：structure-resolver（§4.1）──
@@ -104,4 +104,58 @@ workflowContract({
     return mockScreen({ material, dopants, relaxImpl, emit })
   },
   missingDeps: async () => { throw new Error('workflow.mock requires services "material" and "potential"') },
+})
+
+// ── 合规 mock：sampler（§4.5，采样语义 + 似然诚实 + 谱系前缀 + 确定性）──
+function mockPrng(seed) {
+  let a = seed | 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const mockSampler = {
+  name: 'mock-sampler',
+  manifest: {
+    semantics: 'sampling',
+    likelihood: 'none',
+    invertible: false,
+    supportedTargets: ['reference'],
+  },
+  async sample(target, opts = {}) {
+    if (!target?.reference?.graph) {
+      const err = new Error('mock sampler requires a reference structure')
+      err.code = 'SAMPLER_UNAVAILABLE'
+      throw err
+    }
+    const n = opts.n ?? 4
+    if (!Number.isInteger(n) || n <= 0) {
+      const err = new Error('mock sampler cannot produce ' + n + ' candidates')
+      err.code = 'SAMPLE_NOT_FOUND'
+      throw err
+    }
+    const rng = mockPrng(opts.seed ?? 1)
+    const base = target.reference.graph
+    return Array.from({ length: n }, () => ({
+      source: 'generative:mock-sampler#seed=' + (opts.seed ?? 1),
+      graph: {
+        ...base,
+        nodes: base.nodes.map(node => ({
+          ...node,
+          position: node.position.map(x => x + (rng() - 0.5) * 0.1),
+        })),
+      },
+    }))
+  },
+}
+
+samplerContract({
+  subject: 'mock-sampler',
+  createSampler: () => mockSampler,
+  createReference: () => Material.create(
+    { modalities: { formula: 'Cu' } }, new PrototypeLibResolver(),
+  ),
 })

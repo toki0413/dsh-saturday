@@ -1,0 +1,29 @@
+{
+  "name": "@saturday/plugin-sampler-perturb",
+  "version": "0.3.0",
+  "description": "Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/kernel": "^0.3.0",
+    "@saturday/core": "^0.3.0"
+  },
+  "devDependencies": {
+    "@saturday/contract-tests": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/index.mjs"
+    ]
+  },
+  "license": "MIT"
+}

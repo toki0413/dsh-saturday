@@ -243,3 +243,92 @@ export function workflowContract({ subject, runTest, formula, dopants, missingDe
     assert.match(result.failed[0].error, /故意失败/, '失败原因必须保留，不得吞错')
   })
 }
+
+// ────────────────────────────────────────────────────────────
+// 套件 4：sampler（契约 §4.5）
+// 采样语义强制声明 / 似然与可逆性诚实声明 / 谱系前缀 /
+// 确定性（种子）/ 生成失败显式错。
+// ────────────────────────────────────────────────────────────
+
+/**
+ * @param {Object}   opts
+ * @param {string}   opts.subject         被测 sampler 标识（测试名前缀）
+ * @param {Function} opts.createSampler   () => StructureSampler（可 async）
+ * @param {Function} opts.createReference () => Material（supportedTargets 含 reference 时的参考结构）
+ */
+export function samplerContract({ subject, createSampler, createReference }) {
+  const TARGET_KINDS = ['composition', 'properties', 'energyModel', 'reference']
+
+  test(`[contract:${subject}] §4.5 manifest：采样语义强制声明 + 诚实声明自洽`, async () => {
+    const sampler = await createSampler()
+    assert.equal(typeof sampler.name, 'string')
+    const m = sampler.manifest
+    assert.equal(m.semantics, 'sampling', '采样语义是唯一语义（与 §4.1 查表式结构源的本质区别）')
+    assert.ok(['exact', 'approximate', 'none'].includes(m.likelihood), '似然声明必须三选一')
+    assert.equal(typeof m.invertible, 'boolean')
+    assert.ok(Array.isArray(m.supportedTargets) && m.supportedTargets.length >= 1)
+    for (const t of m.supportedTargets) assert.ok(TARGET_KINDS.includes(t))
+    // 诚实声明可执行：invertible 与 encode 提供必须一致（不静默、不伪造）
+    if (m.invertible) {
+      assert.equal(typeof sampler.encode, 'function', 'invertible 声明必须提供 encode')
+    } else {
+      assert.equal(sampler.encode, undefined, 'invertible: false 不得提供 encode')
+    }
+  })
+
+  test(`[contract:${subject}] §4.5 采样输出形状：generative: 谱系前缀 + 似然声明一致`, async () => {
+    const sampler = await createSampler()
+    const reference = await createReference()
+    const samples = await sampler.sample({ reference }, { n: 3, seed: 42 })
+    assert.equal(samples.length, 3, 'n 必须被尊重')
+    for (const s of samples) {
+      assert.ok(typeof s.source === 'string' && s.source.startsWith('generative:'),
+        'source 必须以 generative:<name> 前缀写入谱系')
+      // 候选可回算验证：graph 形状兼容 §4.1（可送入引擎）
+      assert.ok(Array.isArray(s.graph.nodes) && s.graph.nodes.length >= 1)
+      for (const node of s.graph.nodes) assert.equal(node.position.length, 3)
+      assert.ok(Array.isArray(s.graph.edges))
+      assert.equal(typeof s.graph.periodic, 'boolean')
+      assert.equal(s.graph.cell.length, 3)
+      // 似然诚实：声明 none 时不得伪造 logProb
+      if (sampler.manifest.likelihood === 'none') {
+        assert.equal(s.logProb, undefined, 'likelihood: none 禁止伪造伪似然')
+      } else {
+        assert.ok(Number.isFinite(s.logProb), '声明似然则必须可求值')
+      }
+    }
+  })
+
+  test(`[contract:${subject}] §4.5 确定性：同种子同样本，异种子异样本`, async () => {
+    const sampler = await createSampler()
+    const reference = await createReference()
+    const a = await sampler.sample({ reference }, { n: 2, seed: 7 })
+    const b = await sampler.sample({ reference }, { n: 2, seed: 7 })
+    assert.deepEqual(b.map(s => s.graph.nodes), a.map(s => s.graph.nodes), '同种子必须确定性复现')
+    const c = await sampler.sample({ reference }, { n: 2, seed: 8 })
+    assert.notDeepEqual(c.map(s => s.graph.nodes), a.map(s => s.graph.nodes), '异种子不得退化为常量映射')
+  })
+
+  test(`[contract:${subject}] §4.5 生成失败显式错：缺目标 SAMPLER_UNAVAILABLE，产不出候选 SAMPLE_NOT_FOUND`, async () => {
+    const sampler = await createSampler()
+    await assert.rejects(
+      () => sampler.sample({}, {}),
+      err => err.code === 'SAMPLER_UNAVAILABLE',
+      '缺目标/超覆盖范围必须显式报错，不得静默为空成功',
+    )
+    const reference = await createReference()
+    await assert.rejects(
+      () => sampler.sample({ reference }, { n: 0, seed: 1 }),
+      err => err.code === 'SAMPLE_NOT_FOUND',
+      '按判据产不出候选必须显式报错',
+    )
+  })
+
+  test(`[contract:${subject}] §4.5 候选可回算：graph 可直接构造 Material（生成→弛豫→核对闭环入口）`, async () => {
+    const sampler = await createSampler()
+    const reference = await createReference()
+    const [s] = await sampler.sample({ reference }, { n: 1, seed: 3 })
+    const material = await Material.create({ modalities: { graph: s.graph } })
+    assert.equal(material.nAtoms, s.graph.nodes.length)
+  })
+}

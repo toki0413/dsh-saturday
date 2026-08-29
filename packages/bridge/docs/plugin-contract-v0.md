@@ -267,7 +267,7 @@ v0 只冻结"输入/输出类型声明 + 谱系登记"两点；方法签名在�
   收敛判据需梯度绝对阈值 + 停滞检测，纯步长判据在缩放空间不可达；
   求解器的低级索引 bug 曾伪装成“参数共线不可辨识”——诊断前先核对求解器本身。
 
-### 4.5 sampler —— 逆解插件（采样语义；条款冻结，签名待首个实现实证）
+### 4.5 sampler —— 逆解插件（采样语义；条款已冻结并由首个实证实现固化）
 
 **职责**：给定目标约束（组分 / 性质 / 能量函数 / 参考结构），采样相容的候选结构。
 本 seam 是生成式逆设计的唯一入口——Boltzmann 生成器、潜空间 normalizing flow、
@@ -294,7 +294,9 @@ interface SampleTarget {
   properties?: Record<string, number> // 性质目标（如 energyAboveHull 上限）
   /** 能量函数引用（potential-provider 名）：按不变分布 ρ ∝ exp(−βU) 做 Boltzmann 采样 */
   energyModel?: string
-  reference?: string                 // 参考结构 materialId：微扰 / 插值邻域采样
+  reference?: string | Material      // 参考结构：微扰 / 插值邻域采样（materialId；
+                                     // 首个实证形态：插件工具层负责 id→Material 解析，
+                                     // 纯层采样器直接接收已解析结构，id 语义不外溢）
   // 至少给定一项；支持的目标类型以 manifest.supportedTargets 声明
 }
 
@@ -428,14 +430,15 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 
 ### 8.3 契约测试套件（@saturday/contract-tests）
 
-兼容性由测试而非文档承诺。三条核心 seam 的标准断言集已独立成包：
+兼容性由测试而非文档承诺。四条核心 seam 的标准断言集已独立成包：
 `structureResolverContract`（§4.1：候选形状 / 多晶型排序 / 查无显式错 / 幂等）、
 `potentialProviderContract`（§4.2 + §5.2：manifest 形状 / 粒度门禁 / 结果形状 /
-幂等 / 显式失败）与 `workflowContract`（§4.3：结果形状与排序 / 逐变体事件 /
-不吞错 / 缺依赖显式报错）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 13 项 + bridge 14 项 + 五个插件各自套件 + 其余插件各自契约测试，
-全仓 95/95）。映射见附录 A。
-sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地后进入套件。
+幂等 / 显式失败）、`workflowContract`（§4.3：结果形状与排序 / 逐变体事件 /
+不吞错 / 缺依赖显式报错）与 `samplerContract`（§4.5：manifest 自洽（采样语义 /
+似然三选一 / invertible 与 encode 一致）/ generative: 谱系前缀 / 似然诚实（none 禁伪造）/
+种子确定性 / 两码显式失败 / 候选可回算构造 Material）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
+套件自检 18 项 + bridge 14 项 + 六个插件各自套件 + 其余插件各自契约测试，
+全仓 109/109）。映射见附录 A。
 
 ---
 
@@ -464,10 +467,11 @@ sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地
 | 19 | 跨引擎画像路由：validation 选高精度（mace），screening 选低成本（lammps） | plugin-mace 测试 5 |
 | 20 | 插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换 | plugin-ase 测试 1-3（含真实 sidecar） |
 | 21 | 时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹 | plugin-replay 测试 1-5（含真实筛选对账） |
-| 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | 待首个 sampler 插件实证（先在 LJ/EMT 小体系对账 MD；`samplerContract` 同期进套件） |
+| 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | plugin-sampler-perturb 测试 1-8（首个实证：微扰采样器；MD 对账仍待能量模型接入后补） |
 | 23 | analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默 | plugin-neb 测试 6-8（含真实挂载与卸载回收） |
 | 24 | analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析 | plugin-eos 测试 1-8（含真实桥 Cu EOS 集成） |
 | 25 | workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错 | `workflowContract`（套件自检 + plugin-screening 测试 5-8） |
+| 26 | sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material | `samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4） |
 
 ## 附录 B：插件骨架模板
 

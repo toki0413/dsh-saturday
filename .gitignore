@@ -21,3 +21,5 @@ Thumbs.db
 
 # 日志
 *.log
+
+reg-stream.ps1
