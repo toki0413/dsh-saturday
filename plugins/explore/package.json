@@ -1,0 +1,30 @@
+{
+  "name": "@saturday/plugin-explore",
+  "version": "0.3.0",
+  "description": "Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/kernel": "^0.3.0",
+    "@saturday/core": "^0.3.0"
+  },
+  "devDependencies": {
+    "@saturday/contract-tests": "^0.3.0",
+    "@saturday/plugin-sampler-perturb": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/index.mjs"
+    ]
+  },
+  "license": "MIT"
+}

@@ -178,8 +178,10 @@ export function potentialProviderContract({
  * @param {string[]} opts.dopants    掺杂元素列表（至少 1 个）
  * @param {Function} [opts.missingDeps] 工具层可选断言：缺核心服务时的调用，
  *                                   必须 reject（不得静默降级，契约 §2）
- */
-export function workflowContract({ subject, runTest, formula, dopants, missingDeps }) {
+ * @param {Function} [opts.failWhen]  (material) => boolean，不吞错测试里指定故意失败的变体；
+ *                                   默认“首个掺杂变体”（screening 语义）；同构变体工作流（如采样回算）
+ *                                   由 subject 自行标记（如谱系标记）并传入断言 */
+export function workflowContract({ subject, runTest, formula, dopants, missingDeps, failWhen }) {
   const stubRelax = (energies) => async (material) => ({
     jobId: `job-${material.formula}`, engine: 'contract-stub', converged: true,
     energy: energies[material.formula], n_steps: 3,
@@ -230,8 +232,9 @@ export function workflowContract({ subject, runTest, formula, dopants, missingDe
 
   test(`[contract:${subject}] §4.3 单变体失败计入 failed，不中断整体（不吞错）`, async () => {
     const failFormula = `${formula}3${dopants[0]}`
+    const shouldFail = failWhen ?? (m => m.formula === failFormula)
     const relaxImpl = async (material) => {
-      if (material.formula === failFormula) throw new Error('contract-stub: 故意失败')
+      if (shouldFail(material)) throw new Error('contract-stub: 故意失败')
       return {
         jobId: `job-${material.formula}`, engine: 'contract-stub',
         converged: true, energy: -12.0, n_steps: 3,

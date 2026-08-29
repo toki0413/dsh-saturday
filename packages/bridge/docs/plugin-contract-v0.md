@@ -436,9 +436,10 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 幂等 / 显式失败）、`workflowContract`（§4.3：结果形状与排序 / 逐变体事件 /
 不吞错 / 缺依赖显式报错）与 `samplerContract`（§4.5：manifest 自洽（采样语义 /
 似然三选一 / invertible 与 encode 一致）/ generative: 谱系前缀 / 似然诚实（none 禁伪造）/
-种子确定性 / 两码显式失败 / 候选可回算构造 Material）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 18 项 + bridge 14 项 + 六个插件各自套件 + 其余插件各自契约测试，
-全仓 109/109）。映射见附录 A。
+种子确定性 / 两码显式失败 / 候选可回算构造 Material）；`workflowContract` 另支持可选 `failWhen(material)`
+断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；新插件在自己的测试文件里调用套件即完成接入（当前基线：
+套件自检 18 项 + bridge 14 项 + 七个插件各自套件 + 其余插件各自契约测试，
+全仓 118/118）。映射见附录 A。
 
 ---
 
@@ -472,6 +473,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 24 | analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析 | plugin-eos 测试 1-8（含真实桥 Cu EOS 集成） |
 | 25 | workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错 | `workflowContract`（套件自检 + plugin-screening 测试 5-8） |
 | 26 | sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material | `samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4） |
+| 27 | §4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null | plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者） |
 
 ## 附录 B：插件骨架模板
 
