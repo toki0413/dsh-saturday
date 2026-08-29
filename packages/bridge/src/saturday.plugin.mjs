@@ -5,7 +5,7 @@
 import { createCordisAdapter } from '@saturday/kernel'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@saturday/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
-import { PythonBridge } from './compute/bridge.mjs'
+import { PythonBridge } from '@saturday/python-bridge'
 
 export default {
   name: 'saturday',
