@@ -1,0 +1,21 @@
+{
+  "name": "saturday",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Saturday — 材料计算的插件运行时（Everything is a plugin，宿主为 DeepSeek Harness / Cordis v4）",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "plugins/*"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

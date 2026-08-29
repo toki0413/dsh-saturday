@@ -1,0 +1,15 @@
+{
+  "name": "@saturday/core",
+  "version": "0.3.0",
+  "description": "Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖）",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./material": "./src/material.mjs",
+    "./potential": "./src/potential.mjs",
+    "./structure-resolver": "./src/structure-resolver.mjs",
+    "./elements": "./src/elements.mjs"
+  },
+  "license": "MIT"
+}

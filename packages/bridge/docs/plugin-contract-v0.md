@@ -2,7 +2,7 @@
 
 **版本**: v0（**experimental** —— 1.0 前允许破坏性变更，以契约测试套件为准）
 **日期**: 2026-08-29
-**状态**: 草案，与 `saturday-mvp` Phase 0 实测代码对齐提炼
+**状态**: 草案，与 monorepo（`packages/*`）Phase 0 实测代码对齐提炼
 **上游依据**: 《Saturday 技术路线细化 v3.3》；Cordis 范式见 arXiv:2608.25512
 
 ---
@@ -80,7 +80,7 @@ const rt = createCordisAdapter(ctx, config)   // config 含 trajectoryPath / bri
 
 ## 3. SaturdayRuntime —— kernel 契约
 
-插件唯一依赖的运行时接口（当前实现：`saturday-mvp/src/kernel/cordis-adapter.mjs`）：
+插件唯一依赖的运行时接口（当前实现：`@saturday/kernel`，即 `packages/kernel/src/cordis-adapter.mjs`）：
 
 ```typescript
 interface SaturdayRuntime {

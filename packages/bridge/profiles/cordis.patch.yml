@@ -5,9 +5,9 @@
 #
 # 步骤：
 #   1) 声明插件包到 profile 的 package.json dependencies 并安装：
-#        { "dependencies": { "@saturday/dsh-bridge": "file:/path/to/saturday-mvp" } }
+#        { "dependencies": { "@saturday/bridge": "file:/path/to/Saturday/packages/bridge" } }
 #        cd $DSH_HOME/profiles/web && pnpm install
-#      （注册表包直接用 `dsh plugin --profile web add @saturday/dsh-bridge`；
+#      （注册表包直接用 `dsh plugin --profile web add @saturday/bridge`；
 #        本地路径经 CLI 安装有已知问题，绕过方案见适配清单 §0；
 #        修改本地包的 package.json 后需"先删依赖再重新添加"以刷新快照）
 #   2) 将下面的行写入 profile 的 cordis.patch.yml（注意是 - insert: 列表形式）
@@ -21,7 +21,7 @@
 
 - insert:
     - id: saturday
-      name: '@saturday/dsh-bridge'
+      name: '@saturday/bridge'
       config:
         # Python sidecar 配置（可选，默认 python3 + 包内 sidecar.py）
         # bridge:

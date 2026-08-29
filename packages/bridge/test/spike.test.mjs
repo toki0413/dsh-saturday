@@ -7,9 +7,7 @@ import { readFile, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import { PotentialRegistry } from '../src/core/potential.mjs'
-import { Material } from '../src/core/material.mjs'
-import { PrototypeLibResolver } from '../src/core/structure-resolver.mjs'
+import { PotentialRegistry, Material, PrototypeLibResolver } from '@saturday/core'
 import { VASP_LIKE_MANIFEST } from '../src/compute/emt-provider.mjs'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory.jsonl', import.meta.url))

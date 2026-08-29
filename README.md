@@ -4,8 +4,8 @@
 它是材料计算的**组合层**：引擎、结构源、工作流、分析工具全部以插件形态挂载到
 **DeepSeek Harness (dsh) / `@deepseek-ai/cordis` v4** 运行时上，由 Agent 在运行时自由挂载、卸载与组合。
 
-> 当前仓库为 **Phase 0 Spike**（最小可行验证），对应《Saturday 技术路线细化 v3.3》。
-> 完整产品路线见根目录 `Saturday_技术路线细化_v3.3.md`。
+> 仓库为 npm workspaces monorepo（Phase 1a 结构），对应《Saturday 技术路线细化 v3.3》。
+> 完整产品路线见根目录 `Saturday_技术路线细化_v3.3.md`；插件接口规范见 `packages/bridge/docs/plugin-contract-v0.md`。
 
 ## 核心范式
 
@@ -46,13 +46,13 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**11/11 验收测试通过**（含 ASE EMT 真物理断言）
+- 裸 cordis：**14/14 验收测试通过**（含 ASE EMT 真物理断言 + 3 项契约测试）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory"
 
-详见《DSH适配清单.md》（含 Node ≥ 22 硬性要求等实测结论）。
+详见《packages/bridge/DSH适配清单.md》（含 Node ≥ 22 硬性要求等实测结论）。
 
-## 能力（v0.2）
+## 能力（v0.3）
 
 | 能力 | 工具 | 说明 |
 |---|---|---|
@@ -72,37 +72,38 @@ EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。
 - Windows 下默认使用 `python` 命令（无 `python3` 时），可用 `bridge.python` 配置覆盖
 - pnpm（弱网环境建议 `fetch-retries 10`）
 
-## 结构
+## 结构（npm workspaces）
 
 ```
-src/
-  kernel/cordis-adapter.mjs   # 防腐层：唯一接触 cordis 的文件
-  core/structure-resolver.mjs # 结构解析 seam（原型库，含多晶型 + 7 种 fcc 金属）
-  core/elements.mjs           # 元素表（Z/符号/电负性，化学式合成）
-  core/material.mjs           # Material 领域对象（谱系、视图、substitute 掺杂）
-  core/potential.mjs          # PotentialRegistry（引擎 seam + 修正后的评分路由）
-  workflows/screening.mjs     # 批量掺杂筛选工作流
-  compute/bridge.mjs          # TS ↔ Python 桥（stdio JSON-lines，可换 ZeroMQ）
-  compute/emt-provider.mjs    # EMT Provider（零 license 依赖）
-  saturday.plugin.mjs         # cordis 插件入口 { name, apply }（3 个工具）
-python-bridge/
-  sidecar.py                  # stdio JSON-lines 服务（按元素逐调用路由后端）
-  adapters/ase_emt.py         # ASE EMT 真物理（Al Cu Ag Au Ni Pd Pt）
-  adapters/emt_mock.py        # LJ 玩具势兜底（任意元素可跑通流程）
-profiles/cordis.patch.yml     # 挂载到 dsh profile 的示例
-test/spike.test.mjs           # 11 项验收测试
-demo.mjs                      # 端到端演示
-demo-screening.mjs            # 掺杂筛选演示
+packages/
+  kernel/                     # @saturday/kernel —— 防腐层：全仓唯一接触 cordis 的文件
+    src/cordis-adapter.mjs    #   SaturdayRuntime 接口 + append-only Trajectory
+  core/                       # @saturday/core —— 领域核心（零运行时依赖）
+    src/material.mjs          #   Material 领域对象（谱系、视图、substitute 掺杂）
+    src/potential.mjs         #   PotentialRegistry（引擎 seam + 评分路由 + 粒度门禁）
+    src/structure-resolver.mjs#   结构解析 seam（原型库，含多晶型 + 7 种 fcc 金属）
+    src/elements.mjs          #   元素表（Z/符号/电负性，化学式合成）
+  bridge/                     # @saturday/bridge —— dsh Bundle（saturday 主插件）
+    src/saturday.plugin.mjs   #   cordis 插件入口 { name, apply }（3 个工具）
+    src/compute/bridge.mjs    #   TS ↔ Python 桥（stdio JSON-lines，可换 ZeroMQ）
+    src/compute/emt-provider.mjs#  EMT Provider（零 license 依赖）
+    src/workflows/screening.mjs#  批量掺杂筛选工作流
+    python-bridge/sidecar.py  #   stdio JSON-lines 服务（按元素逐调用路由后端）
+    python-bridge/adapters/   #   ase_emt.py（真物理）/ emt_mock.py（LJ 兜底）
+    profiles/cordis.patch.yml #   挂载到 dsh profile 的示例
+    test/spike.test.mjs       #   14 项验收 + 契约测试
+    docs/plugin-contract-v0.md#   Plugin Contract v0（插件契约，experimental）
+plugins/                      # 第三方形态插件（首发中）
 ```
 
 ## 运行
 
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
-pnpm install          # 仅 @deepseek-ai/cordis（peer 依赖）
-npm test              # 11 项验收测试
-npm run demo          # 端到端演示
-npm run demo:screening    # 掺杂筛选演示（ASE EMT 真物理）
+npm install             # workspaces：@deepseek-ai/cordis（peer）+ 三个 @saturday/* 包软链
+npm test                # 全部 workspace 测试（当前 14 项）
+npm run demo --workspace @saturday/bridge            # 端到端演示
+npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 ```
 
 ## 挂载到 dsh（完整运行时，已实测验证）
@@ -112,9 +113,9 @@ npm i @deepseek-ai/dsh                 # 需要 Node ≥ 22
 export DSH_HOME=~/.dsh
 dsh web --help                         # 首次运行自动初始化 web profile
 # 1) 在 $DSH_HOME/profiles/web/package.json 的 dependencies 声明：
-#    "@saturday/dsh-bridge": "file:/path/to/saturday-mvp"
+#    "@saturday/bridge": "file:/path/to/Saturday/packages/bridge"
 # 2) cd $DSH_HOME/profiles/web && pnpm install
-# 3) 把 profiles/cordis.patch.yml 的 - insert: 行写入 profile 的 cordis.patch.yml
+# 3) 把 packages/bridge/profiles/cordis.patch.yml 的 - insert: 行写入 profile 的 cordis.patch.yml
 dsh --profile web --dump-config        # 验证组合树包含 saturday 行
 dsh web                                # 启动（本仓库已实测：0 错误挂载）
 ```

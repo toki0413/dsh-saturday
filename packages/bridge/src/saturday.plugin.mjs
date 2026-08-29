@@ -2,10 +2,8 @@
 // 形态符合 dsh 插件规范：导出 { name, apply(ctx) }。
 // 在 dsh 中：作为 profile 组合的一行挂载；在裸 cordis 中：ctx.registry.plugin() 挂载（开发/CI）。
 
-import { createCordisAdapter } from './kernel/cordis-adapter.mjs'
-import { PrototypeLibResolver } from './core/structure-resolver.mjs'
-import { MaterialService } from './core/material.mjs'
-import { PotentialRegistry } from './core/potential.mjs'
+import { createCordisAdapter } from '@saturday/kernel'
+import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@saturday/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from './compute/bridge.mjs'
 import { screenDopants } from './workflows/screening.mjs'

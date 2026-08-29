@@ -1,0 +1,29 @@
+{
+  "name": "@saturday/bridge",
+  "version": "0.3.0",
+  "description": "Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥",
+  "type": "module",
+  "main": "src/saturday.plugin.mjs",
+  "exports": {
+    ".": "./src/saturday.plugin.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "demo": "node demo.mjs",
+    "demo:screening": "node demo-screening.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
+    "@saturday/core": "^0.3.0",
+    "@saturday/kernel": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/saturday.plugin.mjs"
+    ]
+  },
+  "license": "MIT"
+}
