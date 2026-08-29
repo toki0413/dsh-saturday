@@ -165,7 +165,7 @@ function mockDerivationRegistry() {
   const records = []
   return {
     record({ inputs, output, producer, frozen = false }) {
-      const d = { inputs, output, producer, frozen, status: 'valid', corrections: [], recomputedAt: null }
+      const d = { inputs, output, producer, frozen, status: 'valid', corrections: [], invalidatedBy: null, recomputedAt: null }
       records.push(d)
       return d
     },
@@ -176,7 +176,7 @@ function mockDerivationRegistry() {
         err.code = 'DERIVATION_NOT_FOUND'
         throw err
       }
-      return { ref, status: d.status, frozen: d.frozen, producer: d.producer, corrections: [...d.corrections], recomputedAt: d.recomputedAt }
+      return { ref, status: d.status, frozen: d.frozen, producer: d.producer, corrections: [...d.corrections], invalidatedBy: d.invalidatedBy, recomputedAt: d.recomputedAt }
     },
     async invalidate(ref, reason) {
       const invalidated = []
@@ -191,6 +191,7 @@ function mockDerivationRegistry() {
             corrections.push(d.output)
           } else if (d.status !== 'invalid') {
             d.status = 'invalid'
+            d.invalidatedBy = { source: ref, reason }
             invalidated.push(d.output)
           }
           if (!seen.has(d.output)) { seen.add(d.output); queue.push(d.output) }

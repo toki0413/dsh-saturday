@@ -11,7 +11,9 @@
 //  - 失效源只有显式 invalidate（不可变 fork 不是失效源：§6 冻结原对象语义，
 //    substitute 产生新对象，原结构及其推导不受影响）。
 
-const REF_KINDS = ['material', 'job', 'result']
+// engine ref（契约化扩展）：排序 = f(基体, 引擎)——引擎是推导输入，
+// 势函数热替换即失效源（§8.2 活性上下文接真实工作流）。
+const REF_KINDS = ['material', 'job', 'result', 'engine']
 
 export function derivationError(code, message) {
   const e = new Error(`${message} (${code})`)
@@ -27,7 +29,7 @@ function parseRef(ref, what = 'ref') {
   const kind = i > 0 ? ref.slice(0, i) : ''
   const id = i > 0 ? ref.slice(i + 1) : ''
   if (!REF_KINDS.includes(kind) || id.length === 0) {
-    throw derivationError('INVALID_REF', `${what} 形如 material:<id> / job:<id> / result:<id>，收到 '${ref}'`)
+    throw derivationError('INVALID_REF', `${what} 形如 material:<id> / job:<id> / result:<id> / engine:<id>，收到 '${ref}'`)
   }
   return { kind, id }
 }

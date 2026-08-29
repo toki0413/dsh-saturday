@@ -26,6 +26,7 @@ export default {
         },
         topK: { type: 'integer', description: '只返回能量最低的前 K 个' },
         engine: { type: 'string', default: 'auto' },
+        batchId: { type: 'string', description: '筛选批次号（活性上下文登记用，缺省自动生成）' },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -37,12 +38,17 @@ export default {
                           '(mount the saturday core plugin first)')
         }
         const material = await materialService.get(args.materialId)
+        // derivation 可选（优雅降级）：未挂载推导插件时不登记，工作流照常跑完。
+        // 登记后排序 = f(基体, 引擎)：势函数热替换沿 engine:<id> 传播失效（§8.2）。
+        const derivation = rt.getService('derivation')
         return screenDopants({
           material,
           dopants: args.dopants,
           potential,
           topK: args.topK,
           engine: args.engine,
+          derivation,
+          batchId: args.batchId,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })

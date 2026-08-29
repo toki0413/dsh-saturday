@@ -3,6 +3,12 @@
 //
 // 物理诚实性说明：跨成分直接比较 energyPerAtom 并不严格（严格做法是相对凸包的形成焓），
 // 这里排序值仅用于演示工作流编排与溯源能力；EMT 弛豫本身是真实物理。
+//
+// 活性上下文（§8.2）：排序 = f(基体, 引擎)。注入 derivation 时登记两层推导：
+// 候选能量 result:energy-<jobId> ← [材料, 任务, 引擎]；排序 result:screen-<batchId> ←
+// [基体, 各候选能量]。引擎是推导输入，势函数热替换即失效源（三级传播链）。
+
+import { randomUUID } from 'node:crypto'
 
 /**
  * @param {Object}   opts
@@ -12,8 +18,10 @@
  * @param {number}  [opts.topK]      返回前 K 个结果，默认全部
  * @param {string}  [opts.engine]    引擎选择，默认 'auto'
  * @param {Function}[opts.emit]      事件发射器 (type, event) => Promise
+ * @param {DerivationRegistry} [opts.derivation] 推导登记簿（注入则登记活性推导）
+ * @param {string}  [opts.batchId]   筛选批次号（缺省自动生成）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId }) {
   const variants = [
     { kind: 'pristine', dopant: null, material },
     ...dopants.map(d => ({ kind: 'doped', dopant: d, material: material.substitute(0, d) })),
@@ -36,6 +44,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         kind: v.kind,
         dopant: v.dopant,
         formula: v.material.formula,
+        materialId: v.material.id,
         status: 'ok',
         energy: r.energy,
         energyPerAtom: r.energy / v.material.nAtoms,
@@ -71,12 +80,36 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     .filter(r => r.status === 'ok')
     .sort((a, b) => a.energyPerAtom - b.energyPerAtom)
 
+  // 活性上下文（§8.2）：登记两层推导；引擎入输入，热替换即失效源。
+  // 只对成功变体登记；未注入登记簿时行为不变（纯编排层零依赖）。
+  let derivationRecord
+  if (derivation) {
+    const bid = batchId ?? randomUUID()
+    const energyRefs = ranked.map(r => {
+      const ref = `result:energy-${r.jobId}`
+      derivation.record({
+        inputs: [`material:${r.materialId}`, `job:${r.jobId}`, `engine:${provider.name}`],
+        output: ref,
+        producer: 'workflow.screen',
+      })
+      return ref
+    })
+    const rankRef = `result:screen-${bid}`
+    derivation.record({
+      inputs: [`material:${material.id}`, ...energyRefs],
+      output: rankRef,
+      producer: 'workflow.screen',
+    })
+    derivationRecord = { batchId: bid, rankRef, energyRefs }
+  }
+
   return {
     base: material.formula,
     dopants,
     provider: provider.name,
     ranked: topK ? ranked.slice(0, topK) : ranked,
     failed: results.filter(r => r.status === 'failed'),
+    ...(derivationRecord ? { derivation: derivationRecord } : {}),
     note: 'ASE EMT 能量零点为各元素平衡 fcc 晶体，故 energyPerAtom 近似形成焓排序' +
           '（Cu3Pt/Cu3Au 负值=有序化倾向，Cu-Ni/Cu-Ag 正值=相分离倾向，与实验冶金学一致）；' +
           '严格筛选需相对凸包的形成焓',

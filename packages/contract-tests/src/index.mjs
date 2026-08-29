@@ -390,6 +390,18 @@ export function derivationContract({ subject, createRegistry }) {
     )
   })
 
+  test(`[contract:${subject}] §8.2 引擎引用：engine:<id> 是合法推导输入与失效源（热替换即失效）`, async () => {
+    const reg = await createRegistry()
+    reg.record({
+      inputs: ['material:m1', 'job:j1', 'engine:e-old'],
+      output: 'result:e1', producer: 'contract-mock',
+    })
+    assert.equal(reg.status('result:e1').status, 'valid')
+    const r = await reg.invalidate('engine:e-old', 'contract: 势函数热替换，比较基准变更')
+    assert.deepEqual(r.invalidated, ['result:e1'], '引擎失效必须传播到依赖它的导出量')
+    assert.equal(reg.status('result:e1').invalidatedBy.source, 'engine:e-old')
+  })
+
   test(`[contract:${subject}] §8.2 惰性重算：预算受控 + 拓扑序 + append-only`, async () => {
     const reg = await createRegistry()
     reg.record({ inputs: ['material:m1'], output: 'result:e1', producer: 'contract-mock' })

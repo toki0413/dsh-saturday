@@ -23,7 +23,7 @@ export default {
     rt.registerTool({
       name: 'derivation.record',
       description: '登记一条推导：导出量（output）由哪些输入（inputs）经哪个生产者（producer）得出。' +
-                   '引用形如 material:<id> / job:<id> / result:<id>。冻结结果传 frozen（只追加修正、不重算）。',
+                   '引用形如 material:<id> / job:<id> / result:<id> / engine:<id>。冻结结果传 frozen（只追加修正、不重算）。',
       parameters: {
         inputs: { type: 'array', required: true, description: '输入引用数组' },
         output: { type: 'string', required: true, description: '输出引用' },

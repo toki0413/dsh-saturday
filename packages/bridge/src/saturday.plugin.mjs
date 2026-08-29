@@ -111,6 +111,20 @@ export default {
       })
     })
 
+    // 活性上下文（§8.2）：势函数热替换是失效源。若同 Context 挂了推导登记簿，
+    // 沿 engine:<旧引擎> 传播失效（依赖它的所有导出量——候选能量、筛选排序——全链置 invalid）；
+    // 未挂载时静默跳过（derivation 是可选插件，不构成本插件依赖）。
+    rt.on('saturday/potential/activated', async event => {
+      const derivation = rt.getService('derivation')
+      const { engine, previous } = event.payload
+      if (derivation && previous) {
+        await derivation.invalidate(
+          `engine:${previous}`,
+          `势函数热替换：比较基准由 ${previous} 切换为 ${engine}，旧引擎产出的导出量需重算或作废`,
+        )
+      }
+    })
+
     // 运行时句柄外挂到 fiber.store（cordis v4：apply 只能返回 void 或 disposer，
     // 不能返回任意对象——返回对象会被当作 effect 而拒绝）
     ctx.fiber.store.saturday = { rt, materialService, potential }

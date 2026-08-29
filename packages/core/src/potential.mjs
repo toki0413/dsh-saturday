@@ -60,12 +60,23 @@ export class PotentialRegistry {
     return p
   }
 
-  /** 热切换：只换"当前引擎"指针，在运行任务不受影响（修订 #10） */
+  /**
+   * 热切换：只换“当前引擎”指针，在运行任务不受影响（修订 #10）。
+   * 热替换（previous 非空）是失效源（§8.2）：发 saturday/potential/activated
+   * 事件，推导登记簿侧据此沿 engine:<id> 传播失效；首次激活不发。
+   */
   async activate(name) {
     if (this.activeProvider === name) return
     const provider = this.get(name)
     await this.preflight(provider)
+    const previous = this.activeProvider
     this.activeProvider = name
+    if (previous !== null) {
+      await this.rt?.emit?.('saturday/potential/activated', {
+        type: 'saturday/potential/activated',
+        payload: { engine: name, previous },
+      })
+    }
   }
 
   async preflight(provider) {
