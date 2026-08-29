@@ -20,7 +20,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 | 维度 | 论文原义 | Saturday 的领域落点 | 本仓库的已验证形态 |
 |---|---|---|---|
-| 时间维 | 组件副作用可完全逆置（可逆效应） | 研发过程是可挂起/分叉/回放的事件流；**可逆的是研究决策，不是物理** | 计算事件 → append-only Trajectory，逐变体溯源 |
+| 时间维 | 组件副作用可完全逆置（可逆效应） | 研发过程是可挂起/分叉/回放的事件流；**可逆的是研究决策，不是物理** | 计算事件 → append-only Trajectory，逐变体溯源；`trajectory.replay` 回放重建索引 |
 | 空间维 | 依赖声明 + 反应式管理（响应式协效应） | 跨引擎/跨尺度能力按需激活联动 | 引擎能力在 hello 握手声明，测试按能力动态增强断言 |
 
 ### 材料计算 = 双通道事件流
@@ -35,7 +35,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 ### 原子化操作（Atomic Operations）
 
 一切研发动作分解为可独立调用、自由组合的原语（`relax` / `calculate` / `substitute` …），
-同一组原语同时暴露给 Agent 工具、DSL 与编程 API 三种消费方。原子性按作用域分级：
+同一组原语同时暴露给 Agent 工具、DSL 与编程 API 两种消费方。原子性按作用域分级：
 软件资源域完全可逆（cordis effect）、计算任务域幂等 + 可取消、物理设备域永不回滚。
 
 ### 活的材料上下文（目标形态）
@@ -46,9 +46,9 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**28/28 测试通过**（14 项集成验收含 ASE EMT 真物理 + 3 个首发插件各自契约测试）
+- 裸 cordis：**71/71 测试通过**（8 个 workspace：bridge 14 项集成验收 + 契约测试套件自检 9 项 + 六个插件各自契约测试，含 ASE EMT 真物理与真实 sidecar 集成）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
-- 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory"
+- 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
 详见《packages/bridge/DSH适配清单.md》（含 Node ≥ 22 硬性要求等实测结论）。
 
@@ -60,6 +60,10 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 结构弛豫 | `potential.relax` | **ASE EMT 真实物理**（UnitCellFilter+BFGS），LJ 玩具势兜底 |
 | 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体 Trajectory 溯源（独立插件 `@saturday/plugin-screening`） |
 | MP 结构源 | `structure.resolve` | Materials Project 远端解析（独立插件 `@saturday/plugin-mp`，需 MP_API_KEY） |
+| 轨迹回放 | `trajectory.replay` | 从 append-only 事件流重建计算索引，回放事件带 `saturday/replay/` 防回灌前缀（独立插件 `@saturday/plugin-replay`） |
+
+引擎插件矩阵（均接入 `@saturday/contract-tests` 标准套件）：
+`emt-mock`（核心，ASE EMT/LJ）、`lammps`（批处理，粒度 job）、`mace`（ML 势，可用性预检）、`ase`（通用 ASE 计算器，自带 sidecar）。
 
 EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。实测 Cu 掺杂筛选：
 **Cu3Pt (-0.10) < Cu3Au (-0.02) < Cu (0) < Cu3Ni (+0.01) < Cu3Ag (+0.02) eV/atom**——
@@ -84,28 +88,32 @@ packages/
     src/potential.mjs         #   PotentialRegistry（引擎 seam + 评分路由 + 粒度门禁）
     src/structure-resolver.mjs#   结构解析 seam（原型库，含多晶型 + 7 种 fcc 金属）
     src/elements.mjs          #   元素表（Z/符号/电负性，化学式合成）
+  python-bridge/              # @saturday/python-bridge —— 通用 Python sidecar 客户端
+    src/bridge.mjs            #   stdio JSON-lines，握手/超时/批量（可换 ZeroMQ）
+    sidecar.py + adapters/    #   主 sidecar：按元素逐调用路由 ASE EMT / LJ 兜底
+  contract-tests/             # @saturday/contract-tests —— 契约测试套件（§8.3：兼容性由测试承诺）
+    src/index.mjs             #   structureResolverContract / potentialProviderContract
   bridge/                     # @saturday/bridge —— dsh Bundle（saturday 主插件）
-    src/saturday.plugin.mjs   #   cordis 插件入口 { name, apply }（3 个工具）
-    src/compute/bridge.mjs    #   TS ↔ Python 桥（stdio JSON-lines，可换 ZeroMQ）
+    src/saturday.plugin.mjs   #   cordis 插件入口 { name, apply }（2 个工具）
     src/compute/emt-provider.mjs#  EMT Provider（零 license 依赖）
-    src/workflows/screening.mjs#  批量掺杂筛选工作流
-    python-bridge/sidecar.py  #   stdio JSON-lines 服务（按元素逐调用路由后端）
-    python-bridge/adapters/   #   ase_emt.py（真物理）/ emt_mock.py（LJ 兜底）
     profiles/cordis.patch.yml #   挂载到 dsh profile 的示例
     test/spike.test.mjs       #   14 项验收 + 契约测试
     docs/plugin-contract-v0.md#   Plugin Contract v0（插件契约，experimental）
-plugins/                      # 首发插件（契约压力测试）
+plugins/                      # 插件生态（新插件必须过 contract-tests 套件）
   screening/                  #   @saturday/plugin-screening —— 工作流：批量掺杂筛选（§4.3）
   mp-structure-source/        #   @saturday/plugin-mp —— 结构源：Materials Project（§4.1）
-  lammps/                     #   @saturday/plugin-lammps —— 引擎：LAMMPS 批处理，事件粒度 job（§4.2）
+  lammps/                     #   @saturday/plugin-lammps —— 引擎：LAMMPS 批处理，粒度 job（§4.2）
+  mace/                       #   @saturday/plugin-mace —— 引擎：MACE ML 势，可用性预检（§4.2）
+  ase/                        #   @saturday/plugin-ase —— 引擎：通用 ASE 计算器，自带 sidecar（§4.2）
+  replay/                     #   @saturday/plugin-replay —— 分析：Trajectory 回放与索引重建（时间维读侧）
 ```
 
 ## 运行
 
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
-npm install             # workspaces：@deepseek-ai/cordis（peer）+ 六个 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 28 项）
+npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
+npm test                # 全部 workspace 测试（当前 71 项）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 ```
@@ -132,7 +140,8 @@ Agent 会话演示（无真实 API Key）：可配 `dsh-llm-mock-server@0.0.1-rc
 - **修订 #7**：autoRoute 评分修正，screening 画像选快引擎（测试 5 固化）
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
-- **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）
+- **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider 两条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
+- **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）；`trajectory.replay` 从事件流重建计算索引，回放事件带防回灌前缀（可逆的是决策不是物理）
 - **原子化操作**：relax/calculate 原语同时暴露给工具与编程 API；substitute 为不可变 fork（测试 10）
 - **后端路由**：sidecar 按结构元素逐调用选择 ASE EMT / LJ 兜底，能力声明在 hello 握手（测试 9 依此跳过或断言真物理）
 

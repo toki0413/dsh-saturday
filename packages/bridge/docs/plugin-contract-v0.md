@@ -340,10 +340,13 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 - 响应式协效应下沉：`getService` → 依赖声明 + 激活/去激活（活性上下文的地基）；
 - 谱系驱动的失效传播与惰性重算（含重算预算控制）。
 
-### 8.3 契约测试套件
+### 8.3 契约测试套件（@saturday/contract-tests）
 
-兼容性由测试而非文档承诺。每个 seam 配契约测试（当前基线：`test/spike.test.mjs`
-14 项 + 3 个首发插件各自套件共 14 项）；新插件进入生态必须通过对应套件。映射见附录 A。
+兼容性由测试而非文档承诺。两条核心 seam 的标准断言集已独立成包：
+`structureResolverContract`（§4.1：候选形状 / 多晶型排序 / 查无显式错 / 幂等）与
+`potentialProviderContract`（§4.2 + §5.2：manifest 形状 / 粒度门禁 / 结果形状 /
+幂等 / 显式失败）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
+套件自检 9 项 + bridge 14 项 + 六个插件各自套件，全仓 71/71）。映射见附录 A。
 
 ---
 
@@ -367,6 +370,11 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 14 | 结构源 seam 可互换：远端来源写谱系（修订 #8） | plugin-mp 测试 1-4 |
 | 15 | 引擎插件：注册即 effect，卸载注销且激活指针重置 | plugin-lammps 测试 5、6 |
 | 16 | 批处理引擎：缺二进制显式报 ENGINE_UNAVAILABLE，不静默降级 | plugin-lammps 测试 3 |
+| 17 | seam 标准断言集（§4.1/§4.2）自检与复用 | contract-tests self.test（9 项，mp/lammps/mace/ase 已接入） |
+| 18 | ML 势引擎：可用性预检（`import mace` 探测），不可用显式报 ENGINE_UNAVAILABLE | plugin-mace 测试 1、2 |
+| 19 | 跨引擎画像路由：validation 选高精度（mace），screening 选低成本（lammps） | plugin-mace 测试 5 |
+| 20 | 插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换 | plugin-ase 测试 1-3（含真实 sidecar） |
+| 21 | 时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹 | plugin-replay 测试 1-5（含真实筛选对账） |
 
 ## 附录 B：插件骨架模板
 

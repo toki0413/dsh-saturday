@@ -1,0 +1,21 @@
+{
+  "name": "@saturday/plugin-replay",
+  "version": "0.3.0",
+  "description": "Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/kernel": "^0.3.0"
+  },
+  "devDependencies": {
+    "@saturday/bridge": "^0.3.0",
+    "@saturday/plugin-screening": "^0.3.0"
+  },
+  "license": "MIT"
+}
