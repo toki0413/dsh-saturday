@@ -37,6 +37,21 @@ export default {
           items: { type: 'object' },
           description: '共掺变体列表，如 [{"elements":["Pt","Ni"],"sites":[0,1]}]；落在稳定相连线上的物理内点',
         },
+        sampled: {
+          type: 'array',
+          items: { type: 'object' },
+          description: '采样候选（通常来自 sampler.ou 的交付）：每项 {"materialId":"...","logProb":-12.3}（已注册材料）' +
+                       '或 {"graph":{...},"source":"...","logProb":-12.3}（§4.5 SampledStructure 透传）；' +
+                       '逐候选单点回算后与似然证据联合排序（需提供 temperatureK）',
+        },
+        sampledSource: {
+          type: 'string', default: 'external-sampler',
+          description: '采样来源声明（如 "sampler.ou"；似然语义随交付呈现，不默认）',
+        },
+        temperatureK: {
+          type: 'number',
+          description: '联合排序目标温度（K；提供 sampled 时必填）',
+        },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -77,6 +92,24 @@ export default {
         // derivation 可选（优雅降级）：未挂载推导插件时不登记，工作流照常跑完。
         // 登记后排序 = f(基体, 引擎)：势函数热替换沿 engine:<id> 传播失效（§8.2）。
         const derivation = rt.getService('derivation')
+        // 采样候选（可选）：Agent 先调采样器再调筛选，谱系在编排层不断；
+        // 已注册材料按 ID 解析，采样器直交付（{graph, source}）透传纯层构造；缺/错显式报错（不静默丢弃候选）
+        let sampled
+        if (args.sampled?.length) {
+          const candidates = []
+          for (let i = 0; i < args.sampled.length; i++) {
+            const s = args.sampled[i]
+            if (s.materialId) {
+              candidates.push({ material: await materialService.get(s.materialId), logProb: s.logProb })
+            } else if (s.graph) {
+              candidates.push({ graph: s.graph, source: s.source, logProb: s.logProb })
+            } else {
+              throw new Error(`sampled[${i}] needs either materialId or graph (missing candidate structure)：` +
+                              '候选结构不得静默丢弃')
+            }
+          }
+          sampled = { candidates, samplerName: args.sampledSource ?? 'external-sampler', likelihood: 'declared-by-caller' }
+        }
         return screenDopants({
           material,
           dopants: args.dopants,
@@ -89,6 +122,8 @@ export default {
           thermoUnavailable,
           maxDopedSites: args.maxDopedSites,
           codopants: args.codopants,
+          sampled,
+          temperatureK: args.temperatureK,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })

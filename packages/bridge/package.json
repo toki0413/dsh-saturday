@@ -36,6 +36,7 @@
     "@saturday/plugin-ase": "^0.3.0",
     "@saturday/plugin-derivation": "^0.3.0",
     "@saturday/plugin-free-energy": "^0.3.0",
+    "@saturday/plugin-sampler-ou": "^0.3.0",
     "@saturday/plugin-screening": "^0.3.0"
   },
   "peerDependencies": {

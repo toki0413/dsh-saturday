@@ -16,7 +16,11 @@ import {
   formationEnthalpy, convexHull, energyAboveHull,
   multiConvexHull, energyAboveHullMulti,
   compositionFromNumbers,
+  Material,
 } from '@saturday/core'
+import { combineEvidence, essFraction, evidenceError } from './evidence.mjs'
+
+const KB_EV_PER_K = 8.617333262145e-5
 
 /**
  * @param {Object}   opts
@@ -33,8 +37,13 @@ import {
  * @param {number}  [opts.maxDopedSites] 每掺杂的最大取代位数（浓度扫描：k=1..max 各一个变体，默认 1）
  * @param {Array<{elements: string[], sites?: number[]}>} [opts.codopants]
  *        共掺变体：多个不同元素占据不同位点（混合共掺；落在稳定相连线上的物理内点）
+ * @param {{candidates: Array<{material?: Material, graph?: Object, source?: string, logProb?: number}>, samplerName?: string, likelihood?: string}} [opts.sampled]
+ *        采样候选（来自任意采样器，如 OU）：逐候选单点回算后与似然证据联合排序；
+ *        候选可给 Material 或 §4.5 SampledStructure 形态（{graph, source}，谱系登记采样来源）；
+ *        不弛豫（弛豫会抹掉待加权的涨落信息），不入凸包（成分点与基体重合）
+ * @param {number} [opts.temperatureK] 联合排序的目标温度（K；提供 sampled 时必填——焓证据 −βE 无温度即无标度）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK }) {
   const maxSites = maxDopedSites ?? 1
   if (!Number.isInteger(maxSites) || maxSites < 1) {
     throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
@@ -200,6 +209,104 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     thermo = { level: 'unavailable', reason: thermoUnavailable }
   }
 
+  // 多证据源联合排序（Logits 组合律，纯层见 ./evidence.mjs）：
+  // 采样候选 = 基体成分的热涨落快照，逐候选单点回算（候选不自证，§4.5）。
+  // 能量证据 −βU × 提议似然 q → 重要性权重 log w = −βU − log q（与 ergodic 升档同形）；
+  // 独立性声明与逐候选覆盖随交付呈现；缺 logProb 的候选按覆盖子集组合（不零填充）。
+  let sampledJoint
+  if (sampled) {
+    if (!Number.isFinite(temperatureK) || temperatureK <= 0) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT',
+        'temperatureK is required when sampled candidates are provided: ' +
+        'Boltzmann evidence −βE has no scale without a declared temperature')
+    }
+    if (!Array.isArray(sampled.candidates) || sampled.candidates.length === 0) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT', 'sampled.candidates must be a non-empty array')
+    }
+    if (typeof provider.calculate !== 'function') {
+      throw evidenceError('EVIDENCE_INVALID_INPUT',
+        `engine ${provider.name} does not provide the calculate primitive: ` +
+        'joint ranking requires oracle single-point energies (candidates do not self-attest)')
+    }
+    const beta = 1 / (KB_EV_PER_K * temperatureK)
+    const okEntries = []
+    const failedSampled = []
+    for (let i = 0; i < sampled.candidates.length; i++) {
+      const c = sampled.candidates[i]
+      const label = `sampled[${i}]`
+      let m = c?.material
+      // §4.5 SampledStructure 形态（{graph, source}）：graph 模态构造 + 谱系登记采样来源；
+      // 微扰不改组分，化学式沿用基体（与 explore 回算同款构造）
+      if (!m?.graph && c?.graph) {
+        m = await Material.create({
+          modalities: { graph: c.graph, formula: material.formula },
+          lineage: [{
+            operation: 'sampled-candidate',
+            detail: { source: c.source ?? `sampled:${i}`, referenceId: material.id, index: i },
+            timestamp: Date.now(),
+          }],
+        })
+      }
+      if (!m?.graph) {
+        failedSampled.push({ label, status: 'failed', error: 'candidate missing material/graph' })
+        continue
+      }
+      try {
+        const calc = await provider.calculate(m, {})
+        okEntries.push({
+          label,
+          kind: 'sampled',
+          formula: m.formula,
+          materialId: m.id,
+          energy: calc.energy,
+          energyPerAtom: calc.energy / m.nAtoms,
+          logProb: Number.isFinite(c.logProb) ? c.logProb : null,   // 缺失即缺失（掩码语义）
+          jobId: calc.jobId,
+          calculator: calc.calculator ?? calc.engine,
+        })
+      } catch (err) {
+        failedSampled.push({ label, status: 'failed', error: err.message })
+      }
+    }
+    if (okEntries.length === 0) {
+      sampledJoint = {
+        samplerName: sampled.samplerName ?? 'undeclared',
+        nFailed: failedSampled.length,
+        note: '全部单点回算失败：联合排序无数据（不伪造权重）',
+        failed: failedSampled,
+      }
+    } else {
+      const combined = combineEvidence({
+        sources: [
+          { name: `boltzmann:${provider.name}`, logWeights: okEntries.map(e => -beta * e.energy) },
+          { name: `proposal:${sampled.samplerName ?? 'undeclared'}`, logWeights: okEntries.map(e => e.logProb) },
+        ],
+        independence: '能量证据取引擎单点能（玻尔兹曼因子 −βU），似然证据取采样器提议核密度 q；' +
+                      '两者条件独立于候选给定坐标：U 是能量面属性，q 是采样协议属性。' +
+                      '组合后为重要性权重（重加权到玻尔兹曼目标的修正因子），兼作联合排序判据',
+      })
+      okEntries.forEach((e, i) => {
+        e.weight = combined.weights[i]
+        e.logJointWeight = combined.logJointWeights[i]
+        e.coverage = combined.coverage[i]
+      })
+      okEntries.sort((a, b) => b.weight - a.weight)
+      sampledJoint = {
+        samplerName: sampled.samplerName ?? 'undeclared',
+        likelihood: sampled.likelihood ?? 'undeclared',
+        temperatureK,
+        betaEVInv: beta,
+        entries: okEntries,
+        essFraction: essFraction(combined.weights),
+        sourceNames: combined.sourceNames,
+        independence: combined.independence,
+        note: '采样候选是基体成分的热涨落快照：不入凸包（成分点与基体重合，判据以枚举候选为准）；' +
+              '单点作业经 jobId 溯源；缺 logProb 的候选按覆盖子集组合并如实声明',
+        ...(failedSampled.length > 0 ? { failed: failedSampled } : {}),
+      }
+    }
+  }
+
   // 活性上下文（§8.2）：登记两层推导；引擎入输入，热替换即失效源。
   // 只对成功变体登记；未注入登记簿时行为不变（纯编排层零依赖）。
   let derivationRecord
@@ -231,6 +338,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     failed: results.filter(r => r.status === 'failed'),
     ...(derivationRecord ? { derivation: derivationRecord } : {}),
     ...(thermo ? { thermo } : {}),
+    ...(sampledJoint ? { sampledJoint } : {}),
     note: references
       ? '严格形成焓排序（formationEnthalpy，能量零点显式计算）；' +
         'energyAboveHull=0 为当前候选集内的热力学稳定相候选'

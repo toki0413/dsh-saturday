@@ -169,7 +169,7 @@ test('6. 二元路径保持：单掺杂时 mode=binary，判据不变', async ()
   await coreFiber.dispose()
 })
 
-// ── 多浓度扫描（⑯）：同掺杂多内点 → 包络非退化，判据闭式可写 ──
+// ── 多浓度扫描（⑮）：同掺杂多内点 → 包络非退化，判据闭式可写 ──
 // 能量模型：Cu2Ni2 的 ΔH_f=−0.05 撑起包络；Cu3Ni（x=0.25）在 (0,0)-(0.5,−0.05) 弦上方，
 // 插值 −0.025 → 距离闭式 = 0.05 − (−0.025) = 0.075（非退化判据的最小实证）。
 test('7. 多浓度扫描：二元多内点非退化判据（闭式 0.075 对账）', async () => {
@@ -215,7 +215,7 @@ test('8. maxDopedSites 越界显式报错：全取代 = 纯掺杂端点，属参
   await coreFiber.dispose()
 })
 
-// ── 共掺变体（⑯）：落在稳定相连线以外的成分空间内部 → 非退化判据闭式可写 ──
+// ── 共掺变体（⑮）：落在稳定相连线以外的成分空间内部 → 非退化判据闭式可写 ──
 // 几何：Cu2PtNi=(0.5,0.25,0.25) 由单形 (Cu3Pt,Pt,Ni) 包含：
 // λ = (2/3, 1/12, 1/4)；包络插值 = (2/3)·(−0.08) = −4/75 → 距离 = 0.04+4/75 = 7/75。
 test('9. 共掺候选：稳定相顶点拉低包络 → 非退化判据（闭式 7/75 对账）', async () => {
@@ -266,6 +266,162 @@ test('10. codopants 参数校验：元素重复/位点冲突/单元素均显式�
   await assert.rejects(() => screenDopants({ ...base, codopants: [{ elements: ['Pt'] }] }), /≥2 个不同元素/)
   await assert.rejects(() => screenDopants({ ...base, codopants: [{ elements: ['Pt', 'Ni'], sites: [0, 0] }] }), /位点非法/)
   await coreFiber.dispose()
+})
+
+// ── 采样候选联合排序（⑯⑰，Logits 组合律）：单点回算能量证据 × 提议似然证据 ──
+// 确定性对账：两采样候选单点能 E₀=−12.0 / E₁=−11.99（总能量，非每原子），
+// logProb = 0 / −ln2，T = 1/(100·kB) K → β = 100 eV⁻¹。
+// 联合 log 权重差：βΔE + ΔlogProb = 1 + ln2 → 权重比 w₀/w₁ = 2e，归一良态闭式可写。
+function stubCorePluginWithCalc(getRelaxImpl, getCalcImpl) {
+  const base = stubCorePlugin(getRelaxImpl)
+  return {
+    name: base.name,
+    async apply(ctx) {
+      await base.apply(ctx)
+      const calcImpl = getCalcImpl()
+      const { potential } = ctx.fiber.store.stub
+      // 登记簿条目是活引用：直接把单点实现挂到已注册引擎上（能力声明不动，测试专用）
+      potential.get('stub-engine').calculate = calcImpl
+    },
+  }
+}
+
+test('11. 采样候选联合排序：重要性权重闭式对账（能量证据 × 似然证据）', async () => {
+  const calcEnergies = [-12.0, -11.99]
+  let calcCount = 0
+  const coreFiber = await ctx.registry.plugin(stubCorePluginWithCalc(
+    () => async (material) => ({
+      jobId: `job-${material.formula}`, engine: 'stub-engine',
+      converged: true, energy: -12.0, n_steps: 5,
+    }),
+    () => async () => ({ jobId: `calc-${calcCount}`, engine: 'stub-engine', energy: calcEnergies[calcCount++] }),
+  ))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    // 两个采样候选：同成分快照（公式同为 Cu，靠 materialId 区分）
+    const s0 = await materialService.load('Cu')
+    const s1 = await materialService.load('Cu')
+
+    const result = await screenDopants({
+      material: cu, dopants: [],
+      potential: coreFiber.store.stub.potential,
+      sampled: { candidates: [{ material: s0, logProb: 0 }, { material: s1, logProb: -Math.log(2) }], samplerName: 'stub-sampler', likelihood: 'exact' },
+      temperatureK: 1 / (100 * 8.617333262145e-5),   // β = 100 eV⁻¹
+    })
+    const joint = result.sampledJoint
+    assert.ok(joint, 'sampledJoint 段随交付呈现')
+    assert.equal(joint.entries.length, 2)
+    assert.ok(Math.abs(joint.betaEVInv - 100) < 1e-9, 'β = 100 eV⁻¹（温度显式选定）')
+    // 闭式：w₀/w₁ = exp(1 + ln2) = 2e → w₀ = r/(1+r), r = 2e
+    const r = 2 * Math.E
+    assert.ok(Math.abs(joint.entries[0].weight - r / (1 + r)) < 1e-12, '高权重候选排前（闭式）')
+    assert.ok(Math.abs(joint.entries[1].weight - 1 / (1 + r)) < 1e-12)
+    // log 联合权重只有差值不变（归一减 max）：Δ = βΔE + ΔlogProb = 1 + ln2
+    const dLog = joint.entries[0].logJointWeight - joint.entries[1].logJointWeight
+    assert.ok(Math.abs(dLog - (1 + Math.log(2))) < 1e-9, 'log 权重差 = βΔE + ΔlogProb（闭式）')
+    assert.deepEqual(joint.entries[0].coverage, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
+    assert.deepEqual(joint.sourceNames, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
+    assert.match(joint.independence, /条件独立/, '独立性声明随交付呈现')
+    assert.equal(joint.likelihood, 'exact')
+    assert.ok(joint.essFraction > 0 && joint.essFraction <= 1)
+    // 枚举排序不受影响（无掺杂 → 只有基体）
+    assert.equal(result.ranked.length, 1)
+  } finally {
+    await coreFiber.dispose()   // 断言失败也必须清理，否则服务残留连锁后续测试
+  }
+})
+
+test('12. 缺 logProb 的采样候选：按覆盖子集组合，覆盖声明如实区分', async () => {
+  let calcCount = 0
+  const coreFiber = await ctx.registry.plugin(stubCorePluginWithCalc(
+    () => async (material) => ({
+      jobId: `job-${material.formula}`, engine: 'stub-engine',
+      converged: true, energy: -12.0, n_steps: 5,
+    }),
+    () => async () => ({ jobId: `calc-${calcCount}`, engine: 'stub-engine', energy: -12.0 + 0.01 * calcCount++ }),
+  ))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    const s0 = await materialService.load('Cu')
+    const s1 = await materialService.load('Cu')
+
+    const result = await screenDopants({
+      material: cu, dopants: [],
+      potential: coreFiber.store.stub.potential,
+      sampled: { candidates: [{ material: s0, logProb: 0 }, { material: s1 }], samplerName: 'stub-sampler' },
+      temperatureK: 1 / (100 * 8.617333262145e-5),
+    })
+    const noLik = result.sampledJoint.entries.find(e => e.logProb === null)
+    assert.ok(noLik, '缺 logProb 的候选保留且标记 null（不零填充）')
+    assert.deepEqual(noLik.coverage, ['boltzmann:stub-engine'], '覆盖声明如实缺似然源')
+    // 良态性断言：能量差 0.01·β=1 时，双源候选与单源候选的权重都是良态可区分的非零值；
+    // 若误把缺失零填充（或温度错到 β=1000 下溢），至少一项会失效。0.01·β=1 时，
+    // 双源候选（能量 −12.0，似然 0）对单源候选（能量 −11.99）的联合差 = 1 → 比值 e
+    const both = result.sampledJoint.entries.find(e => e.logProb === 0)
+    assert.ok(Math.abs(both.weight / noLik.weight - Math.E) < 1e-9, '权重比 = e（闭式）')
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+test('13. 联合排序门禁：缺温度 / 引擎无 calculate 原语均显式拒绝', async () => {
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: -12.0, n_steps: 5,
+  })))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    const s0 = await materialService.load('Cu')
+    const base = {
+      material: cu, dopants: [], potential: coreFiber.store.stub.potential,
+      sampled: { candidates: [{ material: s0, logProb: 0 }], samplerName: 'stub-sampler' },
+    }
+    await assert.rejects(() => screenDopants(base), /temperatureK is required/)
+    await assert.rejects(
+      () => screenDopants({ ...base, temperatureK: 300 }),
+      /does not provide the calculate primitive/,
+    )
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+test('14. 工具层采样候选解析：materialId 逐个解析，未知 ID 显式报错', async () => {
+  let calcCount = 0
+  const coreFiber = await ctx.registry.plugin(stubCorePluginWithCalc(
+    () => async (material) => ({
+      jobId: `job-${material.formula}`, engine: 'stub-engine',
+      converged: true, energy: -12.0, n_steps: 5,
+    }),
+    () => async () => ({ jobId: `calc-${calcCount++}`, engine: 'stub-engine', energy: -12.0 }),
+  ))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    const s0 = await materialService.load('Cu')
+
+    const result = await screenRt.tools.call('workflow.screen', {
+      materialId: cu.id, dopants: [],
+      sampled: [{ materialId: s0.id, logProb: -1.5 }],
+      sampledSource: 'sampler.ou',
+      temperatureK: 300,
+    })
+    assert.equal(result.sampledJoint.samplerName, 'sampler.ou')
+    assert.equal(result.sampledJoint.entries[0].materialId, s0.id)
+
+    await assert.rejects(
+      () => screenRt.tools.call('workflow.screen', {
+        materialId: cu.id, dopants: [],
+        sampled: [{ materialId: 'nonexistent', logProb: 0 }], temperatureK: 300,
+      }),
+      /Unknown material id: nonexistent/,
+    )
+  } finally {
+    await coreFiber.dispose()
+  }
 })
 
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，

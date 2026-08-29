@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-29T16:04:44.372Z
+生成时间：2026-08-29T16:44:34.819Z
 
-**回归基线：217/217**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：232/232**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 27/27 |
+| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 30/30 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 14/14 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -24,9 +24,9 @@
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 13/13 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
-| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 14/14 |
+| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 26/26 |
 
-## 实证条款（契约文档附录 A，40 条）
+## 实证条款（契约文档附录 A，42 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -68,6 +68,8 @@
 - **#38** 三元混掺真实筛选演示（⑬）：Cu + Ag/Au/Ni/Pt 五元素统一成分空间（d=4），真实 EMT 弛豫 + 全元素参考态显式计算；Cu-Pt/Cu-Au 负 ΔH_f 候选成为稳定相顶点；几何诚实声明：单点掺杂候选位于"基体端点→掺杂端点"连线上，该连线内包络由 0-0 弦主导，判据保持 max(0, ΔH_f) 退化形——非退化判据需共掺内点（见第 39 条），不夸大多组分凸包在单点候选上的作用（证据：demo:screening-ternary 端到端验证（真实 EMT，0.2 s））
 - **#39** 多浓度 + 共掺候选接筛选（⑮）：`maxDopedSites` 浓度扫描（每掺杂 k=1..max 各一个变体，越界显式报错：全取代 = 纯掺杂端点属参考态而非候选）+ `codopants` 共掺变体（元素重复/位点冲突/单元素显式报错）；二元分支泛化为逐掺杂系多内点构包，单内点退化为 0-0 弦（行为兼容）；非退化判据闭式对账：共掺候选由单形 (Cu3Pt,Pt,Ni) 包含，包络插值 = −4/75，距离 = 7/75（1e-9 精确）；真实演示（demo:concentrations）：EMT Cu-Pt-Ni 全候选负/正 ΔH_f 分区，Cu2NiPt 共掺有序化（−0.0895）成为稳定相顶点（证据：plugin-screening 测试 7-10（多浓度闭式 0.075 + 越界报错 + 共掺闭式 7/75 + 参数校验）+ demo:concentrations 端到端）
 - **#40** 谐波锚点物理化（⑭）：sidecar 新增 harmonic 算子（弛豫→中心差分 Hessian→质量加权简正模；平动零模与真虚频分开计数，零模不进振动闭式，虚频拒绝锚点——两种情况都不静默修正）；量子谐振子闭式在 JS 纯层（单一闭式来源，低温→零点能/高温→经典极限/模间线性叠加/虚频拒收）；`anchorMode='harmonic'` 接线（引擎无原语显式报错，锚点来源声明物理化随交付呈现）；LJ 谱形对账：匹配晶格参数下横模 6 重/纵模 3 重简并（fcc 立方对称）+ ν_L/ν_T ≈ √2（中心力+张力对称比，实测 0.1% 内）（证据：plugin-free-energy 测试 10-12（纯层闭式 + 接线纪律 + 端到端对账）+ plugin-ase 测试 6（真实 sidecar 谱形）+ demo:freeenergy 升级（EMT Cu 谐波锚点端到端））
+- **#41** Logits 组合律纯层 + 联合排序接线（⑯）：`combineEvidence` 把仓库既有孤立 log 权重实例（ergodic 重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层——独立证据源 log 权重相加（独立性声明必填，缺失即拒 `EVIDENCE_INDEPENDENCE_UNDECLARED`）；候选级证据掩码：缺失即缺失，零填充禁止（log 权重 0 = 伪造中立证据），全源缺失候选拒排（`EVIDENCE_NO_COVERAGE`）；log-sum-exp 归一（整体偏移不变）+ 组合爆炸门禁 + 源名重复防证据重复计数；`screenDopants` 接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫——弛豫抹掉待加权的涨落信息；不入凸包——成分点与基体重合，候选不自证 §4.5），能量证据 −βU × 提议似然 q → 重要性权重（与 ergodic 升档同形），`sampledJoint` 段附逐候选覆盖/独立性/ESS 诊断；闭式对账：双源权重 2e/(1+2e)、log 权重差 βΔE+ΔlogProb；测试首跑抓出 β 算术错（kB·300≈1/38.7 非 1/1000，换 β=100 eV⁻¹ 良态条件）（证据：plugin-screening evidence 测试 1-8（组合律闭式 + 五条拒绝路径 + ESS）+ screening 测试 11-14（联合排序闭式 + 掩码 + 门禁 + 工具层解析））
+- **#42** 采样器 → 筛选真实接线（⑰，候选来自系综而非枚举）：`workflow.screen` 接受 `{materialId, logProb}` 或 `{graph, source, logProb}`（§4.5 SampledStructure 透传，纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错不静默丢弃）；OU 候选真实 EMT 单点回算 → 联合权重归一 + 逐候选双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码（覆盖子集组合，权重仍归一）；logProb 可由位移闭式独立重算（1e-9，exact 似然声明的实证）；Agent 编排链：sampler.ou → workflow.screen，谱系在编排层不断（证据：bridge sampled-screen 测试 1-3（真 OU + 真 EMT 完整工具链 + 混合覆盖 + 双门禁））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。
