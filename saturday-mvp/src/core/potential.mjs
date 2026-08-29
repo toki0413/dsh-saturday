@@ -10,6 +10,13 @@ export class NoCapableProviderError extends Error {
 export class LicenseUnavailableError extends Error {
   constructor(name) { super(`License unavailable for provider "${name}"`); this.code = 'LICENSE_UNAVAILABLE' }
 }
+export class GranularityUnavailableError extends Error {
+  constructor(name, requested, declared) {
+    super(`Provider "${name}" declares eventGranularity "${declared}"; ` +
+          `"${requested}" monitoring must be explicitly rejected, not silently degraded`)
+    this.code = 'GRANULARITY_UNAVAILABLE'
+  }
+}
 
 const WEIGHT_PROFILES = {
   screening:  { accuracy: 0.2, speed: 0.5, cost: 0.3 },
@@ -47,6 +54,17 @@ export class PotentialRegistry {
     if (provider.manifest.constraints?.requiresLicense) {
       const ok = await this.licenseChecker(provider.name)
       if (!ok) throw new LicenseUnavailableError(provider.name)
+    }
+  }
+
+  /**
+   * 细粒度监听门禁（契约 §5.2）：事件粒度不足的引擎必须显式拒绝，
+   * 不得静默降级为任务级监听。未声明粒度按 'iteration' 对待。
+   */
+  assertCanMonitor(provider, granularity = 'iteration') {
+    const declared = provider.manifest.eventGranularity ?? 'iteration'
+    if (granularity === 'iteration' && declared === 'job') {
+      throw new GranularityUnavailableError(provider.name, granularity, declared)
     }
   }
 

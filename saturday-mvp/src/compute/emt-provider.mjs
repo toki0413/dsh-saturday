@@ -16,6 +16,7 @@ export class EmtMockProvider {
         { type: 'calculate', accuracy: 0.5, speed: 0.99, cost: 0.05, maxAtoms: 200 },
       ],
       constraints: { requiresLicense: false },
+      eventGranularity: 'iteration',   // 契约 §5.2：逐迭代回调可用（sidecar 同步调用形态）
     }
   }
 
@@ -50,5 +51,6 @@ export const VASP_LIKE_MANIFEST = {
     capabilities: [{ type: 'calculate', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 },
                    { type: 'relax', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 }],
     constraints: { requiresLicense: true },
+    eventGranularity: 'job',           // 批处理形态示意：仅任务级事件，拒绝细粒度监听
   },
 }

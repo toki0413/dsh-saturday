@@ -10,6 +10,7 @@ import plugin from '../src/saturday.plugin.mjs'
 import { PotentialRegistry } from '../src/core/potential.mjs'
 import { Material } from '../src/core/material.mjs'
 import { PrototypeLibResolver } from '../src/core/structure-resolver.mjs'
+import { VASP_LIKE_MANIFEST } from '../src/compute/emt-provider.mjs'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory.jsonl', import.meta.url))
 
@@ -183,4 +184,77 @@ test('11. workflow.screen：批量掺杂筛选，排序正确且逐变体溯源'
   const screenEntries = lines.filter(l => l.workflow === 'screen')
   assert.equal(screenEntries.length, 3, 'each variant should have its own trajectory entry')
   assert.ok(lines.length >= before + 3)
+})
+
+// ── 契约测试（附录 A 待补项）──────────────────────────────
+
+test('12. 契约：license 是前置门禁（修订 #10）', async () => {
+  const rt = { on() {}, emit() {} }
+  const reg = new PotentialRegistry(rt)
+  reg.register({ name: VASP_LIKE_MANIFEST.name, manifest: VASP_LIKE_MANIFEST.manifest })
+
+  // license 不可用：激活被拒绝，且当前引擎不受影响（未激活成功不得污染状态）
+  reg.licenseChecker = async () => false
+  await assert.rejects(
+    () => reg.activate('vasp'),
+    err => err.code === 'LICENSE_UNAVAILABLE',
+  )
+  assert.equal(reg.activeProvider, null, 'failed preflight must not activate')
+
+  // license 可用同一 Provider 放行（门禁是前置校验，不是一次性熔断）
+  reg.licenseChecker = async () => true
+  await reg.activate('vasp')
+  assert.equal(reg.activeProvider, 'vasp')
+
+  // 免 license 引擎（如 emt-mock）不受门禁影响
+  const provider = handles.potential.get('emt-mock')
+  await handles.potential.activate('emt-mock')
+  assert.equal(handles.potential.activeProvider, 'emt-mock')
+  assert.equal(provider.manifest.constraints.requiresLicense, false)
+})
+
+test('13. 契约：事件粒度声明——job 级引擎必须显式拒绝细粒度监听（§5.2）', () => {
+  const rt = { on() {}, emit() {} }
+  const reg = new PotentialRegistry(rt)
+  const emt = handles.potential.get('emt-mock')
+
+  // iteration 级引擎：允许细粒度监听，且粒度已在 manifest 声明（握手可见）
+  assert.equal(emt.manifest.eventGranularity, 'iteration')
+  reg.assertCanMonitor(emt, 'iteration')
+
+  // job 级引擎：请求细粒度监听必须显式报错，不得静默降级为任务级
+  const jobLevel = { name: VASP_LIKE_MANIFEST.name, manifest: VASP_LIKE_MANIFEST.manifest }
+  assert.equal(jobLevel.manifest.eventGranularity, 'job')
+  assert.throws(
+    () => reg.assertCanMonitor(jobLevel, 'iteration'),
+    err => err.code === 'GRANULARITY_UNAVAILABLE',
+  )
+  // 任务级监听对两类引擎都合法（粒度是上限，不是下限）
+  reg.assertCanMonitor(jobLevel, 'job')
+  reg.assertCanMonitor(emt, 'job')
+})
+
+test('14. 契约：事件薄、数据厚——工作流事件载荷只含引用不含结构（§7.2）', async () => {
+  const { rt } = handles
+  const loaded = await rt.tools.call('material.load', { query: 'Cu' })
+  const before = (await readFile(TRAJECTORY, 'utf8')).trim().split('\n').length
+
+  await rt.tools.call('workflow.screen', {
+    materialId: loaded.materialId, dopants: ['Ag'],
+  })
+  await new Promise(r => setTimeout(r, 100))
+
+  const lines = (await readFile(TRAJECTORY, 'utf8')).trim().split('\n').map(JSON.parse)
+  const events = lines.slice(before).filter(l => l.workflow === 'screen')
+  assert.ok(events.length >= 2, 'pristine + doped variants')
+  for (const e of events) {
+    // 必备引用字段：结构经 materialId 引用，计算经 jobId 引用
+    assert.ok(e.material?.id, 'payload must reference material by id')
+    assert.ok(e.jobId, 'payload must reference the computation by jobId')
+    // 结构载荷不得内联：无原子数组、无坐标、无晶胞（GB 级对象走对象存储）
+    assert.equal(e.nodes, undefined)
+    assert.equal(e.structure, undefined)
+    assert.equal(e.cell, undefined)
+    assert.ok(!JSON.stringify(e).includes('"position"'), 'no inline positions in event payload')
+  }
 })

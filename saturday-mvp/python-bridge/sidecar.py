@@ -50,6 +50,8 @@ def handle(method: str, params: dict):
             "sidecar": "saturday-python-bridge",
             "version": "0.2.0",
             "calculators": {"ase-emt": HAS_ASE, "lj-mock": True},
+            # 契约 §5.1：事件粒度声明（逐调用同步形态，均为迭代级）
+            "eventGranularity": {"ase-emt": "iteration", "lj-mock": "iteration"},
         }
     if method == "relax":
         backend = pick_backend(params["structure"])
