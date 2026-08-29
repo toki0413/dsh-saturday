@@ -43,7 +43,13 @@ export default {
         query: { type: 'string', required: true, description: '化学式' },
         polymorphRank: { type: 'integer', description: '多晶型序号，默认 0（最稳定）' },
       },
-      output: { schema: { type: 'object', additionalProperties: true } },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        // dsh 工具出口要求：结果需经 render 投影为内容块（适配清单 §9 未竟项，Agent 会话实证补齐）
+        render(_args, value) {
+          return [{ type: 'text', text: JSON.stringify(value) }]
+        },
+      },
       async execute(args) {
         const m = await materialService.load(args.query, { polymorphRank: args.polymorphRank ?? 0 })
         const resolved = m.lineage.find(l => l.operation === 'structure-resolved')
@@ -65,7 +71,12 @@ export default {
         engine: { type: 'string', default: 'auto' },
         simulatedSeconds: { type: 'number', description: '模拟计算耗时（演示长任务）', default: 0.5 },
       },
-      output: { schema: { type: 'object', additionalProperties: true } },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) {
+          return [{ type: 'text', text: JSON.stringify(value) }]
+        },
+      },
       async execute(args) {
         const material = await materialService.get(args.materialId)
         const provider = potential.resolveProvider(

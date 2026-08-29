@@ -8,6 +8,8 @@ import { Z } from './elements.mjs'
 function fcc(element, a) {
   return {
     source: `prototype:A1-fcc(a=${a})`, polymorphRank: 0,
+    // 单质在自身凸包上，能量距定义为零（与 §7 “EMT 零点恰为元素平衡 fcc”一致）
+    energyAboveHull: 0,
     cell: [[a, 0, 0], [0, a, 0], [0, 0, a]],
     frac: [[0, 0, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
     numbers: Array(4).fill(Z[element]),
@@ -18,7 +20,7 @@ function fcc(element, a) {
 const PROTOTYPE_LIB = {
   Si: [
     {
-      source: 'prototype:A4-diamond', polymorphRank: 0,
+      source: 'prototype:A4-diamond', polymorphRank: 0, energyAboveHull: 0,
       cell: [[5.431, 0, 0], [0, 5.431, 0], [0, 0, 5.431]],
       // 金刚石常规晶胞，8 原子
       frac: [

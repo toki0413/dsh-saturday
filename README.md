@@ -128,6 +128,7 @@ npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @sa
 npm test                # 全部 workspace 测试（当前 95 项）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
+npm run demo:agent --workspace @saturday/bridge      # Agent 会话端到端（mock LLM，无需 API Key）
 ```
 
 ## 挂载到 dsh（完整运行时，已实测验证）
@@ -144,7 +145,7 @@ dsh --profile web --dump-config        # 验证组合树包含 saturday 行
 dsh web                                # 启动（本仓库已实测：0 错误挂载）
 ```
 
-Agent 会话演示（无真实 API Key）：可配 `dsh-llm-mock-server@0.0.1-rc.1`，见适配清单 §7/§9。
+Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @saturday/bridge`——裸 cordis 进程内组装全部真实 dsh 服务 + `dsh-llm-mock-server@0.0.1-rc.1` 脚本化模型，两段实证（自然语言 → material.load → 结果回流；自然语言 → potential.relax → 真实 ASE EMT 计算），详见适配清单 §9/§10。
 
 ## 设计锚点（与 v3.3 方案对应）
 

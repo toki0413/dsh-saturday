@@ -45,7 +45,9 @@ export class Material {
           resolver: resolver.name,
           source: chosen.source,
           polymorphRank: chosen.polymorphRank,
-          energyAboveHull: chosen.energyAboveHull,
+          // resolver 未给出的字段不入谱系：带 undefined 字段的谱系会被
+          // dsh 工具出口的 lossless-JSON 边界拒绝（Agent 会话实证）
+          ...(chosen.energyAboveHull !== undefined ? { energyAboveHull: chosen.energyAboveHull } : {}),
         },
         timestamp: Date.now(),
       })

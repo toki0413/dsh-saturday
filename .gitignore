@@ -22,4 +22,8 @@ Thumbs.db
 # 日志
 *.log
 
+# 临时包产物（npm pack 解包残留）
+*.tgz
+.dsh-demo/
+
 reg-stream.ps1

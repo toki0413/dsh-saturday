@@ -10,15 +10,26 @@
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
     "demo": "node demo.mjs",
-    "demo:screening": "node demo-screening.mjs"
+    "demo:screening": "node demo-screening.mjs",
+    "demo:agent": "node demo-agent.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
     "@saturday/core": "^0.3.0",
     "@saturday/kernel": "^0.3.0",
     "@saturday/python-bridge": "^0.3.0"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-agent": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-agent-loop": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-invariants": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-llm": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-llm-mock-server": "^0.0.1-rc.1",
+    "@deepseek-ai/dsh-scope": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-session": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-session-persistence": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-settings": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
     "@saturday/plugin-screening": "^0.3.0"
   },
   "peerDependencies": {

@@ -126,14 +126,25 @@ export default {
 
 ## 9. 未竟项（按优先级）
 
-- [ ] **Agent 会话端到端**（自然语言 → material.load → relax）：需模型 key，或用已发布的 `dsh-llm-mock-server@0.0.1-rc.1` 做无 key 演示
+- [x] ~~**Agent 会话端到端**~~ ✅ 已完成（2026-08-29，无 key）：`demo-agent.mjs` 裸 cordis 进程内组装全部真实服务（sessions / tools / system-prompt / agents / agent-loop / llm）+ `dsh-llm-mock-server` 脚本化模型 + 最小 OpenAI 兼容适配器；两段实证——自然语言→`material.load`（Cu fcc，谱系含 energyAboveHull）→结果回流，自然语言→`potential.relax`（真实 ASE EMT，energy -0.028）→结果回流。运行：`npm run demo:agent --workspace @saturday/bridge`
 - [ ] `sessions.append` 确切签名与 Trajectory 视图呈现（需运行实例内 `cordis_inspect_query` 查 `sessions` 服务）
 - [ ] 长任务与 `dsh-jobs-local` 的关系：relax 是否应注册为 job 而非同步工具（Phase 1 评审）
 - [x] ~~ASE EMT 替换 LJ 玩具势~~ ✅ 已完成（v0.2）：sidecar 按结构元素逐调用路由——全 EMT 元素（Al/Cu/Ag/Au/Ni/Pd/Pt）走 ASE 真物理，其余走 LJ 兜底；Cu 掺杂筛选排序与实验冶金学一致
-- [ ] 工具结果卡片 `render` 定制（material 摘要/结构图）
+- [ ] 工具结果富卡片 `render`（material 摘要/结构图）——基础 JSON 文本 render 已补（工具出口硬性要求，Agent 会话实证；未提供会在运行时抛 `userRender is not a function`）
 - [ ] 严格热力学筛选：形成焓相对凸包（当前 EMT 零点恰为元素平衡 fcc，E/atom 近似形成焓）
 
-## 10. 对 v3.3 方案的反馈（Spike 结论 → 文档修订建议）
+## 10. Agent 会话实证补充（2026-08-29）
+
+dsh 工具出口三道关卡（端到端会话实证，新工具接入前必读）：
+1. **lossless-JSON 快照**：返回值任何字段为 `undefined` / 非有限数 / -0 / 非纯原型对象 → 整个结果被拒（`value is not lossless JSON`）；谱系 detail 已改条件展开，原型库单质补 `energyAboveHull: 0`
+2. **output schema 校验**（JSON Schema）
+3. **output.render 投影**：`defineTool` 默认 render 调用户提供的 render；**未提供会在运行时抛 `userRender is not a function`**（注册期校验不可靠，因 defineTool 包了一层）
+
+运行时组装顺序（裸 cordis）：`SessionStore → SystemPrompt → ToolRuntime`（ToolRuntime inject 依赖 systemPrompt，须后挂）`→ AgentRegistry → LlmRuntime → AgentLoop`；适配器只需实现 `stream(options): AsyncIterable<StreamChunk>`。
+
+演示工程坑位（已在 `demo-agent.mjs` 固化）：`agent.whenIdle()` 在 followup 后可能先于驱动器启动结算 → 先轮询等待可观察状态（如 `server.requests.length`）再 whenIdle；mock server 分段重启须换新端口（undici 全局连接池复用已销毁的 keep-alive 连接 → ECONNRESET）。
+
+## 11. 对 v3.3 方案的反馈（Spike 结论 → 文档修订建议）
 
 1. **环境前提新增：Node ≥ 22**（§0），写入附录 C 开发环境搭建与 CI 矩阵。
 2. 附录 A 依赖项：`cordis` 应改为 **`@deepseek-ai/cordis`**（DeepSeek 命名空间，v4.0.1）；新增 `@deepseek-ai/dsh-tools`（defineTool）。
