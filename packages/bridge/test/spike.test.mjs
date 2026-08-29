@@ -7,12 +7,13 @@ import { readFile, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
+import screeningPlugin from '@saturday/plugin-screening'
 import { PotentialRegistry, Material, PrototypeLibResolver } from '@saturday/core'
 import { VASP_LIKE_MANIFEST } from '../src/compute/emt-provider.mjs'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory.jsonl', import.meta.url))
 
-let ctx, fiber, handles, HAS_ASE = false
+let ctx, fiber, handles, screenFiber, screenRt, HAS_ASE = false
 
 before(async () => {
   await rm(TRAJECTORY, { force: true })
@@ -22,12 +23,19 @@ before(async () => {
     apply: (ctx) => plugin.apply(ctx, { trajectoryPath: TRAJECTORY }),
   })
   handles = fiber.store.saturday
+  // 工作流插件独立挂载（契约 §4.3）：与核心插件同一 Context 组合
+  screenFiber = await ctx.registry.plugin({
+    name: 'saturday-screening',
+    apply: (ctx) => screeningPlugin.apply(ctx, { trajectoryPath: TRAJECTORY }),
+  })
+  screenRt = screenFiber.store.saturdayScreening.rt
   // sidecar 握手信息：ASE 是否可用（决定测试 9/11 断言强度）
   const provider = handles.potential.get('emt-mock')
   HAS_ASE = provider.bridge.sidecarInfo?.calculators?.['ase-emt'] === true
 })
 
 after(async () => {
+  await screenFiber.dispose()
   await fiber.dispose()
 })
 
@@ -114,7 +122,7 @@ test('8. 卸载回退：dispose 后服务与工具全部回收（effect 语义�
   })
   const h2 = f2.store.saturday
   assert.ok(ctx2.reflect.get('material'))
-  assert.equal(h2.rt.tools.list().length, 3)
+  assert.equal(h2.rt.tools.list().length, 2, 'workflow.screen 已迁出为独立插件')
   await f2.dispose()
   assert.equal(ctx2.reflect.get('material'), undefined, 'service should be withdrawn on dispose')
   assert.equal(h2.rt.tools.list().length, 0, 'tools should be withdrawn on dispose')
@@ -150,12 +158,12 @@ test('10. Material.substitute：Cu 掺 Ag 得 Cu3Ag，谱系可追溯且原对�
   assert.throws(() => cu.substitute(0, 'Xx'), /Unknown element/)
 })
 
-test('11. workflow.screen：批量掺杂筛选，排序正确且逐变体溯源', async (t) => {
+test('11. workflow.screen：批量掺杂筛选，排序正确且逐变体溯源（独立插件）', async (t) => {
   const { rt } = handles
   const loaded = await rt.tools.call('material.load', { query: 'Cu' })
   const before = (await readFile(TRAJECTORY, 'utf8')).trim().split('\n').length
 
-  const result = await rt.tools.call('workflow.screen', {
+  const result = await screenRt.tools.call('workflow.screen', {
     materialId: loaded.materialId, dopants: ['Ag', 'Ni'],
   })
   // pristine + 2 掺杂 = 3 个变体全部成功
@@ -237,7 +245,7 @@ test('14. 契约：事件薄、数据厚——工作流事件载荷只含引用�
   const loaded = await rt.tools.call('material.load', { query: 'Cu' })
   const before = (await readFile(TRAJECTORY, 'utf8')).trim().split('\n').length
 
-  await rt.tools.call('workflow.screen', {
+  await screenRt.tools.call('workflow.screen', {
     materialId: loaded.materialId, dopants: ['Ag'],
   })
   await new Promise(r => setTimeout(r, 100))

@@ -36,6 +36,12 @@ export class PotentialRegistry {
     this.providers.set(provider.name, provider)
   }
 
+  /** 注销（引擎插件卸载路径）；若注销的是当前激活引擎，重置激活指针 */
+  unregister(name) {
+    this.providers.delete(name)
+    if (this.activeProvider === name) this.activeProvider = null
+  }
+
   get(name) {
     const p = this.providers.get(name)
     if (!p) throw new Error(`Provider ${name} not registered`)
@@ -89,9 +95,9 @@ export class PotentialRegistry {
     return caps.accuracy * w.accuracy + caps.speed * w.speed + (1 - caps.cost) * w.cost
   }
 
-  /** 当前引擎（显式指定优先，否则 autoRoute） */
+  /** 当前引擎（显式指定优先，否则 autoRoute）；profile 属任务画像，两个入参位置都认 */
   resolveProvider(params = {}, task = {}) {
     if (params.engine && params.engine !== 'auto') return this.get(params.engine)
-    return this.autoRoute({ type: task.type ?? 'calculate', nAtoms: task.nAtoms ?? 0, profile: params.profile })
+    return this.autoRoute({ type: task.type ?? 'calculate', nAtoms: task.nAtoms ?? 0, profile: task.profile ?? params.profile })
   }
 }

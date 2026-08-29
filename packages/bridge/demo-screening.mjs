@@ -3,6 +3,7 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
+import screeningPlugin from '@saturday/plugin-screening'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({
@@ -10,6 +11,13 @@ const fiber = await ctx.registry.plugin({
   apply: (ctx) => plugin.apply(ctx, {}),
 })
 const { rt, potential } = fiber.store.saturday
+
+// 工作流插件独立挂载（契约 §4.3）：与核心插件同一 Context 组合
+const screenFiber = await ctx.registry.plugin({
+  name: 'saturday-screening',
+  apply: (ctx) => screeningPlugin.apply(ctx, {}),
+})
+const screenRt = screenFiber.store.saturdayScreening.rt
 
 const provider = potential.get('emt-mock')
 console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
@@ -19,7 +27,7 @@ console.log(`基体: ${cu.formula} (${cu.nAtoms} 原子, id=${cu.materialId.slic
 console.log('筛选: 掺杂 Ag / Au / Ni / Pt（各取代位点 0）\n')
 
 const t0 = Date.now()
-const result = await rt.tools.call('workflow.screen', {
+const result = await screenRt.tools.call('workflow.screen', {
   materialId: cu.materialId,
   dopants: ['Ag', 'Au', 'Ni', 'Pt'],
 })
@@ -39,4 +47,5 @@ console.log(`\n共 ${result.ranked.length} 个变体，耗时 ${((Date.now() - t
 console.log(`注: ${result.note}`)
 console.log('每个变体的完整计算记录已写入 Trajectory（data/trajectory.jsonl）')
 
+await screenFiber.dispose()
 await fiber.dispose()

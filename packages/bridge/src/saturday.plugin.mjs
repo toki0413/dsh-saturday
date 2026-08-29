@@ -6,7 +6,6 @@ import { createCordisAdapter } from '@saturday/kernel'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@saturday/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from './compute/bridge.mjs'
-import { screenDopants } from './workflows/screening.mjs'
 
 export default {
   name: 'saturday',
@@ -91,33 +90,7 @@ export default {
       },
     })
 
-    rt.registerTool({
-      name: 'workflow.screen',
-      description: '批量掺杂筛选：基体 + 掺杂变体逐个弛豫，按能量排序。' +
-                   '每个变体独立落 Trajectory，可全程溯源。支持元素：Cu Ag Al Ni Au Pd Pt（EMT 范围）。',
-      parameters: {
-        materialId: { type: 'string', required: true, description: '基体材料 ID' },
-        dopants: {
-          type: 'array', required: true,
-          items: { type: 'string' },
-          description: '掺杂元素列表，如 ["Ag","Ni"]',
-        },
-        topK: { type: 'integer', description: '只返回能量最低的前 K 个' },
-        engine: { type: 'string', default: 'auto' },
-      },
-      output: { schema: { type: 'object', additionalProperties: true } },
-      async execute(args) {
-        const material = await materialService.get(args.materialId)
-        return screenDopants({
-          material,
-          dopants: args.dopants,
-          potential,
-          topK: args.topK,
-          engine: args.engine,
-          emit: (type, event) => rt.emit(type, event),
-        })
-      },
-    })
+    // workflow.screen 已迁出为独立插件 @saturday/plugin-screening（契约 §4.3：工作流不进核心）
 
     // 计算事件统一落 Trajectory
     rt.on('saturday/simulation/converged', async event => {

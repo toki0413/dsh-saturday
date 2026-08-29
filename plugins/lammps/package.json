@@ -1,0 +1,27 @@
+{
+  "name": "@saturday/plugin-lammps",
+  "version": "0.3.0",
+  "description": "Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job）",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./provider": "./src/lammps-provider.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/core": "^0.3.0",
+    "@saturday/kernel": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/index.mjs"
+    ]
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@saturday/plugin-mp",
+  "version": "0.3.0",
+  "description": "Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现）",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./resolver": "./src/mp-resolver.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/core": "^0.3.0",
+    "@saturday/kernel": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/index.mjs"
+    ]
+  },
+  "license": "MIT"
+}

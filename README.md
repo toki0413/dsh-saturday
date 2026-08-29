@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**14/14 验收测试通过**（含 ASE EMT 真物理断言 + 3 项契约测试）
+- 裸 cordis：**28/28 测试通过**（14 项集成验收含 ASE EMT 真物理 + 3 个首发插件各自契约测试）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory"
 
@@ -58,7 +58,8 @@ Saturday 把论文的两个正交维度落到材料计算域：
 |---|---|---|
 | 材料加载 | `material.load` | 化学式 → 结构（原型库，TiO2 多晶型可选） |
 | 结构弛豫 | `potential.relax` | **ASE EMT 真实物理**（UnitCellFilter+BFGS），LJ 玩具势兜底 |
-| 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体 Trajectory 溯源 |
+| 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体 Trajectory 溯源（独立插件 `@saturday/plugin-screening`） |
+| MP 结构源 | `structure.resolve` | Materials Project 远端解析（独立插件 `@saturday/plugin-mp`，需 MP_API_KEY） |
 
 EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。实测 Cu 掺杂筛选：
 **Cu3Pt (-0.10) < Cu3Au (-0.02) < Cu (0) < Cu3Ni (+0.01) < Cu3Ag (+0.02) eV/atom**——
@@ -93,15 +94,18 @@ packages/
     profiles/cordis.patch.yml #   挂载到 dsh profile 的示例
     test/spike.test.mjs       #   14 项验收 + 契约测试
     docs/plugin-contract-v0.md#   Plugin Contract v0（插件契约，experimental）
-plugins/                      # 第三方形态插件（首发中）
+plugins/                      # 首发插件（契约压力测试）
+  screening/                  #   @saturday/plugin-screening —— 工作流：批量掺杂筛选（§4.3）
+  mp-structure-source/        #   @saturday/plugin-mp —— 结构源：Materials Project（§4.1）
+  lammps/                     #   @saturday/plugin-lammps —— 引擎：LAMMPS 批处理，事件粒度 job（§4.2）
 ```
 
 ## 运行
 
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
-npm install             # workspaces：@deepseek-ai/cordis（peer）+ 三个 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 14 项）
+npm install             # workspaces：@deepseek-ai/cordis（peer）+ 六个 @saturday/* 包软链
+npm test                # 全部 workspace 测试（当前 28 项）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 ```
