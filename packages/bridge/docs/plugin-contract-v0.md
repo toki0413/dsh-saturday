@@ -248,6 +248,15 @@ interface AnalysisPlugin {
 v0 只冻结"输入/输出类型声明 + 谱系登记"两点；方法签名在薄插件冲刺（Phase 1c）
 收集 3 个以上真实分析插件后定稿。
 
+**首个实证实现**：`@saturday/plugin-neb`（NEB 最小能量路径与过渡态势垒；
+能量/梯度注入式，内置 LJ 双阱玩具体系）。由它固化的实证点：
+- `inputs` / `outputs` 是**数据类型字符串数组**（如 `['energy-model']` → `['minimum-energy-path']`）；
+- `describe()` 返回 `{ description, parameters }`；`run(inputs, rt)` 接收运行时句柄；
+- 谱系登记 = 分析结果同样落 append-only Trajectory（`type: 'analysis_complete'`）——
+  分析产出与计算结果同为事实，不得只活在内存里；
+- 分析结果不可自我认证：如势垒需由独立逐点求值（或更高精度引擎）对账，
+  对账工具由工作流层（§4.3）编排。
+
 ### 4.5 sampler —— 逆解插件（采样语义；条款冻结，签名待首个实现实证）
 
 **职责**：给定目标约束（组分 / 性质 / 能量函数 / 参考结构），采样相容的候选结构。
@@ -444,6 +453,7 @@ sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地
 | 20 | 插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换 | plugin-ase 测试 1-3（含真实 sidecar） |
 | 21 | 时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹 | plugin-replay 测试 1-5（含真实筛选对账） |
 | 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | 待首个 sampler 插件实证（先在 LJ/EMT 小体系对账 MD；`samplerContract` 同期进套件） |
+| 23 | analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默 | plugin-neb 测试 6-8（含真实挂载与卸载回收） |
 
 ## 附录 B：插件骨架模板
 
