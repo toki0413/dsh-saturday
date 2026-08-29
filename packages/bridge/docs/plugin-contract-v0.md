@@ -118,7 +118,7 @@ interface SaturdayTool {
 
 ---
 
-## 4. 四类插件契约
+## 4. 五类插件契约
 
 ### 4.1 structure-resolver —— 结构源插件
 
@@ -248,6 +248,73 @@ interface AnalysisPlugin {
 v0 只冻结"输入/输出类型声明 + 谱系登记"两点；方法签名在薄插件冲刺（Phase 1c）
 收集 3 个以上真实分析插件后定稿。
 
+### 4.5 sampler —— 逆解插件（采样语义；条款冻结，签名待首个实现实证）
+
+**职责**：给定目标约束（组分 / 性质 / 能量函数 / 参考结构），采样相容的候选结构。
+本 seam 是生成式逆设计的唯一入口——Boltzmann 生成器、潜空间 normalizing flow、
+晶体扩散模型等均挂载于此。**语义是采样而非求逆**：弛豫是多对一投影，原像本质非唯一；
+sampler 交付的是与目标相容的候选分布，不是"某次计算的起点"（可逆性作用域见 §1.2）。
+
+```typescript
+interface StructureSampler {
+  /** 全局唯一：'boltzmann-generator' | 'latent-flow' | 'crystal-diffusion' … */
+  readonly name: string
+  readonly manifest: SamplerManifest
+  /**
+   * 采样与 target 相容的候选；模型不可用 / 目标超出覆盖范围抛
+   * code === 'SAMPLER_UNAVAILABLE'；按判据产不出候选抛 'SAMPLE_NOT_FOUND'——
+   * 生成失败绝不静默为空成功。
+   */
+  sample(target: SampleTarget, opts?: { n?: number, seed?: number }): Promise<SampledStructure[]>
+  /** 仅 manifest.invertible === true 必须提供（双射输运映射的反向）；未声明者调用必须抛 INVERTIBILITY_UNDECLARED */
+  encode?(structure: AtomGraph): Promise<unknown>
+}
+
+interface SampleTarget {
+  composition?: string               // 组分约束，允许部分指定（'Cu3Ag' / 'Cu-Ag-*'）
+  properties?: Record<string, number> // 性质目标（如 energyAboveHull 上限）
+  /** 能量函数引用（potential-provider 名）：按不变分布 ρ ∝ exp(−βU) 做 Boltzmann 采样 */
+  energyModel?: string
+  reference?: string                 // 参考结构 materialId：微扰 / 插值邻域采样
+  // 至少给定一项；支持的目标类型以 manifest.supportedTargets 声明
+}
+
+interface SamplerManifest {
+  /** 采样语义（核心条款）：本 seam 与 §4.1 查表式结构源的本质区别 */
+  semantics: 'sampling'
+  /** 似然可求值性：exact = 双射精确似然（如 flow）；approximate 必须注明估计方式；none = 不提供 */
+  likelihood: 'exact' | 'approximate' | 'none'
+  /** 输运映射可逆性：true（如 normalizing flow 双射）必须提供 encode；false 不得提供 */
+  invertible: boolean
+  supportedTargets: ('composition' | 'properties' | 'energyModel' | 'reference')[]
+}
+
+interface SampledStructure {
+  graph: AtomGraph
+  logProb?: number             // likelihood !== 'none' 时必须提供，与 manifest 声明一致
+  source: string               // 登记谱系时统一为 'generative:<name>'（如 'generative:latent-flow#seed=42'）
+  polymorphRank?: number       // 不承诺稳定性排序；给出必须注明排序依据（如模型预测能量）
+}
+```
+
+**规则**：
+- **采样语义是唯一语义**：候选是学习/参数化分布上的采样点，不得呈现为"唯一解"；
+  消费方（工作流 / Agent 工具）必须连同非唯一性与似然一起呈现；
+- **候选必须可回算验证**：每个候选可送入 `PotentialProvider` 的 `relax` / `calculate`
+  做性质核对（生成 → 弛豫 → 核对闭环）；核对失败是工作流级错误，sampler 不得自我认证；
+- **诚实声明可执行**：似然不可精确求值时必须声明 `'none'`，禁止伪造伪似然；
+  `invertible: false` 不得提供 `encode`，调用方得到显式错误（"不静默降级"纪律的延伸）；
+- **遍历对账（oracle 条款）**：给定 `energyModel` 时，采样系综统计必须可与同一能量函数
+  的 MD 时间平均对账（ergodic 对账）；对账工具落在工作流 seam（§4.3），不进 sampler 本体；
+- **交付即谱系**：交付按 `ResolvedStructure` 兼容形态（§4.1）转换，`source` 以 `generative:`
+  前缀写入谱系；不可变与 fork 语义继承 §6。
+
+**条款依据**（由可逆性讨论固化）：① 逆解是对相容分布的采样，不是对计算的求逆——
+求逆的障碍是多对一映射本身，与近似精度无关；② 材料域的独特优势是能量函数逐点可求值
+（现有引擎即逐点 U）：训练可零数据（KL 直接按能量算），验证有第一性 oracle（MD 时间平均），
+且双射流是本契约下真正可逆的计算——呼应 §1.2：Trajectory 记账保存物理丢弃的比特，
+flow 双射则在构型空间内保持比特。
+
 ---
 
 ## 5. 能力握手与事件粒度
@@ -347,6 +414,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 `potentialProviderContract`（§4.2 + §5.2：manifest 形状 / 粒度门禁 / 结果形状 /
 幂等 / 显式失败）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 9 项 + bridge 14 项 + 六个插件各自套件，全仓 71/71）。映射见附录 A。
+sampler seam（§4.5）条款已冻结，`samplerContract` 待首个实现落地后进入套件。
 
 ---
 
@@ -375,6 +443,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 19 | 跨引擎画像路由：validation 选高精度（mace），screening 选低成本（lammps） | plugin-mace 测试 5 |
 | 20 | 插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换 | plugin-ase 测试 1-3（含真实 sidecar） |
 | 21 | 时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹 | plugin-replay 测试 1-5（含真实筛选对账） |
+| 22 | sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错 | 待首个 sampler 插件实证（先在 LJ/EMT 小体系对账 MD；`samplerContract` 同期进套件） |
 
 ## 附录 B：插件骨架模板
 

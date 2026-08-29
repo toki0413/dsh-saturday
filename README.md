@@ -141,6 +141,7 @@ Agent 会话演示（无真实 API Key）：可配 `dsh-llm-mock-server@0.0.1-rc
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
 - **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider 两条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
+- **sampler seam（§4.5，条款冻结）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；Boltzmann 生成器 / 潜空间 normalizing flow 挂载于此，待首个实现实证
 - **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）；`trajectory.replay` 从事件流重建计算索引，回放事件带防回灌前缀（可逆的是决策不是物理）
 - **原子化操作**：relax/calculate 原语同时暴露给工具与编程 API；substitute 为不可变 fork（测试 10）
 - **后端路由**：sidecar 按结构元素逐调用选择 ASE EMT / LJ 兜底，能力声明在 hello 握手（测试 9 依此跳过或断言真物理）
