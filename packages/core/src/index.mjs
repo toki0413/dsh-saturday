@@ -13,6 +13,9 @@ export {
   formationEnthalpy,
   convexHull,
   energyAboveHull,
+  multiConvexHull,
+  energyAboveHullMulti,
+  MULTI_HULL_MAX_SUBSETS,
   compositionFromNumbers,
   thermoError,
 } from './thermo.mjs'

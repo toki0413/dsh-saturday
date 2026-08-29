@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**201/201 测试通过**（18 个含测试包：bridge 27 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 8 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、首个采样器确定性验证、OU 采样器精确似然升档（闭式转移核统计验证）、遍历对账随似然声明实质升档（重要性重加权解析对账）、采样→回算闭环排序验证、遍历对账（Langevin MD 时间平均）真实链路、活性上下文失效传播（含势函数热替换→筛选候选全链失效）、严格形成焓+凸包判据与互转精度/电子结构门禁验证、构型自由能热力学积分解析对账）
+- 裸 cordis：**回归 214/214**（19 个回归单元：18 个 workspace 207 项 + 摘要层脚本 7 项；含 bridge 27 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 14 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、采样器确定性/精确似然升档、遍历对账重要性重加权解析对账、活性上下文失效传播、严格形成焓+二元/多组分凸包判据、构型自由能热力学积分解析对账、可再生摘要机械汇编）；项目级摘要见 `SUMMARY.md`（`npm run summary` 再生，勿手改）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
@@ -129,7 +129,8 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 201 项，18 个包）
+npm test                # 全部 workspace 测试（当前 207 项，18 个包）
+npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 npm run demo:agent --workspace @saturday/bridge      # Agent 会话端到端（mock LLM，无需 API Key）
@@ -162,6 +163,8 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **活性上下文地基（§8.2，首个实证落地）**：plugin-derivation 把“响应式谱系图”从目标形态变成测试——每个导出量登记推导来源，上游失效沿推导图向下游传播（重复失效幂等），冻结结果（实验数据/已交付，§7）只追加修正不重算，重算惰性且预算受控（超预算显式报错）；不可变 fork（§6）不是失效源；`derivationContract` 第五套件同步入包；**已接真实工作流：排序 = f(基体, 引擎)——`workflow.screen` 完成即登记两层推导，势函数热替换（`activate` 事件）沿 `engine:<id>` 全链失效**；响应式依赖声明（`getService` 下沉）仍为演进方向
 - **热力学第一档（§9 欠账清偿）**：能量零点显式化——筛选排序从“近似形成焓”升级为严格形成焓（能量零点 = 各元素参考态经引擎显式弛豫，数据面 `reference_energy` 算子）+ 形成焓空间凸包判据（`energyAboveHull`）；`thermo.level` 声明凸包精度等级（不冒充更高精度），参考态不可得时诚实降级保留“近似”声明；纯层 `formationEnthalpy/convexHull/energyAboveHull` 入 `@saturday/core`（缺参考态/超成分范围显式报错）
 - **热力学第二档（§9 从焓到自由能）**：plugin-free-energy 把 E→G 缺口补上——`workflow.freeEnergy` 逐温度网格点恒温 MD（复用 `md` 原语）得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线；**自由能零点延续第一档纪律：锚点必须显式注入（缺锚点 `THERMO_REFERENCE_MISSING`），锚点物理来源声明随交付呈现**；诚实声明不含动量部分、逐点附统计标准误；解析对账双核（线性核梯形精确闭式 1e-9 + 谐波核密网格截断收敛），测试首跑即抓出定向积分符号 bug（锚点升温侧不取绝对值）；曲线型工作流不接 `workflowContract`（强套会扭曲契约形态，诚实声明入附录 A）
+- **多组分凸包（第 1.5 档）**：二元凸包推广到 d = 元素数−1 维成分空间——显式穷举 d-单形下包络 + 重心坐标插值（纯层 `multiConvexHull/energyAboveHullMulti` 入 `@saturday/core`）；二元退化与既有实现 1e-12 数值一致；端点纪律延续（缺纯元素端点显式报错不外推）、组合上限显式门禁（不静默换近似算法）；测试首跑即抓出包外点污染包络（包络单形只用包上点构造）
+- **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
 - **时空可组合性（时间维）**：计算事件 → append-only Trajectory（测试 7/11：批量任务逐变体溯源）；`trajectory.replay` 从事件流重建计算索引，回放事件带防回灌前缀（可逆的是决策不是物理）
 - **原子化操作**：relax/calculate 原语同时暴露给工具与编程 API；substitute 为不可变 fork（测试 10）

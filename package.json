@@ -9,7 +9,8 @@
     "plugins/*"
   ],
   "scripts": {
-    "test": "npm test --workspaces --if-present"
+    "test": "npm test --workspaces --if-present",
+    "summary": "node scripts/summary/summarize.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

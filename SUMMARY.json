@@ -1,0 +1,324 @@
+{
+  "generatedAt": "2026-08-29T14:03:07.971Z",
+  "totalPass": 207,
+  "totalFail": 0,
+  "packageCount": 19,
+  "testedCount": 18,
+  "packages": [
+    {
+      "dir": "packages\\bridge",
+      "name": "@saturday/bridge",
+      "version": "0.3.0",
+      "pass": 27,
+      "fail": 0
+    },
+    {
+      "dir": "packages\\contract-tests",
+      "name": "@saturday/contract-tests",
+      "version": "0.3.0",
+      "pass": 24,
+      "fail": 0
+    },
+    {
+      "dir": "packages\\core",
+      "name": "@saturday/core",
+      "version": "0.3.0",
+      "pass": 14,
+      "fail": 0
+    },
+    {
+      "dir": "packages\\kernel",
+      "name": "@saturday/kernel",
+      "version": "0.3.0",
+      "pass": null,
+      "fail": null
+    },
+    {
+      "dir": "packages\\python-bridge",
+      "name": "@saturday/python-bridge",
+      "version": "0.3.0",
+      "pass": 5,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\ase",
+      "name": "@saturday/plugin-ase",
+      "version": "0.3.0",
+      "pass": 10,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\derivation",
+      "name": "@saturday/plugin-derivation",
+      "version": "0.3.0",
+      "pass": 15,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\eos",
+      "name": "@saturday/plugin-eos",
+      "version": "0.3.0",
+      "pass": 8,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\ergodic",
+      "name": "@saturday/plugin-ergodic",
+      "version": "0.3.0",
+      "pass": 14,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\explore",
+      "name": "@saturday/plugin-explore",
+      "version": "0.3.0",
+      "pass": 9,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\free-energy",
+      "name": "@saturday/plugin-free-energy",
+      "version": "0.3.0",
+      "pass": 9,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\lammps",
+      "name": "@saturday/plugin-lammps",
+      "version": "0.3.0",
+      "pass": 11,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\mace",
+      "name": "@saturday/plugin-mace",
+      "version": "0.3.0",
+      "pass": 10,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\mp-structure-source",
+      "name": "@saturday/plugin-mp",
+      "version": "0.3.0",
+      "pass": 8,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\neb",
+      "name": "@saturday/plugin-neb",
+      "version": "0.3.0",
+      "pass": 8,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\replay",
+      "name": "@saturday/plugin-replay",
+      "version": "0.3.0",
+      "pass": 5,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\sampler-ou",
+      "name": "@saturday/plugin-sampler-ou",
+      "version": "0.3.0",
+      "pass": 13,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\sampler-perturb",
+      "name": "@saturday/plugin-sampler-perturb",
+      "version": "0.3.0",
+      "pass": 9,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\screening",
+      "name": "@saturday/plugin-screening",
+      "version": "0.3.0",
+      "pass": 8,
+      "fail": 0
+    }
+  ],
+  "milestones": [
+    {
+      "index": 1,
+      "clause": "服务注册即 effect，卸载全回收",
+      "evidence": "测试 1、8"
+    },
+    {
+      "index": 2,
+      "clause": "formula-only 必须显式 resolver，来源写谱系",
+      "evidence": "测试 2、4"
+    },
+    {
+      "index": 3,
+      "clause": "多晶型排序与选择",
+      "evidence": "测试 3"
+    },
+    {
+      "index": 4,
+      "clause": "autoRoute 画像评分（修订 #7）",
+      "evidence": "测试 5"
+    },
+    {
+      "index": 5,
+      "clause": "长任务异步原语语义",
+      "evidence": "测试 6"
+    },
+    {
+      "index": 6,
+      "clause": "事件 → Trajectory 落盘",
+      "evidence": "测试 7、11"
+    },
+    {
+      "index": 7,
+      "clause": "能力握手驱动断言强度",
+      "evidence": "测试 9"
+    },
+    {
+      "index": 8,
+      "clause": "不可变 fork 与谱系",
+      "evidence": "测试 10"
+    },
+    {
+      "index": 9,
+      "clause": "逐变体事件与批量溯源",
+      "evidence": "测试 11"
+    },
+    {
+      "index": 10,
+      "clause": "license 前置门禁（修订 #10）",
+      "evidence": "测试 12（含失败不污染状态、门禁可重入）"
+    },
+    {
+      "index": 11,
+      "clause": "事件粒度声明：job 级显式拒绝细粒度监听",
+      "evidence": "测试 13"
+    },
+    {
+      "index": 12,
+      "clause": "载荷引用语义（无内联大对象）",
+      "evidence": "测试 14"
+    },
+    {
+      "index": 13,
+      "clause": "工作流插件：缺服务显式报错 / 逐变体事件 / 不吞错",
+      "evidence": "plugin-screening 测试 1-4"
+    },
+    {
+      "index": 14,
+      "clause": "结构源 seam 可互换：远端来源写谱系（修订 #8）",
+      "evidence": "plugin-mp 测试 1-4"
+    },
+    {
+      "index": 15,
+      "clause": "引擎插件：注册即 effect，卸载注销且激活指针重置",
+      "evidence": "plugin-lammps 测试 5、6"
+    },
+    {
+      "index": 16,
+      "clause": "批处理引擎：缺二进制显式报 ENGINE_UNAVAILABLE，不静默降级",
+      "evidence": "plugin-lammps 测试 3"
+    },
+    {
+      "index": 17,
+      "clause": "seam 标准断言集（§4.1/§4.2）自检与复用",
+      "evidence": "contract-tests self.test（9 项，mp/lammps/mace/ase 已接入）"
+    },
+    {
+      "index": 18,
+      "clause": "ML 势引擎：可用性预检（`import mace` 探测），不可用显式报 ENGINE_UNAVAILABLE",
+      "evidence": "plugin-mace 测试 1、2"
+    },
+    {
+      "index": 19,
+      "clause": "跨引擎画像路由：validation 选高精度（mace），screening 选低成本（lammps）",
+      "evidence": "plugin-mace 测试 5"
+    },
+    {
+      "index": 20,
+      "clause": "插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换",
+      "evidence": "plugin-ase 测试 1-3（含真实 sidecar）"
+    },
+    {
+      "index": 21,
+      "clause": "时间维回放：从事件流重建索引；回放事件带防回灌前缀，不产生新轨迹",
+      "evidence": "plugin-replay 测试 1-5（含真实筛选对账）"
+    },
+    {
+      "index": 22,
+      "clause": "sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错",
+      "evidence": "plugin-sampler-perturb 测试 1-8（首个实证：微扰采样器；MD 对账已由 #28 补齐）"
+    },
+    {
+      "index": 23,
+      "clause": "analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默",
+      "evidence": "plugin-neb 测试 6-8（含真实挂载与卸载回收）"
+    },
+    {
+      "index": 24,
+      "clause": "analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析",
+      "evidence": "plugin-eos 测试 1-8（含真实桥 Cu EOS 集成）"
+    },
+    {
+      "index": 25,
+      "clause": "workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错",
+      "evidence": "`workflowContract`（套件自检 + plugin-screening 测试 5-8）"
+    },
+    {
+      "index": 26,
+      "clause": "sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material",
+      "evidence": "`samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4）"
+    },
+    {
+      "index": 27,
+      "clause": "§4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null",
+      "evidence": "plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者）"
+    },
+    {
+      "index": 28,
+      "clause": "§4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明三档分级（none 仅信息性；声明可求且候选附 logProb 时重要性重加权后直接检验；声明与交付不一致降级并明说）",
+      "evidence": "plugin-ergodic 测试 1-14（纯层统计判定 + 升档解析对账 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路）"
+    },
+    {
+      "index": 29,
+      "clause": "§8.2 活性上下文地基首个实证：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞（§7）/ 查无显式错 / 惰性重算预算受控 + 拓扑序 + append-only / substitute fork 非失效源（§6）",
+      "evidence": "`derivationContract`（套件自检 mock-derivation + plugin-derivation 测试 1-14）"
+    },
+    {
+      "index": 30,
+      "clause": "§8.2 活性上下文接真实工作流：排序 = f(基体, 引擎)——筛选完成即登记两层推导（候选能量/排序，`engine:<id>` 契约化入推导输入）；势函数热替换（`activate` 发 `saturday/potential/activated`）即失效源，全链失效 + 重算拓扑序；推导插件可选（未挂载优雅降级）",
+      "evidence": "`derivationContract` 引擎条款 + bridge live-context 测试 1-4"
+    },
+    {
+      "index": 31,
+      "clause": "热力学第一档（§9 欠账清偿）：能量零点显式化——数据面 `reference_energy` 算子（fcc 单胞全弛豫，无承诺后端诚实报错）+ 纯层严格形成焓/二元凸包（缺参考态/超范围显式错，不静默假设零点）；筛选接严格形成焓 + `energyAboveHull` 凸包判据，`thermo.level` 声明精度等级；参考态不可得时诚实降级保留“近似”声明",
+      "evidence": "core thermo 测试 1-8 + python-bridge 参考态 4-5 + bridge thermo 端到端 1-4"
+    },
+    {
+      "index": 32,
+      "clause": "sampler seam（§4.5）第二实证：OU（Ornstein-Uhlenbeck）参考结构采样——闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，`samplerContract` 第三个接入者）；诚实边界写进交付：exact 指提议核自身（非玻尔兹曼，热力学加权仍须引擎回算）、OU 单峰定位为局部采样器、γΔ 有效性窗口门禁（非正/非有限显式错）",
+      "evidence": "plugin-sampler-ou 测试 1-13（契约 5 + 似然自洽独立重算 + 平稳幅度闭式统计验证 + 均值回归语义 + 插件层挂载/缺依赖/端到端/确定性）"
+    },
+    {
+      "index": 33,
+      "clause": "§4.5 升档实证：判定强度随似然声明实质升档——`workflow.ergodic` 接 `sampler.ou`（likelihood: 'exact'）后判据从原始均值对比升为重要性重加权（log w = −βU − log q，log-sum-exp 归一）均值对 MD 时间平均；ESS 占比作为重叠度诊断随判定/事件载荷呈现；解析对账体系（σ_q = σ_t 时权重均匀、ESS=1、重加权均值不变，⟨‖u‖²⟩ 落能量均分闭式）不靠数值巧合",
+      "evidence": "plugin-ergodic 测试 4/4a-4c/6/7b（三档判定 + 重加权纯层 + checkErgodic 解析引擎端到端 + 工具层升档）"
+    },
+    {
+      "index": 34,
+      "clause": "热力学第二档（§9 从焓到自由能）：`workflow.freeEnergy` 温度网格逐点恒温 MD（复用 `md` 原语）得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线（d(βF_conf)/dβ = ⟨U⟩）；自由能零点延续第一档纪律——锚点必须显式注入（缺锚点 `THERMO_REFERENCE_MISSING`），锚点物理来源声明随交付呈现；诚实声明不含动量部分、逐点附统计标准误；解析对账双核（线性核梯形精确闭式 1e-9 + 谐波核密网格截断收敛），测试首跑即抓出定向积分符号 bug（锚点升温侧不得取绝对值）；曲线型工作流不接 `workflowContract`（变体排序形态不适配，强套会扭曲契约，诚实声明而非冒充合规）",
+      "evidence": "plugin-free-energy 测试 1-9（锚点门禁 + 双核解析对账 + 统计诚实 + 挂载/缺服务/端到端/真实 ASE 冒烟）"
+    },
+    {
+      "index": 35,
+      "clause": "多组分凸包（第 1.5 档，二元→d 维推广）：成分空间维度 d = 元素数−1，显式穷举 d-单形（d+1 点仿射无关子集）构造下包络，重心坐标插值 + 最小包络；二元退化与既有实现数值一致（1e-12 对账）；非轴对齐单形闭式核验；端点纪律延续（缺纯元素端点 `THERMO_REFERENCE_MISSING`，不外推）；组合上限显式门禁（`THERMO_TOO_MANY_COMBINATIONS`，不静默换近似算法）；包络单形只用包上点构造（包外点不得参与包络，测试首跑抓出）；包外成分查询显式报错",
+      "evidence": "core thermo 测试 9-14（二元退化对账 + 三元四边形 + 重心闭式 + 端点纪律 + 门禁）"
+    },
+    {
+      "index": 36,
+      "clause": "摘要层（可再生产物而非手写文档）：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；计数对账门禁（有测试但缺结果显式报错）；无独立测试的包（防腐层）诚实标记不计数；失败用例显式标记不隐藏；子进程不继承 `NODE_TEST_*` 环境（嵌套 runner 防御）；摘要只含来源可追溯字段",
+      "evidence": "scripts/summary 测试 1-7（TAP 解析 + 附录 A 表解析 + 组装门禁/确定性 + 真实小包冒烟）"
+    }
+  ]
+}
