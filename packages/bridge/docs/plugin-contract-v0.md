@@ -522,7 +522,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 24 项 + bridge 27 项 + core 8 项 + 九个插件各自套件 + 其余插件各自契约测试，
-全仓 188/188）。映射见附录 A。
+全仓 192/192）。映射见附录 A。
 
 ---
 
@@ -557,11 +557,12 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 25 | workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错 | `workflowContract`（套件自检 + plugin-screening 测试 5-8） |
 | 26 | sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material | `samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4） |
 | 27 | §4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null | plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者） |
-| 28 | §4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明诚实分级（likelihood:'none' 仅信息性） | plugin-ergodic 测试 1-10（纯层统计判定 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路） |
+| 28 | §4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明三档分级（none 仅信息性；声明可求且候选附 logProb 时重要性重加权后直接检验；声明与交付不一致降级并明说） | plugin-ergodic 测试 1-14（纯层统计判定 + 升档解析对账 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路） |
 | 29 | §8.2 活性上下文地基首个实证：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞（§7）/ 查无显式错 / 惰性重算预算受控 + 拓扑序 + append-only / substitute fork 非失效源（§6） | `derivationContract`（套件自检 mock-derivation + plugin-derivation 测试 1-14） |
 | 30 | §8.2 活性上下文接真实工作流：排序 = f(基体, 引擎)——筛选完成即登记两层推导（候选能量/排序，`engine:<id>` 契约化入推导输入）；势函数热替换（`activate` 发 `saturday/potential/activated`）即失效源，全链失效 + 重算拓扑序；推导插件可选（未挂载优雅降级） | `derivationContract` 引擎条款 + bridge live-context 测试 1-4 |
 | 31 | 热力学第一档（§9 欠账清偿）：能量零点显式化——数据面 `reference_energy` 算子（fcc 单胞全弛豫，无承诺后端诚实报错）+ 纯层严格形成焓/二元凸包（缺参考态/超范围显式错，不静默假设零点）；筛选接严格形成焓 + `energyAboveHull` 凸包判据，`thermo.level` 声明精度等级；参考态不可得时诚实降级保留“近似”声明 | core thermo 测试 1-8 + python-bridge 参考态 4-5 + bridge thermo 端到端 1-4 |
 | 32 | sampler seam（§4.5）第二实证：OU（Ornstein-Uhlenbeck）参考结构采样——闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，`samplerContract` 第三个接入者）；诚实边界写进交付：exact 指提议核自身（非玻尔兹曼，热力学加权仍须引擎回算）、OU 单峰定位为局部采样器、γΔ 有效性窗口门禁（非正/非有限显式错） | plugin-sampler-ou 测试 1-13（契约 5 + 似然自洽独立重算 + 平稳幅度闭式统计验证 + 均值回归语义 + 插件层挂载/缺依赖/端到端/确定性） |
+| 33 | §4.5 升档实证：判定强度随似然声明实质升档——`workflow.ergodic` 接 `sampler.ou`（likelihood: 'exact'）后判据从原始均值对比升为重要性重加权（log w = −βU − log q，log-sum-exp 归一）均值对 MD 时间平均；ESS 占比作为重叠度诊断随判定/事件载荷呈现；解析对账体系（σ_q = σ_t 时权重均匀、ESS=1、重加权均值不变，⟨‖u‖²⟩ 落能量均分闭式）不靠数值巧合 | plugin-ergodic 测试 4/4a-4c/6/7b（三档判定 + 重加权纯层 + checkErgodic 解析引擎端到端 + 工具层升档） |
 
 ## 附录 B：插件骨架模板
 
