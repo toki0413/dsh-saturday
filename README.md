@@ -129,7 +129,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 275 项，18 个包）
+npm test                # 全部 workspace 测试（当前 276 项，18 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
@@ -140,6 +140,7 @@ npm run demo:agent --workspace @saturday/bridge      # Agent 会话端到端（m
 npm run demo:cross-engine --workspace @saturday/bridge # 跨引擎对照演示（单位/指纹门禁四段实证）
 npm run demo:availability --workspace @saturday/bridge # 可用性预检演示（四引擎环境诚实报告 + 实测态版本回读）
 npm run demo:mixture-sampling --workspace @saturday/bridge # 多锚点混合采样演示（闭式似然重算 + 真实 EMT 回算闭环）
+npm run demo:anchor-guided --workspace @saturday/bridge # 锚点引导闭环演示（入库 → 检索 → 提案 → 回算 → 联合排序）
 ```
 
 ## 挂载到 dsh（完整运行时，已实测验证）
@@ -177,6 +178,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **Logits 组合律（多证据源联合排序）**：仓库既有孤立 log 权重实例（遍历重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层 `combineEvidence`——独立证据源 log 权重相加，三条诚实纪律强制：独立性声明必填（缺失即拒）、候选级证据掩码缺失即缺失（零填充禁止）、全源缺失候选拒排；筛选接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫/不入凸包/不自证），能量证据 × 提议似然 → 重要性权重；候选来自系综而非枚举（`sampler.ou` → `workflow.screen` 真实接线，logProb 可闭式独立重算）；**可扩展性已实证：第三证据源 = 凸包距离（`evidenceSources: ['hull']`，包内点 max(0,·) 掩码不伪造稳定性梯度，退化关联如实声明），且证据源已注册表化（描述符四要素 + 可注入注册表，新源接入不改筛选代码——组合律纪律与源的数量/种类无关）；采样器声明温度与目标不一致时温差随交付诚实呈现不纠正，采样温度标定闭式（u_eq = √(k_B·T/k_eff)，力常数显式注入）与显式温度声明（声明 ≠ 替换）已落地，多锚点混合采样（`ouSampleMixture`）把局部采样器推广为跨盆地的高斯混合提案（似然保持 exact，端到端演示 `demo:mixture-sampling`：配额采样 → 似然独立重算 → 真实 EMT 回算）；第二内置证据源 = 理想混合熵（`mixing-entropy`，逐候选组分先验 −Σ x·ln x 与 β 无关，纯元素按定义 0，独立性声明如实含与凸包共享组分变量的退化关联，接入不改筛选代码——可扩展性本身的第二次实证）**
 - **证据独立性的机器校验 + 预检工具化 + 锚点库 + 发布准备（⑤⑥⑦⑧）**：⑤证据源可选第五要素 `variables`（依赖变量词表），`auditEvidenceIndependence` 三态审计（未声明者不冒充独立也不拒绝），门禁牙齿：机械检出的共享变量必须在独立性声明文本中被解释否则拒绝（声明是人写的，交集是机器算的），`maskCounts` 随交付呈现；⑥预检从演示升为工具：`engine.availability` 逐引擎如实报告（`stamp` 默认 false——预检是查询不是变更；注册表不因探测失败缩减）；⑦混合提案锚点库 `createAnchorStore`（自监督进场的数据管道第一段：谱系必填入库 + 拓扑硬门禁检索 + 组分 L1 排序，空检索拒伪造锚点）；⑧发布准备：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 契约英文摘要版（忠实摘要而非有损全译，权威文本以中文原本与测试套件为准）
 - **锚点库接 Agent 层 + 发布打磨（⑩⑪）**：⑩锚点引导混合提案工具化——`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取，直交付无谱系即拒）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案，`anchorOrigin` 声明来源层，空库拒伪造，两路径共用同一条纯层目标构造——门禁不另开旁路）；会话级内存库与闭环运行同生命周期（不跨会话持久化，不伪造库外数据）；候选回算后经 `workflow.screen` 的 `sampled` 透传，谱系在编排层不断；⑪发布打磨：19 包 `files` 白名单（发布物只含实现与必要数据面：python-bridge 含 sidecar.py/adapters，ase 含 python-sidecar，bridge 含 docs/profiles/demo）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）
+- **锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）**：⑫`demo:anchor-guided` 全程工具层四段（入库 → 会话库检索 → 混合提案 → 工具间只传交付接 `workflow.screen` 联合排序：真实 EMT 回算、双源证据组合、Σw = 1 配分函数归一，谱系不断）；⑬裁决：`workflow.screen` 不直收 `anchors`（直收 = 筛选插件内嵌采样逻辑破坏插件边界；两步编排即组合律）；⑭审查：锚点工具不新增进 `StructureSampler` seam，交付仍是 `SampledStructure` 形态（`generative:` 前缀 + 可回算构造形态测试）
 - **Agent 编排链三段实证**：`demo:agent` 阶段 C 把采样→联合排序推到 Agent 层（OU 交付打包进工具参数，谱系在编排层不断）；dsh 工具三连坑入纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`；回归/摘要脚本包内串行（并发拉 sidecar + OpenBLAS 线程内存竞态实证，确定性优先于耗时）
 - **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证

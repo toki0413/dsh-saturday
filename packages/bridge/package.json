@@ -17,7 +17,8 @@
     "demo:agent": "node demo-agent.mjs",
         "demo:cross-engine": "node demo-cross-engine.mjs",
         "demo:availability": "node demo-availability.mjs",
-        "demo:mixture-sampling": "node demo-mixture-sampling.mjs"
+        "demo:mixture-sampling": "node demo-mixture-sampling.mjs",
+        "demo:anchor-guided": "node demo-anchor-guided.mjs"
   },
   "dependencies": {
     "@saturday/core": "^0.3.0",

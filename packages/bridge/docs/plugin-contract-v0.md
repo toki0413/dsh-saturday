@@ -374,6 +374,13 @@ interface SampledStructure {
 （现有引擎即逐点 U）：训练可零数据（KL 直接按能量算），验证有第一性 oracle（MD 时间平均），
 且双射流是本契约下真正可逆的计算——呼应 §1.2：Trajectory 记账保存物理丢弃的比特，
 flow 双射则在构型空间内保持比特。
+**锚点工具链契约审查（⑭，结论入档）**：`sampler.anchor.add` / `sampler.mixture` 属工具层编排，
+**不新增进 `StructureSampler` seam**：库存的是已验证结构的参考，提案层复用既有采样实现，
+交付仍是 `SampledStructure` 形态（`logProb` 与 `'exact'` 声明、`generative:` 前缀、候选可回算）；
+现有条款已充分约束（谱系门禁在工具层生效、候选不自证、诚实声明），形态审查见附录 A 61。
+同批裁决（⑬，不做并说明理由）：`workflow.screen` 不直收 `anchors` 参数——直收意味着筛选插件
+内嵌采样逻辑并依赖 `plugin-sampler-ou`，破坏插件边界；两步编排（`sampler.mixture` →
+`workflow.screen(sampled=…)`）正是组合律本身，seam 不折叠。
 
 ### 4.6 derivation —— 推导登记簿（活性上下文地基）
 
@@ -522,7 +529,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 24 项 + bridge 32 项 + core 28 项 + 十一个插件各自套件 + 其余插件各自契约测试，
-全仓 workspace 275/275；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。发布形态（⑧/⑪）：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 本契约英文摘要版（`plugin-contract-v0.en.md`，忠实摘要而非有损全译，权威文本以中文原本与本套件为准）+ 19 包 `files` 白名单（发布物只含实现与必要数据面，测试/日志/临时产物不外泄）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）。以上文档/配置交付无测试映射故不入附录 A。映射见附录 A。
+全仓 workspace 276/276；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。发布形态（⑧/⑪）：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 本契约英文摘要版（`plugin-contract-v0.en.md`，忠实摘要而非有损全译，权威文本以中文原本与本套件为准）+ 19 包 `files` 白名单（发布物只含实现与必要数据面，测试/日志/临时产物不外泄）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）。以上文档/配置交付无测试映射故不入附录 A。映射见附录 A。
 
 ---
 
@@ -590,6 +597,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 58 | 可用性预检工具化（⑥）：`engine.availability` 逐引擎如实报告——有 `probeVersion` 则探测（失败 → `unknown-or-missing`，注册表不因探测失败缩减：注册 = 声明层不因运行时不可用而回收）；`stamp` 默认 false（预检是查询不是变更——查询性工具不得携带副作用默认值）；仅 `stamp=true` 且 version 实测才走 `stampFingerprint`（实测态回读纪律复用，见本表第 53 条）；status 不区分未知与缺失（区分需真实计算，超出预检权限——诚实不区分） | bridge availability 测试 1-2（默认只报告不盖章 + 按需盖章三态） |
 | 59 | 混合提案锚点库（⑦，自监督进场的数据管道第一段）：`createAnchorStore` 纯层——`add` 谱系必填（无来源声明的数据不入库：锚点来自闭环轨迹，出处必须可追溯）；`retrieve` 拓扑硬门禁（节点数一致，与 `ouSampleMixture` 同款，库里先筛一道是诚实不是冗余）+ 组分分数向量 L1 距离升序（锚点缺组分 → `distance: null` 排尾：不可考不冒充可比；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝（不伪造锚点——先让闭环积累数据再谈混合提案）、`weights` 长度必须一致（混合权重是显式声明不是静默补全） | plugin-sampler-ou anchor-store 测试 1-5（入库门禁 + 检索排序三态 + 端到端接 `ouSampleMixture` 配额闭环） |
 | 60 | 锚点引导混合提案的工具化（⑩，锚点库接 Agent 层）：`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取；直交付无谱系即拒——谱系门禁在工具层生效，锚点本体不外泄）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案；`anchorOrigin` 声明锚点来源层，检索距离随交付呈现；空库 `ANCHOR_EMPTY` 拒伪造，拓扑门禁先于采样，权重不静默补全；两路径共用同一条纯层目标构造 `mixtureTargetFromRetrieved`——门禁不另开旁路）；会话级内存库与闭环运行同生命周期（不跨会话持久化，不伪造库外数据）；候选不自证声明随交付（回算后接 `workflow.screen` 的 `sampled` 透传，谱系在编排层不断） | plugin-sampler-ou plugin-anchor-tools 测试 1-3（谱系门禁工具层生效 + 内联配额/似然/确定性 + 会话库拓扑门禁/空库拒伪造/检索排序闭式对账） |
+| 61 | 锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）：`demo:anchor-guided` 全程工具层四段——A 锚点入库（材料入库缺省来源声明，无谱系不入库在工具层生效）；B 会话库检索（cu3ag L1 距离 0、cu4 距离 0.5，权重按检索序映射）→ 配额 [5,3]（0.6/0.4×8 最大余数法）→ 混合提案（温度声明随交付呈现）；C 工具间只传交付（{graph, source, logProb}）接 `workflow.screen` 联合排序：8 候选真实 EMT 回算全部成功，双源证据 × 组合、Σw = 1（配分函数归一）、独立性声明如实——入库 → 检索 → 提案 → 回算 → 排序谱系不断；形态审查（⑭）：候选 `generative:` 前缀 + 可回算构造 Material（§4.5 条款的工具层延续）；裁决（⑬）：`workflow.screen` 不直收 `anchors`（见 §4.5 裁决段，两步编排即组合律） | demo:anchor-guided 端到端 + plugin-sampler-ou plugin-anchor-tools 测试 4（形态延续：前缀纪律 + 可回算构造） |
 
 ## 附录 B：插件骨架模板
 

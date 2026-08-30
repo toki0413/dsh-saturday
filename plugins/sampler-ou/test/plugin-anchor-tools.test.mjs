@@ -8,6 +8,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
+import { Material } from '@saturday/core'
 import plugin from '../src/index.mjs'
 
 // 轻量材料服务桩：只提供 sampler.anchor.add 材料入库路径所需的 get（不拉真引擎）
@@ -140,6 +141,30 @@ test('3. sampler.mixture（会话库）：拓扑门禁前置 + 空库拒伪造 +
       handles.rt.tools.call('sampler.mixture', { nAtoms: 3, n: 2, seed: 1 }),
       /ANCHOR_EMPTY|锚点/,
     )
+  } finally {
+    await fiber.dispose()
+  }
+})
+
+test('4. §4.5 形态延续（⑭ 契约化审查）：混合提案候选可回算构造 Material + 谱系前缀纪律', async () => {
+  const { fiber, handles } = await mountSampler()
+  try {
+    const result = await handles.rt.tools.call('sampler.mixture', {
+      anchors: [{ graph: graphCu4, source: 'inline:cu4', composition: { Cu: 1 } }],
+      n: 2, seed: 5,
+    })
+    for (const c of result.candidates) {
+      // 谱系前缀纪律（§4.5 generative）：候选来源声明以 generative: 开头，可追溯到采样器与锚点
+      assert.match(c.source, /^generative:/, '候选来源声明以 generative: 开头（谱系前缀纪律）')
+      // 候选可回算构造 Material（§4.5 条款：候选必须可回算验证，生成 → 弛豫 → 核对闭环的前置形态）
+      const m = await Material.create({
+        modalities: { graph: c.graph, formula: 'Cu4' },
+        lineage: [{ operation: 'sampled-candidate', detail: { source: c.source }, timestamp: Date.now() }],
+      })
+      assert.equal(m.nAtoms, 4)
+      assert.ok(m.lineage.some(l => l.operation === 'sampled-candidate' && l.detail.source === c.source),
+        '候选谱系写入 Material（锚点 → 提案 → 回算，谱系不断）')
+    }
   } finally {
     await fiber.dispose()
   }
