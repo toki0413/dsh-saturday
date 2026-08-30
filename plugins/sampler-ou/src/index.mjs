@@ -6,6 +6,7 @@
 
 import { createCordisAdapter } from '@saturday/kernel'
 import { compositionFromNumbers } from '@saturday/core'
+import { randomUUID } from 'node:crypto'
 import { ouSampler, samplerError, ouSampleMixture } from './sampler.mjs'
 import { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
 
@@ -157,6 +158,7 @@ export default {
         uEq: { type: 'number', default: 0.05, description: '平衡态每坐标涨落幅度（Å）' },
         gammaDt: { type: 'number', default: 1.0, description: 'γΔ 无量纲摩擦时间尺度积' },
         temperatureK: { type: 'number', description: '采样器自身温度声明（可选；声明 ≠ 替换）' },
+        batchId: { type: 'string', description: '提案批次标识（可选；缺省随机生成，用于推导登记簿引用对账）' },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
@@ -185,6 +187,28 @@ export default {
         const candidates = await ouSampleMixture(target, {
           n: args.n, seed: args.seed, uEq: args.uEq, gammaDt: args.gammaDt, temperatureK: args.temperatureK,
         })
+        // ㉑ 提案层谱系登记（活性上下文 §8.2）：derivation 服务可选——未注入行为不变（与
+        // workflow.screen 同款：纯编排层零依赖）；注入时登记一层提案推导：
+        // 输入 = 可追溯锚点来源（归一化为 material:<id>/job:<id>：自动入库谱系 `job:<id>#engine=<name>`
+        // 取 # 前段），不可追溯来源（内联/其他形态）不冒充推导输入，随交付如实声明。
+        let derivationRecord
+        const derivation = rt.getService('derivation')
+        if (derivation) {
+          const anchorRefs = [...new Set(retrieved
+            .map(r => r.anchor.source.split('#')[0])
+            .filter(ref => ref.startsWith('material:') || ref.startsWith('job:')))]
+          const untrackedSources = retrieved.map(r => r.anchor.source)
+            .filter(s => !anchorRefs.includes(s.split('#')[0]))
+          if (anchorRefs.length > 0) {   // 全不可追溯时不伪登记（没有可声明的输入就不登记）
+            const bid = args.batchId ?? randomUUID()
+            const proposalRef = `result:mixture-${bid}`
+            derivation.record({ inputs: anchorRefs, output: proposalRef, producer: 'sampler.mixture' })
+            derivationRecord = { batchId: bid, proposalRef, anchorRefs, untrackedSources }
+          } else {
+            derivationRecord = { batchId: null, proposalRef: null, anchorRefs: [], untrackedSources,
+              note: '全部锚点来源不可追溯（非 material:/job: 形态）：不伪登记，谱系声明随交付呈现' }
+          }
+        }
         return {
           sampler: ouSampler.name,
           semantics: 'sampling',
@@ -194,9 +218,76 @@ export default {
           anchors: retrieved.map(r => ({ source: r.anchor.source, distance: r.distance })),
           n: candidates.length,
           candidates,
+          ...(derivationRecord ? { derivation: derivationRecord } : {}),
           note: '候选是锚点引导混合提案（OU 提议核高斯混合）的采样点：exact 指提议核自身的闭式似然，' +
                 '不是能量面上的玻尔兹曼似然——候选不自证，请送入引擎回算后接 workflow.screen（sampled 透传）；' +
                 (origin === 'session-store' ? '锚点来自会话库（闭环积累），检索距离随交付呈现（null = 组分不可考）' : '锚点为调用方内联（单次调用即用，不入会话库）'),
+        }
+      },
+    })
+
+    // ㉓ 持久化锚点库原型：库间搬运原语（导出/导入）——跨会话持久化的第一段。
+    // 诚实边界：库自身仍是会话级内存库，导出只交付无损 JSON 有效载荷，
+    // 落盘与跨会话恢复由调用方负责（原型不引入文件 I/O，不伪造库外数据）。
+    rt.registerTool({
+      name: 'sampler.anchor.export',
+      description: '导出会话锚点库全量条目（无损 JSON 有效载荷）：跨会话持久化的原语。' +
+                   '库自身不落盘——导出交付由调用方保存与回填（诚实边界：不伪造库外数据）。',
+      parameters: {},
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute() {
+        return {
+          version: 'saturday-anchor-store/1',
+          size: anchorStore.size(),
+          entries: anchorStore.entries(),
+          note: '锚点库全量导出（含 graph 本体）：无损 JSON；跨会话落盘与回填由调用方负责',
+        }
+      },
+    })
+
+    rt.registerTool({
+      name: 'sampler.anchor.import',
+      description: '从导出载荷回填锚点：逐条入库（谱系门禁复用库层：无来源即拒），' +
+                   '同谱系已在库则跳过（导入幂等，重放安全）。返回入库/跳过/拒绝明细。',
+      parameters: {
+        entries: {
+          type: 'array',
+          items: { type: 'object', additionalProperties: true },
+          description: '导出载荷的 entries 数组（每项 {graph, source, composition?, formula?, energy?}）',
+        },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        if (!Array.isArray(args.entries)) {
+          throw samplerError('ANCHOR_INVALID', 'import 必须提供 entries 数组（导出载荷的 entries 字段）')
+        }
+        let added = 0
+        let skipped = 0
+        const rejected = []
+        for (let i = 0; i < args.entries.length; i++) {
+          const e = args.entries[i]
+          if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
+            rejected.push({ index: i, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
+            continue
+          }
+          if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与 ⑮ 同款）
+          try {
+            anchorStore.add(e)   // graph 本体门禁由库层复用（缺 graph 即拒）
+            added++
+          } catch (err) {
+            rejected.push({ index: i, reason: `库层门禁拒绝：${err.message}` })   // 单条拒绝不中断整批导入（如实记录）
+          }
+        }
+        return {
+          added, skipped, rejected,
+          size: anchorStore.size(),
+          note: '导入完成：谱系门禁复用库层，同谱系幂等跳过；导出载荷由调用方提供（库不伪造库外数据）',
         }
       },
     })
