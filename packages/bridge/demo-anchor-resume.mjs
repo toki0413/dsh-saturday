@@ -7,6 +7,8 @@
 // 边界在此由编排层兑现——锚点库跨会话续供，谱系不断。
 // 诚实声明：两"会话"是同一进程内两次独立挂载（各自 Context、各自锚点库、
 // 各自全部回收），跨会话的唯一通道是磁盘载荷——这正是被实证的边界。
+// ㊽ 会话三：判据快照落盘（㊻）后全新挂载 → 快照回填续供——裁决依据跨会话可续供、
+// 可复算（快照不进锚点库：证据载荷与结构数据燃料正交，诚实声明同 ㊷）。
 // 诚实纪律：无 ASE 环境下数据面诚实报错，本演示如实终止不伪造证据。
 // 运行：node demo-anchor-resume.mjs（依赖 Python sidecar 做真实弛豫/单点）
 
@@ -35,6 +37,7 @@ async function mountSession() {
 
 const dir = await mkdtemp(join(tmpdir(), 'saturday-demo-resume-'))
 const anchorPath = join(dir, 'anchors.json')
+const snapshotPath = join(dir, 'trigger-snapshot.json')
 
 // ── 会话一：闭环积累 → 落盘 → 终结 ──
 console.log('══ 会话一：弛豫 → 自动入库 → 落盘 → 会话终结 ══')
@@ -60,6 +63,7 @@ console.log('会话一终结：运行时全部回收，锚点库不复存在。\
 // ── 会话二：全新挂载 → 回填 → 即刻参与闭环 ──
 console.log('══ 会话二：全新挂载 → 回填 → 检索 → 提案 → 回算 → 联合排序 ══')
 const s2 = await mountSession()
+let assessmentRef   // ㊽：判据结论提出到会话作用域，供会话三续供对账（只读引用，不改判）
 try {
   console.log(`新会话锚点库初始: ${s2.anchorStore.size()} 个（不伪造库外数据）`)
   const loaded = await s2.samplerRt.tools.call('sampler.anchor.load', { path: anchorPath })
@@ -98,9 +102,36 @@ try {
   const stats = await s2.samplerRt.tools.call('sampler.anchor.stats', {})
   const thresholds = { minSize: 100, minCompositionCoverage: 0.8 }
   const assessment = trajectoryTriggerAssessment(stats, thresholds)
+  assessmentRef = assessment
   console.log(`判据快照（㊷）: met=${assessment.met}，读数=${JSON.stringify(assessment.readings)}，缺口=${JSON.stringify(assessment.reasons)}`)
   console.log('裁决依据机器可读：读数 → 阈值 → 结论可复算（“足够轨迹”未达标 → 维持不引入自监督，同 ㉘ 裁决）。')
+
+  // ㊽ 判据快照落盘：会话内日志升级为磁盘证据（结论整体原样，落盘不改判）——
+  // 裁决依据自此跨会话可续供（会话三回填验证实证）。
+  const snapshotSaved = await s2.samplerRt.tools.call('sampler.trigger.snapshot.save', {
+    path: snapshotPath, assessment, batchId: 'resume-b1',
+  })
+  console.log(`判据快照落盘（㊽）: ${snapshotSaved.path}（版本戳 ${snapshotSaved.version}，落盘不改判：met=${snapshotSaved.met}）`)
 } finally {
   await s2.dispose()
+}
+console.log('会话二终结：锚点库回收，判据快照留在磁盘。\n')
+
+// ── 会话三：全新挂载 → 判据快照回填续供（裁决依据跨会话可复算） ──
+console.log('══ 会话三：判据快照回填续供（证据载荷与结构数据燃料正交） ══')
+const s3 = await mountSession()
+try {
+  console.log(`新会话锚点库初始: ${s3.anchorStore.size()} 个（快照不是锚点条目，回填不进库）`)
+  const restored = await s3.samplerRt.tools.call('sampler.trigger.snapshot.load', { path: snapshotPath })
+  console.log(`判据快照回填（㊽）: met=${restored.met}，读数=${JSON.stringify(restored.readings)}，阈值=${JSON.stringify(restored.thresholds)}`)
+  // 续供对账：回填的结论与会话二落盘前逐字段一致（裁决依据可复算，不重新估算）
+  if (restored.met !== assessmentRef.met
+      || JSON.stringify(restored.readings) !== JSON.stringify(assessmentRef.readings)
+      || JSON.stringify(restored.thresholds) !== JSON.stringify(assessmentRef.thresholds)) {
+    throw new Error('判据快照跨会话续供不一致：读数/阈值/结论必须与会话二原样一致')
+  }
+  console.log(`跨会话续供一致（会话三库内仍 ${s3.anchorStore.size()} 个：快照不进数据燃料）——裁决依据可续供、可复算。`)
+} finally {
+  await s3.dispose()
   await rm(dir, { recursive: true, force: true })
 }

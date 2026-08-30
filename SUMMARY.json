@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T13:53:55.299Z",
-  "totalPass": 325,
+  "generatedAt": "2026-08-30T14:43:27.056Z",
+  "totalPass": 328,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@saturday/bridge",
       "version": "0.3.0",
-      "pass": 48,
+      "pass": 50,
       "fail": 0
     },
     {
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 59,
+      "pass": 60,
       "fail": 0
     },
     {
@@ -504,6 +504,11 @@
       "index": 73,
       "clause": "修复链接 Agent 层 + 判据快照跨会话续供 + 判据谱系质量维（㊺/㊻/㊼）：㊺ `demo:agent` 阶段 I——自然语言“按审计建议修复不可追溯条目并重新审计验收” → repair（逐条显式授权，写新载荷不碰原件）→ 重新审计验收（修复后载荷全可追溯、原件保持原状：审计是修复的验收面）——观测→修复→验收三步链在 Agent 层链接（修复声明由 mock 脚本编码，诚实声明）；㊻ `sampler.trigger.snapshot.save`/`load` 判据快照落盘/回填原语：对账结论整体原样落盘（读数/阈值/结论一并保留，落盘不改判）→ 回填只读校验版本戳（`saturday-trigger-snapshot/1`）与形态后原样交付（未知版本戳/形态不完整/缺批次标识均如实拒）；快照不是锚点条目（不进锚点库、不进数据燃料）——裁决依据跨会话可续供、可复算；㊼ 判据谱系质量维：可选阈值 `minTrackableRatio`（可追溯占比）由调用方显式声明——未声明行为不变，声明后读数缺谱系分布维则显式拒绝（不替调用方猜测质量读数），质量维缺口与数量/覆盖维独立呈报不合并糊化（“足够轨迹”不只够多还要够可追溯）",
       "evidence": "demo:agent 阶段 I 端到端 + plugin-sampler-ou plugin-anchor-save-load 测试 13（快照落盘/回填原样 + 三道门禁拒绝 + 不进锚点库）+ plugin-anchor-trigger 测试 4（质量维对账如实与门禁）"
+    },
+    {
+      "index": 74,
+      "clause": "判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账（㊽/㊾/㊿）：㊽ `demo:anchor-resume` 会话二收尾判据快照经 `snapshot.save` 落盘（会话内日志升级为磁盘证据，落盘不改判）→ 会话三全新挂载经 `snapshot.load` 回填，续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；㊾ 修复后载荷的活性闭环（观测→修复→验收→入库四环）：不可追溯载荷经修复 + 审计验收后回填，提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；㊿ 质量维观测对账：判据回呈的可追溯占比 = ㊳ 观测的库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转（结论不硬编码），观测/判据全程不变更库",
+      "evidence": "demo:anchor-resume 会话三续供对账 + bridge anchor-repair-liveness 测试 1-2（修复达标数据成燃料 + 归属如实不冒充原件）+ plugin-sampler-ou plugin-anchor-save-load 测试 14（观测→判据不断链与结论随读数翻转）"
     }
   ]
 }

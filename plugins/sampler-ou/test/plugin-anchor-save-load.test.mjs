@@ -421,3 +421,28 @@ test('13. ㊻ 判据快照落盘/回填：结论整体原样跨会话续供 + �
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('14. ㊿ 质量维观测对账：stats 读数 → 判据回呈的可追溯占比与库内逐条谱系一致（观测→判据不断链）', async () => {
+  const env = await mount()
+  try {
+    env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-q', composition: { Cu: 4 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'job:j-q#engine=emt-mock', composition: { Cu: 4 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'inline:adhoc-q', composition: { Cu: 4 } })
+    const stats = await env.handles.rt.tools.call('sampler.anchor.stats', {})
+    // 判据回呈的可追溯占比 = 库内逐条谱系计数（2/3）：质量维从观测到判据不断链、不重新估算
+    const result = trajectoryTriggerAssessment(stats, { minSize: 1, minCompositionCoverage: 0.5, minTrackableRatio: 0.9 })
+    assert.equal(result.readings.trackableRatio, (stats.lineage.material + stats.lineage.job) / stats.size,
+      '判据回呈占比与观测逐条计数一致（2/3）')
+    assert.equal(result.met, false)
+    assert.equal(result.reasons.length, 1, '仅质量维缺口（数量/覆盖维达标不冒名）')
+    assert.ok(result.reasons[0].includes('可追溯占比'), '缺口理由指向质量维读数')
+    // 判据随观测读数变化：补一条可追溯条目 → 占比达阈，结论如实翻转（结论不硬编码）
+    env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-q2', composition: { Cu: 4 } })
+    const stats2 = await env.handles.rt.tools.call('sampler.anchor.stats', {})
+    const flipped = trajectoryTriggerAssessment(stats2, { minSize: 1, minCompositionCoverage: 0.5, minTrackableRatio: 0.7 })
+    assert.equal(flipped.met, true, '观测变化 → 对账结论如实变化（先见数据再谈机制）')
+    assert.equal(env.handles.anchorStore.size(), 4, '观测/判据全程不变更库')
+  } finally {
+    await env.fiber.dispose()
+  }
+})
