@@ -327,7 +327,8 @@ export default {
     rt.registerTool({
       name: 'sampler.anchor.load',
       description: '从调用方指定路径回填锚点（落盘载荷 → 会话库）：文件缺失/损坏显式报错（不静默冒充成功）；' +
-                   '回填复用导入门禁（谱系/本体/幂等同款）。',
+                   '版本门禁与 size 对账（完整性声明 ≠ 实质即拒，不连坐单条）；' +
+                   '回填复用导入门禁（谱系/本体/幂等同款）；交付附 lineageRefs（磁盘数据起点的可追溯声明，消费方可从此起点 invalidate）。',
       parameters: {
         path: { type: 'string', description: '载荷文件路径（调用方显式声明）' },
       },
@@ -354,11 +355,24 @@ export default {
         if (!Array.isArray(payload?.entries)) {
           throw samplerError('ANCHOR_PERSIST', '载荷缺少 entries 数组（非 sampler.anchor.export/save 产物，不猜测冒充）')
         }
+        // ㉜ 完整性校验：版本门禁（未知形态不静默接受）+ size 声明对账（声明 ≠ 实质即拒）。
+        // 单条损坏不连坐：单条问题由共享导入循环逐条拒绝如实记录（与 ㉓ 同款纪律）。
+        if (payload.version !== 'saturday-anchor-store/1') {
+          throw samplerError('ANCHOR_PERSIST',
+            `载荷版本不受支持（声明 ${payload.version ?? '无'}，当前仅支持 saturday-anchor-store/1）：不静默接受未知形态`)        }
+        if (payload.size !== payload.entries.length) {
+          throw samplerError('ANCHOR_PERSIST',
+            `载荷完整性声明与实质不符（声明 size=${payload.size}，实际 entries=${payload.entries.length}）：完整性校验拒绝，不猜测补齐`)
+        }
         const { added, skipped, rejected } = importEntries(payload.entries)
+        // ㉛ lineageRefs：磁盘数据起点的可追溯声明——归一化后失效传播可从此起点发起（与 ㉑ 归一规则同款：取 # 前段）。
+        const lineageRefs = [...new Set(payload.entries
+          .map(e => typeof e.source === 'string' ? e.source.split('#')[0] : null)
+          .filter(ref => ref && (ref.startsWith('material:') || ref.startsWith('job:'))))]
         return {
           loaded: true, path: args.path, added, skipped, rejected,
-          size: anchorStore.size(),
-          note: '落盘载荷已回填：门禁与导入工具同款（谱系/本体/幂等）；库自身仍会话级',
+          size: anchorStore.size(), lineageRefs,
+          note: '落盘载荷已回填：门禁与导入工具同款（谱系/本体/幂等）；lineageRefs 为磁盘数据起点的可追溯声明；库自身仍会话级',
         }
       },
     })

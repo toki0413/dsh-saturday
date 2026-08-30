@@ -19,6 +19,9 @@
 //   阶段 E（㉕/㉔）：自然语言“把锚点库落盘再回填” → tool_call(sampler.anchor.save
 //           + sampler.anchor.load)→ 持久化原语在 Agent 层暴露验证（含全量 graph 的无损
 //           JSON 出口关卡压测）+ 同谱系重放幂等（落盘→回填→跳过，重放安全）。
+//   阶段 F（㉚/㉛）：自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)
+//           → 恢复闭环在 Agent 层收口：回填锚点即刻参与提案（来源层/谱系跨恢复保留）；
+//           回填交付的 lineageRefs（磁盘数据起点的可追溯声明）随阶段日志呈现。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -465,7 +468,46 @@ async function main() {
     JSON.stringify({ added: persistLoadResult.added, skipped: persistLoadResult.skipped, size: persistLoadResult.size }))
   console.log('[ok   ] 阶段 E：自然语言 → 落盘 + 回填（无损 JSON 出口 + 重放幂等）→ 收尾 ✓\n')
 
-  // 8. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 8. 阶段 F（㉚/㉛）：恢复闭环在 Agent 层收口——回填后的锚点即刻参与混合提案；
+  //    回填交付的 lineageRefs（磁盘数据起点的可追溯声明，消费方可从此起点 invalidate）随日志呈现。
+  console.log('[tool ] sampler.anchor.load lineageRefs:', JSON.stringify(persistLoadResult.lineageRefs ?? []),
+    '（磁盘数据起点的可追溯声明）')
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8238,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.mixture',
+    toolArguments: JSON.stringify({
+      nAtoms: 4, composition: { Cu: 4 }, weights: [0.5, 0.5],
+      n: 4, seed: 11, uEq: 0.03, gammaDt: 1.0,
+    }),
+    successText: '恢复后的混合提案已完成。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '对恢复后的锚点库再做一次混合提案' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const resumeMixMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(resumeMixMsg, '阶段 F 应包含 sampler.mixture 结果')
+  const resumeMixResult = JSON.parse(resumeMixMsg.content)
+  assert.equal(resumeMixResult.anchorOrigin, 'session-store', '恢复闭环：回填锚点即刻参与提案（来源层不变）')
+  assert.equal(resumeMixResult.anchors.length, 2, '恢复后双锚点命中（自动入库 + 手动入库谱系跨恢复保留）')
+  assert.equal(resumeMixResult.candidates.length, 4, '恢复后提案配额照常')
+  assert.ok(resumeMixResult.candidates.every(c => typeof c.logProb === 'number'), '逐候选似然随交付（exact）')
+  console.log('[tool ] sampler.mixture（恢复后）:',
+    JSON.stringify({
+      anchorOrigin: resumeMixResult.anchorOrigin,
+      anchors: resumeMixResult.anchors.map(a => a.source.split('#')[0]),
+      n: resumeMixResult.candidates.length,
+    }))
+  console.log('[ok   ] 阶段 F：自然语言 → 恢复后混合提案（回填锚点即刻是数据燃料，谱系跨恢复不断）→ 收尾 ✓\n')
+
+  // 9. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
   await handle.dispose()

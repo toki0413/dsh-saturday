@@ -111,3 +111,58 @@ test('3. 会话内重载幂等 + 路径显式声明门禁', async () => {
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('4. ㉜ 完整性校验：版本门禁 + size 声明对账（声明 ≠ 实质即拒，不静默接受）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-integrity-'))
+  const env = await mount()
+  try {
+    // 版本门禁：未知版本形态不静默接受（不猜测兼容）
+    const alien = join(dir, 'alien-version.json')
+    await writeFile(alien, JSON.stringify({ version: 'saturday-anchor-store/9', size: 1,
+      entries: [{ graph: graph4, source: 'material:cu-a', composition: { Cu: 4 } }] }))
+    await assert.rejects(
+      () => env.handles.rt.tools.call('sampler.anchor.load', { path: alien }),
+      err => err.code === 'ANCHOR_PERSIST' && /版本不受支持/.test(err.message),
+    )
+    // 无版本声明同样拒（缺失不冒充合法形态）
+    const noversion = join(dir, 'no-version.json')
+    await writeFile(noversion, JSON.stringify({ size: 1,
+      entries: [{ graph: graph4, source: 'material:cu-a', composition: { Cu: 4 } }] }))
+    await assert.rejects(
+      () => env.handles.rt.tools.call('sampler.anchor.load', { path: noversion }),
+      err => err.code === 'ANCHOR_PERSIST' && /版本不受支持/.test(err.message),
+    )
+    // size 声明对账：声明 ≠ 实质即拒（不猜测补齐）
+    const mismatch = join(dir, 'size-mismatch.json')
+    await writeFile(mismatch, JSON.stringify({ version: 'saturday-anchor-store/1', size: 5,
+      entries: [{ graph: graph4, source: 'material:cu-a', composition: { Cu: 4 } }] }))
+    await assert.rejects(
+      () => env.handles.rt.tools.call('sampler.anchor.load', { path: mismatch }),
+      err => err.code === 'ANCHOR_PERSIST' && /完整性声明与实质不符/.test(err.message),
+    )
+    assert.equal(env.handles.anchorStore.size(), 0, '三条完整性门禁都不得污染库')
+  } finally {
+    await env.fiber.dispose()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('5. ㉜ 单条损坏不连坐：坏条目逐条拒绝，合法条目照常入库（完整性门禁不开旁路）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-partial-'))
+  const env = await mount()
+  try {
+    const partial = join(dir, 'partial.json')
+    await writeFile(partial, JSON.stringify({ version: 'saturday-anchor-store/1', size: 3, entries: [
+      { graph: graph4, source: 'material:cu-good', composition: { Cu: 4 } },
+      { graph: graph4 },   // 坏条目：无谱系（由共享导入循环逐条拒绝，不连坐）
+      { graph: graph4, source: 'job:j-1#engine=emt-mock', composition: { Cu: 3, Ag: 1 } },
+    ] }))
+    const loaded = await env.handles.rt.tools.call('sampler.anchor.load', { path: partial })
+    assert.equal(loaded.added, 2, '合法条目不因坏条目连坐')
+    assert.equal(loaded.rejected.length, 1, '坏条目逐条如实拒绝')
+    assert.equal(env.handles.anchorStore.size(), 2)
+  } finally {
+    await env.fiber.dispose()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
