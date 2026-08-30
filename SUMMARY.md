@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-30T07:11:25.287Z
+生成时间：2026-08-30T07:25:21.049Z
 
-**回归基线：276/276**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：283/283**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 32/32 |
+| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 35/35 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -22,11 +22,11 @@
 | `@saturday/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@saturday/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
-| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 26/26 |
+| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 30/30 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
 | `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，61 条）
+## 实证条款（契约文档附录 A，63 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -89,6 +89,8 @@
 - **#59** 混合提案锚点库（⑦，自监督进场的数据管道第一段）：`createAnchorStore` 纯层——`add` 谱系必填（无来源声明的数据不入库：锚点来自闭环轨迹，出处必须可追溯）；`retrieve` 拓扑硬门禁（节点数一致，与 `ouSampleMixture` 同款，库里先筛一道是诚实不是冗余）+ 组分分数向量 L1 距离升序（锚点缺组分 → `distance: null` 排尾：不可考不冒充可比；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝（不伪造锚点——先让闭环积累数据再谈混合提案）、`weights` 长度必须一致（混合权重是显式声明不是静默补全）（证据：plugin-sampler-ou anchor-store 测试 1-5（入库门禁 + 检索排序三态 + 端到端接 `ouSampleMixture` 配额闭环））
 - **#60** 锚点引导混合提案的工具化（⑩，锚点库接 Agent 层）：`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取；直交付无谱系即拒——谱系门禁在工具层生效，锚点本体不外泄）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案；`anchorOrigin` 声明锚点来源层，检索距离随交付呈现；空库 `ANCHOR_EMPTY` 拒伪造，拓扑门禁先于采样，权重不静默补全；两路径共用同一条纯层目标构造 `mixtureTargetFromRetrieved`——门禁不另开旁路）；会话级内存库与闭环运行同生命周期（不跨会话持久化，不伪造库外数据）；候选不自证声明随交付（回算后接 `workflow.screen` 的 `sampled` 透传，谱系在编排层不断）（证据：plugin-sampler-ou plugin-anchor-tools 测试 1-3（谱系门禁工具层生效 + 内联配额/似然/确定性 + 会话库拓扑门禁/空库拒伪造/检索排序闭式对账））
 - **#61** 锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）：`demo:anchor-guided` 全程工具层四段——A 锚点入库（材料入库缺省来源声明，无谱系不入库在工具层生效）；B 会话库检索（cu3ag L1 距离 0、cu4 距离 0.5，权重按检索序映射）→ 配额 [5,3]（0.6/0.4×8 最大余数法）→ 混合提案（温度声明随交付呈现）；C 工具间只传交付（{graph, source, logProb}）接 `workflow.screen` 联合排序：8 候选真实 EMT 回算全部成功，双源证据 × 组合、Σw = 1（配分函数归一）、独立性声明如实——入库 → 检索 → 提案 → 回算 → 排序谱系不断；形态审查（⑭）：候选 `generative:` 前缀 + 可回算构造 Material（§4.5 条款的工具层延续）；裁决（⑬）：`workflow.screen` 不直收 `anchors`（见 §4.5 裁决段，两步编排即组合律）（证据：demo:anchor-guided 端到端 + plugin-sampler-ou plugin-anchor-tools 测试 4（形态延续：前缀纪律 + 可回算构造））
+- **#62** 闭环轨迹自动入库（⑮，自监督数据管道第二段）：弛豫收敛 + 引擎交付终态 → 弛豫后结构自动入会话锚点库（谱系自动声明 `job:<id>#engine=<name>`，能量随锚点记录，组分从终态原子序机械提取）；三道门禁否定路径同样实证：未收敛不入库（终态在场也不被诱导）、旧协议无终态交付不入库（不拿输入结构冒充）、同谱系重复事件幂等（重放安全）；引擎 `relax` 交付协议扩展 `positions`/`cell`（ase sidecar 补齐；emt-mock 原生已含；旧版按字段存在性诚实缺省）；薄事件纪律：结构体不重复落 Trajectory（只记 `relaxedStructureDelivered` 在场标记）（证据：bridge anchor-autoingest 测试 1-3（自动入库谱系/组分/幂等 + 未收敛门禁 + 旧协议门禁，假引擎桩验证））
+- **#63** 锚点工具 Agent 层暴露 + 配额闭式对账补强（⑯/⑰）：⑯ `demo:agent` 阶段 D——`sampler.anchor.add`/`sampler.mixture` 经 dsh harness 暴露给 Agent（工具出口关卡实证：`graph: undefined` 覆盖触发 'not lossless JSON' 拒付，改显式剔除），阶段 B 弛豫收敛结构由 ⑮ 自动入库后会话库命中双锚点（自动 + 手动，同拓扑）→ 混合提案来源层 `session-store` 随交付呈现；⑰ 最大余数法配额闭式对账：配额只依赖 (n, 归一权重) 与 seed 无关（多 seed 扫描）；余数按小数降序补一、小数平手取靠前锚点（[0.5,0.5]×5 → [3,2]、[1,1,1]×10 → [4,3,3]）；未归一权重与归一形态同配额；三锚点余数顺次补一（[0.5,0.3,0.2]×9 → [4,3,2]）（证据：demo:agent 阶段 D 端到端 + plugin-sampler-ou plugin-mixture-quota 测试 1-4（配额闭式 + 平手确定性 + 归一不变 + seed 无关扫描））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

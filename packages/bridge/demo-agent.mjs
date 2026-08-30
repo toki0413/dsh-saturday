@@ -13,6 +13,9 @@
 //   阶段 C：自然语言“采样并联合排序” → tool_call(workflow.screen，args 携带
 //           OU 采样候选）→ 逐候选真实单点回算 + 能量证据×似然证据联合权重 →
 //           编排链谱系不断（§4.5：采样器交付的 {graph, source, logProb} 原样透传）。
+//   阶段 D（⑯/⑮）：自然语言“把铜入库为锚点并做混合提案” → tool_call(sampler.anchor.add
+//           + sampler.mixture）→ 锚点工具在 Agent 层暴露验证 + 阶段 B 弛豫收敛结构已自动入库，
+//           混合提案走会话库路径（锚点来源层随交付呈现）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -27,7 +30,7 @@ import LlmRuntime, { LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { startMockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
 import saturdayPlugin from './src/saturday.plugin.mjs'
 import screeningPlugin from '@saturday/plugin-screening'
-import { ouSampler } from '@saturday/plugin-sampler-ou'
+import samplerOuPlugin, { ouSampler } from '@saturday/plugin-sampler-ou'
 
 // ── 最小 OpenAI 兼容适配器：fetch + SSE → dsh StreamChunk 协议 ────────
 class MockAdapter extends LlmAdapter {
@@ -204,6 +207,12 @@ async function main() {
     name: 'saturday-screening',
     apply: (ctx) => screeningPlugin.apply(ctx, {}),
   })
+  // OU 采样器插件（阶段 D：sampler.anchor.add / sampler.mixture 工具在 Agent 层暴露；
+  // 同时挂 ⑮ 自动入库监听：阶段 B 弛豫收敛结构自动进会话锚点库）
+  const samplerFiber = await ctx.registry.plugin({
+    name: 'saturday-sampler-ou',
+    apply: (ctx) => samplerOuPlugin.apply(ctx, {}),
+  })
 
   // 3. 阶段 A：mock server 脚本 = [tool_call(material.load), success]
   let server = await startMockLlmServer({
@@ -329,9 +338,74 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 C：自然语言 → 采样交付透传 → 真实单点回算 → 联合权重 → 收尾 ✓\n')
 
-  // 6. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 6. 阶段 D（⑯/⑮）：锚点工具在 Agent 层暴露——入库 + 混合提案（会话库路径）。
+  //    阶段 B 的弛豫收敛结构已由 ⑮ 自动入库（谱系自动声明），此处再经 Agent 手动入库
+  //    一个材料锚点；混合提案从会话库检索（两锚点同拓扑）→ 配额 → 提案。
+  //    两次调用分两个 server（mock 的 toolName 为实例级单值，与 B/C 同款模式无竞态）。
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8234,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.add',
+    toolArguments: JSON.stringify({ materialId: loadResult.materialId }),
+    successText: '铜已入库为锚点。',
+  })
+  adapter.baseURL = server.baseURL
+
+  console.log('[user ] 把铜入库为锚点，再从会话锚点库做混合提案')
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '把铜入库为锚点，再从会话锚点库做混合提案' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const addToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(addToolMsg, '阶段 D1 应包含 sampler.anchor.add 结果')
+  const addResult = JSON.parse(addToolMsg.content)
+  assert.equal(addResult.added, true, '锚点经 Agent 工具入库成功')
+  console.log('[tool ] sampler.anchor.add:', JSON.stringify({ source: addResult.entry.source, size: addResult.size }))
+
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8235,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.mixture',
+    toolArguments: JSON.stringify({
+      nAtoms: 4, composition: { Cu: 4 }, weights: [0.5, 0.5],
+      n: 4, seed: 3, uEq: 0.03, gammaDt: 1.0,
+    }),
+    successText: '锚点已入库，混合提案完成。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '继续：从会话锚点库做混合提案' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const mixToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(mixToolMsg, '阶段 D2 应包含 sampler.mixture 结果')
+  const mixResult = JSON.parse(mixToolMsg.content)
+  assert.equal(mixResult.anchorOrigin, 'session-store', '混合提案走会话库路径（闭环积累的锚点）')
+  assert.equal(mixResult.anchors.length, 2, '会话库命中两锚点（阶段 B 弛豫自动入库 + 手动入库）')
+  assert.equal(mixResult.candidates.length, 4, '混合提案交付配额候选')
+  assert.ok(mixResult.candidates.every(c => typeof c.logProb === 'number'), '逐候选似然随交付（exact）')
+  console.log('[tool ] sampler.mixture:',
+    JSON.stringify({
+      anchorOrigin: mixResult.anchorOrigin,
+      anchors: mixResult.anchors.map(a => a.source.split('#')[0]),
+      n: mixResult.candidates.length,
+    }))
+  console.log('[ok   ] 阶段 D：自然语言 → 锚点入库 + 混合提案（会话库）→ 收尾 ✓\n')
+
+  // 7. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   await handle.dispose()
+  await samplerFiber.dispose()
   await screeningFiber.dispose()
   await saturdayFiber.dispose()
   await ctx.dispose?.()

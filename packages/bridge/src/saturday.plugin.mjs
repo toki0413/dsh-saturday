@@ -85,15 +85,33 @@ export default {
         )
         const result = await provider.relax(material, { simulated_seconds: args.simulatedSeconds })
 
+        // ⑮ 弛豫后终态随交付呈现（自动入库的数据燃料）：引擎返回终态坐标时构造
+        // 弛豫后结构入事件（薄事件厚数据：结构体在场，消费方按 converged 门禁消费）；
+        // 引擎不返回终态（旧协议/不支持）则如实缺省，自动入库静默跳过不伪造。
+        const relaxedStructure = Array.isArray(result.positions) && result.positions.length === material.nAtoms
+          ? {
+              nodes: material.graph.nodes.map((node, i) => ({ ...node, position: result.positions[i] })),
+              edges: material.graph.edges,
+              periodic: material.graph.periodic,
+              cell: Array.isArray(result.cell) ? result.cell : material.graph.cell,
+            }
+          : undefined
+
         // 事件 → Trajectory（append-only 溯源）
         const event = {
           type: 'saturday/simulation/converged',
           payload: {
             jobId: result.jobId,
             material: { id: material.id, formula: material.formula },
-            result: { energy: result.energy, scale: result.scale, nSteps: result.n_steps },
+            result: {
+              energy: result.energy,
+              scale: result.scale,
+              nSteps: result.n_steps,
+              converged: Boolean(result.converged),
+            },
             engine: result.engine,
             wallSeconds: result.wall_seconds,
+            ...(relaxedStructure ? { relaxedStructure } : {}),
           },
         }
         await rt.emit(event.type, event)
@@ -147,11 +165,13 @@ export default {
       },
     })
 
-    // 计算事件统一落 Trajectory
+    // 计算事件统一落 Trajectory（⑮：relaxedStructure 是事件内消费字段，薄事件纪律下不重复落盘）
     rt.on('saturday/simulation/converged', async event => {
+      const { relaxedStructure, ...rest } = event.payload
       await rt.appendTrajectory({
         type: 'material_calculation_complete',
-        ...event.payload,
+        ...(relaxedStructure ? { relaxedStructureDelivered: true } : {}),
+        ...rest,
       })
     })
 

@@ -26,6 +26,26 @@ export default {
     const anchorStore = createAnchorStore()
     rt.provideService('sampler/anchor-store', anchorStore)
 
+    // ⑮ 闭环轨迹自动入库（自监督数据管道第二段）：弛豫收敛且引擎交付了终态结构时，
+    // 弛豫后结构自动入库为锚点（谱系自动声明：job:<jobId> + 引擎 + 能量，出处可追溯）。
+    // 三道门禁：① 未收敛不入库（不收敛的结构不是盆地底，入库即伪造数据燃料）；
+    // ② 引擎未交付终态（旧协议）不入库（诚实缺省，不拿输入结构冒充弛豫产物）；
+    // ③ 同来源重复入库不重复累计（幂等）。
+    rt.on('saturday/simulation/converged', event => {
+      const p = event?.payload
+      if (!p?.result?.converged) return
+      if (!p?.relaxedStructure?.nodes?.length) return
+      const source = `job:${p.jobId}#engine=${p.engine}`
+      if (anchorStore.entries().some(e => e.source === source)) return
+      anchorStore.add({
+        graph: p.relaxedStructure,
+        source,
+        composition: compositionFromNumbers(p.relaxedStructure.nodes.map(n => n.number)),
+        ...(p.material?.formula ? { formula: p.material.formula } : {}),
+        ...(typeof p.result?.energy === 'number' ? { energy: p.result.energy } : {}),
+      })
+    })
+
     rt.registerTool({
       name: 'sampler.ou',
       description: 'OU 参考结构采样（§4.5 采样语义）：均值回归锚定 referenceId 的受控扩散，' +
@@ -109,7 +129,10 @@ export default {
             '直交付锚点必须携带来源声明（source）：无谱系数据不入库（锚点来自闭环轨迹，出处必须可追溯）')
         }
         const entry = anchorStore.add({ graph, source, composition, ...(formula ? { formula } : {}), ...(args.energy !== undefined ? { energy: args.energy } : {}) })
-        return { added: true, size: anchorStore.size(), entry: { ...entry, graph: undefined }, note: '锚点本体已入库（graph 不外泄，检索与混合采样在库内消费）' }
+        // 锚点本体不外泄：显式剔除 graph（不用 undefined 覆盖——dsh 出口关卡要求无损 JSON，
+        // undefined 值会触发 'value is not lossless JSON' 拒付，实证于 demo:agent 阶段 D）
+        const { graph: _body, ...entryPublic } = entry
+        return { added: true, size: anchorStore.size(), entry: entryPublic, note: '锚点本体已入库（graph 不外泄，检索与混合采样在库内消费）' }
       },
     })
 

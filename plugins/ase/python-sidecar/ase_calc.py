@@ -67,6 +67,10 @@ def relax(spec: dict) -> dict:
         "converged": bool(converged),
         "energy": float(atoms.get_potential_energy()),
         "n_steps": int(opt.nsteps),
+        # ⑮ 弛豫后终态随交付呈现（自动入库的数据燃料）：坐标与晶胞按原协议形态返回；
+        # 未收敛时字段仍存在但消费方按 converged 门禁决定是否消费（诚实不丢弃）。
+        "positions": atoms.get_positions().tolist(),
+        "cell": atoms.get_cell().tolist(),
     }
 
 
