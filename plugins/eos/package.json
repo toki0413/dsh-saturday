@@ -17,5 +17,8 @@
   "devDependencies": {
     "@saturday/bridge": "^0.3.0"
   },
+  "files": [
+    "src"
+  ],
   "license": "MIT"
 }

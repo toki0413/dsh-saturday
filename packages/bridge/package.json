@@ -52,5 +52,11 @@
       "./src/saturday.plugin.mjs"
     ]
   },
+  "files": [
+    "src",
+    "docs",
+    "profiles",
+    "demo*.mjs"
+  ],
   "license": "MIT"
 }

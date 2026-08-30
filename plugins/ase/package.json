@@ -18,5 +18,9 @@
   "devDependencies": {
     "@saturday/contract-tests": "^0.3.0"
   },
+  "files": [
+    "src",
+    "python-sidecar"
+  ],
   "license": "MIT"
 }

@@ -29,5 +29,8 @@
       "./src/index.mjs"
     ]
   },
+  "files": [
+    "src"
+  ],
   "license": "MIT"
 }

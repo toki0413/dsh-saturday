@@ -15,5 +15,8 @@
   "scripts": {
     "test": "node --test \"test/*.test.mjs\""
   },
+  "files": [
+    "src"
+  ],
   "license": "MIT"
 }

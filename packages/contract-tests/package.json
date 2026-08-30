@@ -13,5 +13,8 @@
   "dependencies": {
     "@saturday/core": "^0.3.0"
   },
+  "files": [
+    "src"
+  ],
   "license": "MIT"
 }

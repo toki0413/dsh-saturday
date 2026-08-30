@@ -13,5 +13,10 @@
   "devDependencies": {
     "@saturday/core": "^0.3.0"
   },
+  "files": [
+    "src",
+    "adapters",
+    "sidecar.py"
+  ],
   "license": "MIT"
 }

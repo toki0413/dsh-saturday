@@ -37,6 +37,31 @@ function compositionL1(a, b) {
 }
 
 /**
+ * 检索结果 → ouSampleMixture 的 target 形态（{ references: [{ reference: { graph }, weight }] }）。
+ * 纯函数（与库实例无关：内联锚点与会话库共用同一条目标构造路径，不另开门禁旁路）。
+ * @param {Array<{ anchor: Object }>} retrieved retrieve 的交付
+ * @param {{ weights?: number[] }} [opts] 混合权重（缺省均匀；长度必须与检索结果一致，不静默归一补全）
+ */
+export function mixtureTargetFromRetrieved(retrieved, { weights } = {}) {
+  if (!Array.isArray(retrieved) || retrieved.length === 0) {
+    throw samplerError('ANCHOR_EMPTY',
+      '检索结果为空：不得构造混合目标（不伪造锚点——先让闭环积累数据，再谈混合提案）')
+  }
+  if (weights !== undefined) {
+    if (!Array.isArray(weights) || weights.length !== retrieved.length) {
+      throw samplerError('ANCHOR_INVALID',
+        `weights 长度必须与检索结果一致（${retrieved.length}）：混合权重是显式声明不是静默补全`)
+    }
+  }
+  return {
+    references: retrieved.map((r, i) => ({
+      reference: { graph: r.anchor.graph },
+      weight: weights?.[i] ?? 1,
+    })),
+  }
+}
+
+/**
  * 创建锚点库（纯层，无副作用依赖）。
  * @returns {{ add: Function, size: Function, entries: Function, retrieve: Function, toMixtureTarget: Function }}
  */
@@ -108,27 +133,11 @@ export function createAnchorStore() {
     },
 
     /**
-     * 检索结果 → ouSampleMixture 的 target 形态（{ references: [{ reference: { graph }, weight }] }）。
-     * @param {Array<{ anchor: Object }>} retrieved retrieve 的交付
-     * @param {{ weights?: number[] }} [opts] 混合权重（缺省均匀；长度必须与检索结果一致，不静默归一补全）
+     * 检索结果 → ouSampleMixture 的 target 形态（委托纯函数 mixtureTargetFromRetrieved，
+     * 保留实例方法形态供库消费方习惯调用；语义与纯函数完全一致）。
      */
-    toMixtureTarget(retrieved, { weights } = {}) {
-      if (!Array.isArray(retrieved) || retrieved.length === 0) {
-        throw samplerError('ANCHOR_EMPTY',
-          '检索结果为空：不得构造混合目标（不伪造锚点——先让闭环积累数据，再谈混合提案）')
-      }
-      if (weights !== undefined) {
-        if (!Array.isArray(weights) || weights.length !== retrieved.length) {
-          throw samplerError('ANCHOR_INVALID',
-            `weights 长度必须与检索结果一致（${retrieved.length}）：混合权重是显式声明不是静默补全`)
-        }
-      }
-      return {
-        references: retrieved.map((r, i) => ({
-          reference: { graph: r.anchor.graph },
-          weight: weights?.[i] ?? 1,
-        })),
-      }
+    toMixtureTarget(retrieved, opts = {}) {
+      return mixtureTargetFromRetrieved(retrieved, opts)
     },
   }
 }
