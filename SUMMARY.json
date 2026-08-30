@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T05:24:22.110Z",
-  "totalPass": 261,
+  "generatedAt": "2026-08-30T06:49:47.410Z",
+  "totalPass": 272,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@saturday/bridge",
       "version": "0.3.0",
-      "pass": 30,
+      "pass": 32,
       "fail": 0
     },
     {
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 17,
+      "pass": 22,
       "fail": 0
     },
     {
@@ -135,7 +135,7 @@
       "dir": "plugins\\screening",
       "name": "@saturday/plugin-screening",
       "version": "0.3.0",
-      "pass": 34,
+      "pass": 38,
       "fail": 0
     }
   ],
@@ -419,6 +419,21 @@
       "index": 56,
       "clause": "证据源注册表第二内置源（④）：理想混合熵 `mixing-entropy`——逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，与 β 无关：−β·(−TΔS) 的温度线性在 log 权重中消去）；纯元素候选按定义 0（不伪造梯度）；只消费组分与焓/凸包证据零能量信息共享，独立性声明如实含\"与凸包共享组分变量\"退化关联；接入不改筛选代码（注册表化实证：第二源 = 可扩展性本身的第二次实证）；端到端闭式：焓 [0,+1,−1] + 熵 [0, S1, S1]（S1 = 0.5623351446188083 手算），排序不变但权重位移如实呈现",
       "evidence": "plugin-screening 测试 22（每点位熵闭式 + 双源相加闭式 + 独立性声明）"
+    },
+    {
+      "index": 57,
+      "clause": "证据源独立性声明的机器校验升档（⑤）：可选第五要素 `variables`（依赖变量词表）；`auditEvidenceIndependence` 三态——全声明且两两不交 `independent` / 全声明但检出共享 `degenerate` / 存在未声明者 `unverifiable`（未声明者不冒充独立也不拒绝）；门禁牙齿：机械检出的共享变量必须在 `independence` 声明文本中被解释，否则 `EVIDENCE_INDEPENDENCE_UNDECLARED`（声明是人写的，交集是机器算的，对不上即拒绝）；`maskCounts`（逐源掩码计数）随交付呈现（掩码拒绝可核验）；内置源全部携带变量声明（hull [能量,组分] / mixing-entropy [组分] / 枚举 [能量] / 采样 [能量,坐标] + proposal [坐标]，共享\"坐标\"由声明文本\"给定坐标下条件独立\"解释——机械可验）",
+      "evidence": "plugin-screening evidence 测试 9-11（三态审计 + 门禁拒绝 + 掩码计数）+ screening 测试 23（双源端到端退化关联闭环）"
+    },
+    {
+      "index": 58,
+      "clause": "可用性预检工具化（⑥）：`engine.availability` 逐引擎如实报告——有 `probeVersion` 则探测（失败 → `unknown-or-missing`，注册表不因探测失败缩减：注册 = 声明层不因运行时不可用而回收）；`stamp` 默认 false（预检是查询不是变更——查询性工具不得携带副作用默认值）；仅 `stamp=true` 且 version 实测才走 `stampFingerprint`（实测态回读纪律复用，见本表第 53 条）；status 不区分未知与缺失（区分需真实计算，超出预检权限——诚实不区分）",
+      "evidence": "bridge availability 测试 1-2（默认只报告不盖章 + 按需盖章三态）"
+    },
+    {
+      "index": 59,
+      "clause": "混合提案锚点库（⑦，自监督进场的数据管道第一段）：`createAnchorStore` 纯层——`add` 谱系必填（无来源声明的数据不入库：锚点来自闭环轨迹，出处必须可追溯）；`retrieve` 拓扑硬门禁（节点数一致，与 `ouSampleMixture` 同款，库里先筛一道是诚实不是冗余）+ 组分分数向量 L1 距离升序（锚点缺组分 → `distance: null` 排尾：不可考不冒充可比；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝（不伪造锚点——先让闭环积累数据再谈混合提案）、`weights` 长度必须一致（混合权重是显式声明不是静默补全）",
+      "evidence": "plugin-sampler-ou anchor-store 测试 1-5（入库门禁 + 检索排序三态 + 端到端接 `ouSampleMixture` 配额闭环）"
     }
   ]
 }

@@ -283,11 +283,11 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     const betaE = 1 / (KB_EV_PER_K * temperatureK)
     const ctx = { ranked, thermo, betaEVInv: betaE }
     const jointSources = [
-      { name: `boltzmann:${provider.name}`, logWeights: ranked.map(r => -betaE * r.formationEnthalpy) },
+      { name: `boltzmann:${provider.name}`, logWeights: ranked.map(r => -betaE * r.formationEnthalpy), variables: ['能量'] },
     ]
     for (const d of descriptors) {
       d.requires(ctx)
-      jointSources.push({ name: `${d.name}:${thermo?.mode ?? 'builtin'}`, logWeights: d.logWeights(ctx) })
+      jointSources.push({ name: `${d.name}:${thermo?.mode ?? 'builtin'}`, logWeights: d.logWeights(ctx), variables: d.variables })
     }
     const combinedE = combineEvidence({
       sources: jointSources,
@@ -313,6 +313,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       essFraction: essFraction(combinedE.weights),
       sourceNames: combinedE.sourceNames,
       independence: combinedE.independence,
+      correlationAudit: combinedE.correlationAudit,   // ⑤ 变量依赖机器审计随交付呈现
       note: '枚举候选联合排序：凸包证据对包内点（energyAboveHull<0）按 max(0,·) 掩码——' +
             '“已稳定”不再提供额外区分证据（禁止零填充伪造稳定性梯度）；' +
             'energyAboveHull=0 为当前候选集内的稳定相候选',
@@ -388,8 +389,10 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     } else {
       const combined = combineEvidence({
         sources: [
-          { name: `boltzmann:${provider.name}`, logWeights: okEntries.map(e => -beta * e.energy) },
-          { name: `proposal:${sampled.samplerName ?? 'undeclared'}`, logWeights: okEntries.map(e => e.logProb) },
+          // ⑤ 变量声明：两源都依赖坐标（U 是坐标的函数，q 是相对参考坐标的密度），
+          // 机械检出共享变量"坐标"，独立性声明文本解释为"给定坐标下条件独立"——机器可验。
+          { name: `boltzmann:${provider.name}`, logWeights: okEntries.map(e => -beta * e.energy), variables: ['能量', '坐标'] },
+          { name: `proposal:${sampled.samplerName ?? 'undeclared'}`, logWeights: okEntries.map(e => e.logProb), variables: ['坐标'] },
         ],
         independence: '能量证据取引擎单点能（玻尔兹曼因子 −βU），似然证据取采样器提议核密度 q；' +
                       '两者条件独立于候选给定坐标：U 是能量面属性，q 是采样协议属性。' +
@@ -410,6 +413,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         essFraction: essFraction(combined.weights),
         sourceNames: combined.sourceNames,
         independence: combined.independence,
+        correlationAudit: combined.correlationAudit,   // ⑤ 变量依赖机器审计随交付呈现
         // 温度联动诚实声明（⑳）：采样器若声明了自身温度且与目标温度不一致，
         // 如实呈现（提议核的涨落幅度与玻尔兹曼目标的标度不匹配是消费方该知道的事），
         // 不静默纠正（纠正 = 改变交付的证据语义，超出工作流权限）

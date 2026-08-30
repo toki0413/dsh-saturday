@@ -521,8 +521,8 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 引擎引用合法（热替换即失效源）/
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 24 项 + bridge 30 项 + core 28 项 + 十个插件各自套件 + 其余插件各自契约测试，
-全仓 workspace 261/261；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。映射见附录 A。
+套件自检 24 项 + bridge 32 项 + core 28 项 + 十一个插件各自套件 + 其余插件各自契约测试，
+全仓 workspace 272/272；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。发布形态（⑧）：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 本契约英文摘要版（`plugin-contract-v0.en.md`，忠实摘要而非有损全译，权威文本以中文原本与本套件为准——文档交付无测试映射故不入附录 A）。映射见附录 A。
 
 ---
 
@@ -586,6 +586,9 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 54 | 可用性预检演示（②）：`demo:availability` 对四引擎逐一探测 + 实测态回读——注册 = 声明层（M1 注册即验，不可用不移除注册），可用 = 运行时层（使用时 ENGINE_UNAVAILABLE 拦，绝不静默替换）；同一份代码在装了/没装 LAMMPS/MACE 的机器上给出不同的表，两种输出都正确（环境依赖的诚实报告即预检的意义；本机实测：ase 3.28.0 / mace 0.3.16 盖章实测态，lammps 缺失保持 unknown） | demo:availability 端到端（四引擎三态如实运行，packages/bridge/demo-availability.mjs） |
 | 55 | 多锚点混合采样真实演示（③）：`demo:mixture-sampling` 三段——A 双锚点（Cu / Cu3Ag 同拓扑）按 [0.6,0.4] 最大余数法配额采样 10 个（锚点归属随谱系 #anchor=k）；B 混合似然逐一独立重算（相对全部锚点，最大偏差 0：'exact' 声明机械可验）；C 回算闭环（候选不自证：采样似然 ≠ 物理能量，候选[0] 经真实 ASE EMT 单点 oracle 裁定，生成 → 回算 → 核对谱系不断） | demo:mixture-sampling 端到端（真实 EMT 回算，packages/bridge/demo-mixture-sampling.mjs） |
 | 56 | 证据源注册表第二内置源（④）：理想混合熵 `mixing-entropy`——逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，与 β 无关：−β·(−TΔS) 的温度线性在 log 权重中消去）；纯元素候选按定义 0（不伪造梯度）；只消费组分与焓/凸包证据零能量信息共享，独立性声明如实含"与凸包共享组分变量"退化关联；接入不改筛选代码（注册表化实证：第二源 = 可扩展性本身的第二次实证）；端到端闭式：焓 [0,+1,−1] + 熵 [0, S1, S1]（S1 = 0.5623351446188083 手算），排序不变但权重位移如实呈现 | plugin-screening 测试 22（每点位熵闭式 + 双源相加闭式 + 独立性声明） |
+| 57 | 证据源独立性声明的机器校验升档（⑤）：可选第五要素 `variables`（依赖变量词表）；`auditEvidenceIndependence` 三态——全声明且两两不交 `independent` / 全声明但检出共享 `degenerate` / 存在未声明者 `unverifiable`（未声明者不冒充独立也不拒绝）；门禁牙齿：机械检出的共享变量必须在 `independence` 声明文本中被解释，否则 `EVIDENCE_INDEPENDENCE_UNDECLARED`（声明是人写的，交集是机器算的，对不上即拒绝）；`maskCounts`（逐源掩码计数）随交付呈现（掩码拒绝可核验）；内置源全部携带变量声明（hull [能量,组分] / mixing-entropy [组分] / 枚举 [能量] / 采样 [能量,坐标] + proposal [坐标]，共享"坐标"由声明文本"给定坐标下条件独立"解释——机械可验） | plugin-screening evidence 测试 9-11（三态审计 + 门禁拒绝 + 掩码计数）+ screening 测试 23（双源端到端退化关联闭环） |
+| 58 | 可用性预检工具化（⑥）：`engine.availability` 逐引擎如实报告——有 `probeVersion` 则探测（失败 → `unknown-or-missing`，注册表不因探测失败缩减：注册 = 声明层不因运行时不可用而回收）；`stamp` 默认 false（预检是查询不是变更——查询性工具不得携带副作用默认值）；仅 `stamp=true` 且 version 实测才走 `stampFingerprint`（实测态回读纪律复用，见本表第 53 条）；status 不区分未知与缺失（区分需真实计算，超出预检权限——诚实不区分） | bridge availability 测试 1-2（默认只报告不盖章 + 按需盖章三态） |
+| 59 | 混合提案锚点库（⑦，自监督进场的数据管道第一段）：`createAnchorStore` 纯层——`add` 谱系必填（无来源声明的数据不入库：锚点来自闭环轨迹，出处必须可追溯）；`retrieve` 拓扑硬门禁（节点数一致，与 `ouSampleMixture` 同款，库里先筛一道是诚实不是冗余）+ 组分分数向量 L1 距离升序（锚点缺组分 → `distance: null` 排尾：不可考不冒充可比；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝（不伪造锚点——先让闭环积累数据再谈混合提案）、`weights` 长度必须一致（混合权重是显式声明不是静默补全） | plugin-sampler-ou anchor-store 测试 1-5（入库门禁 + 检索排序三态 + 端到端接 `ouSampleMixture` 配额闭环） |
 
 ## 附录 B：插件骨架模板
 

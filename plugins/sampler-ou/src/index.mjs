@@ -8,6 +8,7 @@ import { createCordisAdapter } from '@saturday/kernel'
 import { ouSampler, samplerError } from './sampler.mjs'
 
 export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME, uEqFromHarmonicTemperature, KB_EV_PER_K, ouMixtureLogProb, ouSampleMixture } from './sampler.mjs'
+export { createAnchorStore } from './anchor-store.mjs'
 
 export default {
   name: 'saturday-sampler-ou',

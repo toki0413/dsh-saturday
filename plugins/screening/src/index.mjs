@@ -62,7 +62,8 @@ export default {
         evidenceSources: {
           type: 'array',
           items: { type: 'string' },
-          description: '枚举候选联合排序的额外证据源（显式启用，缺省只按能量排）；支持 ["hull"]（凸包距离，需参考态）',
+          description: '枚举候选联合排序的额外证据源（显式启用，缺省只按能量排）；内置 ["hull"]（凸包距离，需参考态）' +
+                       '与 ["mixing-entropy"]（理想混合熵组分先验，只消费组分）；可同启，退化关联由机器审计随交付呈现',
         },
       },
       output: {

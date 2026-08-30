@@ -103,6 +103,50 @@ export default {
 
     // workflow.screen 已迁出为独立插件 @saturday/plugin-screening（契约 §4.3：工作流不进核心）
 
+    // 可用性预检（①②⑥）：把声明态→实测态回读暴露给 Agent 层——
+    // 逐已注册引擎探测运行时版本（探测失败不报错：诚实降级保持声明态），
+    // 探测成功且 stamp=true 时盖章升级指纹实测态（§4.2 路由契约不变：
+    // 不可用引擎不从注册表移除，使用时由 ENGINE_UNAVAILABLE 拦，绝不静默替换）。
+    rt.registerTool({
+      name: 'engine.availability',
+      description: '可用性预检：逐已注册引擎探测运行时版本并如实报告（注册 = 声明层，可用 = 运行时层）。' +
+                   '探测成功且 stamp=true 时把指纹 version 从声明态 "unknown" 盖章升级为实测值；' +
+                   '探测失败保持 "unknown"（不拿未知冒充已知）。同一份代码在不同环境给出不同的表，两种都正确。',
+      parameters: {
+        stamp: { type: 'boolean', default: false,
+                 description: '探测成功时是否盖章升级指纹实测态（默认只报告不副作用；预检是查询不是变更）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) {
+          return [{ type: 'text', text: JSON.stringify(value) }]
+        },
+      },
+      async execute({ stamp = false } = {}) {
+        const engines = []
+        for (const [name, provider] of potential.providers) {
+          let version = null
+          if (typeof provider.probeVersion === 'function') {
+            try { version = await provider.probeVersion() } catch { version = null }
+          }
+          if (version && stamp) potential.stampFingerprint(name, { version })
+          const fp = provider._fingerprint
+          engines.push({
+            name,
+            status: version ? 'available' : 'unknown-or-missing',
+            fingerprint: { software: fp.software, method: fp.method, version: fp.version },
+            probeSupport: typeof provider.probeVersion === 'function' ? 'probeVersion' : 'none',
+          })
+        }
+        return {
+          engines,
+          stamped: Boolean(stamp),
+          note: 'status 只反映版本探测成败（探测失败 = 未知或缺失，不区分两者——区分需真实计算，超出预检权限）；' +
+                '注册表不因探测失败缩减（声明层完整），使用时由 ENGINE_UNAVAILABLE 门禁拦下',
+        }
+      },
+    })
+
     // 计算事件统一落 Trajectory
     rt.on('saturday/simulation/converged', async event => {
       await rt.appendTrajectory({

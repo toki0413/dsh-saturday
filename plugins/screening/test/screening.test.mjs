@@ -326,6 +326,9 @@ test('11. 采样候选联合排序：重要性权重闭式对账（能量证据 
     assert.deepEqual(joint.entries[0].coverage, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
     assert.deepEqual(joint.sourceNames, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
     assert.match(joint.independence, /条件独立/, '独立性声明随交付呈现')
+    // ⑤ 机器审计：两源都声明依赖坐标 → 机械检出共享，声明文本解释为"给定坐标下条件独立" → 放行且如实标记
+    assert.equal(joint.correlationAudit.status, 'degenerate')
+    assert.deepEqual(joint.correlationAudit.pairs[0].shared, ['坐标'], '能量×似然的条件独立性是给定坐标下的——机器可验不靠口头')
     assert.equal(joint.likelihood, 'exact')
     assert.ok(joint.essFraction > 0 && joint.essFraction <= 1)
     // 枚举排序不受影响（无掺杂 → 只有基体）
@@ -789,6 +792,39 @@ test('22. 混合熵证据源：每点位熵闭式 + 端到端联合排序（注�
     const ni = joint.entries.find(e => e.formula === 'Cu3Ni')
     assert.ok(Math.abs(ni.logJointWeight - (-1 + S1)) < 1e-9, 'Cu3Ni：焓 −1 被同形状混合熵部分抵消（熵不敌焓，如实呈现）')
     assert.match(joint.independence, /混合熵/, '第二源独立性声明随组合呈现（与凸包共享组分变量的退化关联如实声明）')
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+// ── ⑤ 机器审计端到端：双源同启，退化关联由机器检出而非口头声明 ──
+test('23. 机器审计端到端：hull+mixing-entropy 同启，共享变量机械检出且被声明解释（放行）', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.04, Cu3Ni: -11.96 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const result = await screenDopants({
+      material: cu, dopants: ['Ag', 'Ni'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+      evidenceSources: ['hull', 'mixing-entropy'],
+      temperatureK: 1 / (100 * 8.617333262145e-5),   // β = 100 eV⁻¹
+    })
+    const audit = result.joint.correlationAudit
+    assert.equal(audit.status, 'degenerate', '全部声明且存在共享变量 → 退化关联机械可见（不冒充独立）')
+    assert.deepEqual(audit.undeclared, [], '三源（焓 + 两内置）均声明变量词表')
+    // 两对共享：焓×凸包 共享能量（包上点恒 0 退化）；凸包×混合熵 共享组分（凸包坐标即组分）；
+    // 焓×混合熵 机械不交（零能量信息共享）——两对都被声明文本解释，故组合放行
+    const pairAB = audit.pairs.find(p => p.shared.includes('能量'))
+    const pairBC = audit.pairs.find(p => p.shared.includes('组分'))
+    assert.ok(pairAB && pairBC, '两对退化关联均由机器检出（成对交集，不依赖人工自觉）')
+    assert.equal(audit.pairs.length, 2, '恰好两对：焓×混合熵机械不交，不伪造关联')
+    // 掩码机械统计随纯层交付（Cu3Ag 包内点凸包掩码：无候选被凸包源置 null——
+    // max(0,·) 掩码在源内而非 null 掩码，逐源计数如实为 0，两种掩码语义不混淆）
+    assert.ok(result.joint.sourceNames.length === 3)
   } finally {
     await coreFiber.dispose()
   }

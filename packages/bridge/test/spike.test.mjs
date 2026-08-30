@@ -125,9 +125,15 @@ test('8. 卸载回退：dispose 后服务与工具全部回收（effect 语义�
     apply: (ctx) => plugin.apply(ctx, { trajectoryPath: TRAJECTORY }),
   })
   const h2 = f2.store.saturday
-  assert.ok(ctx2.reflect.get('material'))
-  assert.equal(h2.rt.tools.list().length, 2, 'workflow.screen 已迁出为独立插件')
-  await f2.dispose()
+  // 泄漏防护（纪律）：挂载即拉起 Python sidecar，dispose 前的断言若失败而跳过回收，
+  // 子进程会挂住事件循环 → 测试进程永久挂起，掩盖真实失败。故前置断言入 try，
+  // finally 保证 dispose；回收断言依赖 dispose 已发生，在 finally 之后照常执行。
+  try {
+    assert.ok(ctx2.reflect.get('material'))
+    assert.equal(h2.rt.tools.list().length, 3, '核心插件三工具基线：material.load / potential.relax / engine.availability（workflow.screen 已迁出为独立插件）')
+  } finally {
+    await f2.dispose()
+  }
   assert.equal(ctx2.reflect.get('material'), undefined, 'service should be withdrawn on dispose')
   assert.equal(h2.rt.tools.list().length, 0, 'tools should be withdrawn on dispose')
 })

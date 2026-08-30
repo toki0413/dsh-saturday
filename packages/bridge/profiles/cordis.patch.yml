@@ -31,6 +31,10 @@
 
 # 工作流插件独立挂载（契约 §4.3：工作流不进核心）：与核心插件同一组合树，
 # 工具自动暴露给 Agent（workflow.screen / workflow.freeEnergy / workflow.ergodic 等）。
+# 核心插件自带 Agent 工具：material.load / potential.relax / engine.availability
+# （①②⑥ 可用性预检：逐引擎探测运行时版本并如实报告，stamp=true 时盖章升级指纹实测态）。
+# workflow.screen 的 evidenceSources 参数向 Agent 暴露内置证据源：
+#   ["hull"]（凸包距离，需参考态）/ ["mixing-entropy"]（理想混合熵组分先验），可同启。
 # 依赖的 @saturday/plugin-* 包同样先声明到 profile 的 package.json dependencies。
 # - insert:
 #     - id: saturday-screening

@@ -3,7 +3,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { combineEvidence, essFraction, evidenceError } from '../src/evidence.mjs'
+import { combineEvidence, essFraction, evidenceError, auditEvidenceIndependence } from '../src/evidence.mjs'
 
 const LN2 = Math.log(2)
 const LN3 = Math.log(3)
@@ -124,4 +124,64 @@ test('8. evidenceError 携带错误码（调用方可按码分流，不靠字符
   const e = evidenceError('EVIDENCE_INVALID_INPUT', 'x')
   assert.equal(e.code, 'EVIDENCE_INVALID_INPUT')
   assert.match(e.message, /\(EVIDENCE_INVALID_INPUT\)$/)
+})
+
+// ── ⑤ 变量依赖机器审计 + 掩码机械统计：声明是人写的，交集是机器算的，对不上即拒绝 ──
+test('9. 机器审计三态：independent（全声明且两两不交）/ degenerate（检出共享）/ unverifiable（存在未声明者）', () => {
+  const ind = auditEvidenceIndependence([
+    { name: 'A', variables: ['能量'] }, { name: 'B', variables: ['组分'] },
+  ])
+  assert.equal(ind.status, 'independent')
+  assert.deepEqual(ind.pairs, [])
+
+  const deg = auditEvidenceIndependence([
+    { name: 'A', variables: ['能量', '组分'] }, { name: 'B', variables: ['组分'] },
+  ])
+  assert.equal(deg.status, 'degenerate')
+  assert.deepEqual(deg.pairs, [{ a: 'A', b: 'B', shared: ['组分'] }])
+
+  const unv = auditEvidenceIndependence([
+    { name: 'A', variables: ['能量'] }, { name: 'B' },
+  ])
+  assert.equal(unv.status, 'unverifiable', '未声明者存在 = 机器不可证，不冒充独立')
+  assert.deepEqual(unv.undeclared, ['B'])
+
+  assert.throws(() => auditEvidenceIndependence([{ name: 'A', variables: [''] }]),
+    err => err.code === 'EVIDENCE_INVALID_INPUT', '词表不接受空声明')
+})
+
+test('10. 机器审计入组合门禁：检出共享变量未被声明文本解释 → 拒绝；解释则放行（权重不变）', () => {
+  const sources = [
+    { name: 'A', logWeights: [0, LN2], variables: ['组分'] },
+    { name: 'B', logWeights: [LN3, 0], variables: ['组分'] },
+  ]
+  // 声明文本不提共享变量：机械检出组分共享但无人解释 → 拒绝（不依赖人工自觉）
+  assert.throws(
+    () => combineEvidence({ sources, independence: '测试构造：A、B 独立' }),
+    err => err.code === 'EVIDENCE_INDEPENDENCE_UNDECLARED' && /组分/.test(err.message),
+  )
+  // 文本解释了共享变量：放行，权重仍 = 测试 1 闭式 [3/5, 2/5]（审计不改数学）
+  const out = combineEvidence({ sources, independence: '测试构造：共享组分变量，给定组分下条件独立' })
+  assert.ok(Math.abs(out.weights[0] - 3 / 5) < 1e-12)
+  assert.equal(out.correlationAudit.status, 'degenerate')
+  assert.deepEqual(out.correlationAudit.pairs[0].shared, ['组分'])
+  // 未声明 variables 的源：审计如实标记 unverifiable，不拒绝（声明是能力不是义务）
+  const unv = combineEvidence({
+    sources: [{ name: 'A', logWeights: [0] }], independence: '单源',
+  })
+  assert.equal(unv.correlationAudit.status, 'unverifiable')
+})
+
+test('11. 掩码机械统计：逐源 null 计数随交付呈现（消费方可机械复核无零填充）', () => {
+  // 构造满足纪律 3：每个候选至少一源覆盖（A 缺候选 1，B 缺候选 0）
+  const out = combineEvidence({
+    sources: [
+      { name: 'A', logWeights: [0, null, 1] },
+      { name: 'B', logWeights: [null, LN3, 0] },
+    ],
+    independence: '测试构造',
+  })
+  assert.deepEqual(out.maskCounts, { A: 1, B: 1 }, '逐源 null 计数 = 掩码的机械可见形态')
+  const full = combineEvidence({ sources: [{ name: 'A', logWeights: [0, 1] }], independence: '测试构造' })
+  assert.deepEqual(full.maskCounts, { A: 0 }, '全覆盖源计数为 0（不是缺字段）')
 })
