@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-30T12:41:35.229Z
+生成时间：2026-08-30T12:52:18.949Z
 
-**回归基线：319/319**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：323/323**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 46/46 |
+| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 48/48 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -22,11 +22,11 @@
 | `@saturday/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@saturday/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
-| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 55/55 |
+| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 57/57 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
 | `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，71 条）
+## 实证条款（契约文档附录 A，72 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -99,6 +99,7 @@
 - **#69** 条目级版本戳 + 多载荷合并回填 + 载荷血缘审计（㉝/㉞/㉟）：㉝ 载荷形态升版 `saturday-anchor-store/2`（条目附 `entryVersion: 'saturday-anchor-entry/1'`）——`load` 逐条校验版本戳：缺失/未知版本戳按条目级损坏定位到载荷原位索引拒绝（过滤后不丢定位能力），合法条目照常入库不连坐（损坏检测从“整体非载荷”下沉到条目级）；㉞ `load`/`audit` 支持 `path`（单载荷）或 `paths`（多载荷合并）二选一（不静默猜测调用方意图）；门禁先行——全部文件先过完整性检查，全过才开始回填（任一文件不过 → 整批拒绝，出错时库零污染）；同谱系幂等门禁天然兜底跨载荷重复（数据燃料多源汇聚）；逐文件明细随交付；㉟ `sampler.anchor.audit` 只读血缘三态审计（可追溯/不可追溯/损坏）：审计不回填不污染库，异常文件如实入报告不连坐——回填前的一手数据质量观测面（证据：plugin-sampler-ou plugin-anchor-save-load 测试 6-8（条目版本戳定位 + 多载荷合并/门禁先行/二选一门禁 + 审计三态与库零污染）+ plugin-anchor-persist 测试 1（版本戳随导出交付））
 - **#70** 审计接 Agent 层 + 多载荷合并后的活性保持 + 锚点库容量观测（㊱/㊲/㊳）：㊱ `demo:agent` 阶段 G——自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)：只读三态报告回流（全部可追溯、无损坏），库状态不变（观测先于行动的数据纪律在 Agent 层实证，㉕ 教训延续）；㊲ 多载荷合并后的活性保持：两份不同来源载荷经 ㉞ 合并回填后，跨载荷汇聚的谱系各自独立可撤回（沿某一来源失效 → 提案失效；失效不删数据，另一来源与库内条目照常在场）；合并后提案锚点归属与载荷谱系逐条一致（汇聚不冒充、不丢、不改写）；㊳ `sampler.anchor.stats` 只读库内容量观测（条目数 + 归一化谱系形态分布 + 组分声明覆盖）：观测不变更库，与 ㉟ 载荷审计构成“库内 + 库外”双观测面（为 ㉘ 触发条件的“足够轨迹”提供量化读数）（证据：demo:agent 阶段 G 端到端 + bridge anchor-merge-liveness 测试 1-2（谱系独立可撤回 + 归属逐条一致）+ plugin-sampler-ou plugin-anchor-save-load 测试 9（库容量观测如实与不变更））
 - **#71** 审计驱动的合流回填决策链 + “足够轨迹”触发判据原型 + 审计修复建议通道（㊴/㊵/㊶）：㊴ `demo:agent` 阶段 H——自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）→ 按报告只回填达标载荷（不达标载荷不进数据燃料；决策由 mock 脚本编码，实证的是“报告 → 行动”链路的运行时效果）；㊵ `trajectoryTriggerAssessment` 纯层判据：㊳ 读数对调用方显式声明的阈值（`minSize`/`minCompositionCoverage`）为声明式对账不是门禁，阈值不硬编码不设默认（未声明即拒），两项缺口各自独立呈报，空库覆盖率为 0（不除零崩溃）；㊶ `sampler.anchor.audit` 对非可追溯条目随报告交付修复声明（`repairHints`：原位索引 + 三态 + 建议），损坏与不可追溯区分（前者回填必拒，后者可回填但建议声明可追溯起源），仍保持只读不代改（证据：demo:agent 阶段 H 端到端 + plugin-sampler-ou plugin-anchor-trigger 测试 1-3（达标/缺口独立呈报/未声明阈值拒绝 + 空库）+ plugin-anchor-save-load 测试 8 扩展（修复建议定位与可操作）与测试 10（统计读数直喂判据））
+- **#72** 收尾判据快照 + 载荷侧修复原语 + 判据对账谱系化（㊷/㊸/㊹）：㊷ `demo:anchor-resume` 会话二收尾：`stats` 读数 → 判据对账 → 判据快照随日志呈现（`met=false`，缺口如实：条目数 2 低于 minSize 100）——“足够轨迹”裁决从人工对照升级为机器可读的判据快照（读数 → 阈值 → 结论可追溯可复算），阈值调用方显式声明（原型阈值非内置常量），维持 ㉘ 裁决；㊸ `sampler.anchor.repair` 载荷侧修复原语（观测/修复权责分离）：审计只指明出路，修复必须调用方逐条显式授权；修复写新载荷不碰原件（原件留作证据，`out` 与 `path` 相同即拒）；只修复不可追溯条目（损坏修复即伪造必拒，已可追溯修复即替调用方做决定亦拒）；修复全程不回填，审计是修复的验收面；㊹ 判据对账谱系化：对账结论可选登记为推导（输入 = 可追溯证据引用，归一化同 ㉑），证据引用失效 → 对账结论沿推导图如实失效（裁决依据可撤回）；无可追溯证据引用不伪登记；未注入推导服务行为不变（证据：demo:anchor-resume 收尾判据快照 + plugin-sampler-ou plugin-anchor-save-load 测试 11-12（修复原语正路 + 四类门禁拒绝）+ bridge anchor-trigger-derivation 测试 1-2（结论可撤回 + 不伪登记与零依赖））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

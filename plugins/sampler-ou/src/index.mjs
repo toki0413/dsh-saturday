@@ -516,6 +516,67 @@ export default {
       },
     })
 
+    // ㊸ 载荷侧修复原语（观测/修复权责分离）：审计只指明出路（㊶），修复是独立原语且必须
+    // 调用方逐条显式授权；修复写新载荷（不碰原件：原件留作证据）；只可修复不可追溯条目——
+    // 损坏条目修复即伪造数据燃料，已可追溯条目修复即替调用方做决定，两者都拒。
+    rt.registerTool({
+      name: 'sampler.anchor.repair',
+      description: '载荷侧修复原语（写新载荷，不碰原件）：对审计报告中不可追溯条目逐条显式声明可追溯起源；' +
+                   '损坏条目与已可追溯条目不接受修复（修复不是伪造，也不替调用方做决定）。',
+      parameters: {
+        path: { type: 'string', description: '待修复载荷路径' },
+        out: { type: 'string', description: '修复后载荷写出路径（必须与 path 不同）' },
+        repairs: { type: 'array', items: { type: 'object', additionalProperties: true }, description: '逐条修复声明：[{ index, source }]（source 必须为 material:/job: 形态）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        const { path, out, repairs } = args
+        if (typeof path !== 'string' || path.trim().length === 0) throw new Error('repair: 待修复载荷路径必须显式声明')
+        if (typeof out !== 'string' || out.trim().length === 0) throw new Error('repair: 写出路径 out 必须显式声明（修复写新载荷，不碰原件）')
+        if (path === out) throw new Error('repair: out 不得与 path 相同（原件留作证据，不覆盖）')
+        if (!Array.isArray(repairs) || repairs.length === 0) {
+          throw new Error('repair: 修复声明必须逐条显式给出（repairs 非空；修复不是越权代改）')
+        }
+        const c = checkPayload(path)
+        if (!c.ok) throw new Error(`repair: ${c.reason}`)
+        const entries = c.payload.entries.map(e => ({ ...e }))
+        const applied = []
+        const refused = []
+        for (const r of repairs) {
+          const idx = r?.index
+          if (!Number.isInteger(idx) || idx < 0 || idx >= entries.length) {
+            refused.push({ index: idx, reason: '索引越出载荷范围（载荷原位索引）' })
+            continue
+          }
+          const e = entries[idx]
+          const { state } = classifyEntry(e)
+          if (state === 'corrupt') {
+            refused.push({ index: idx, reason: '条目损坏（版本戳/来源缺失）：修复即伪造，必拒' })
+            continue
+          }
+          if (state === 'traceable') {
+            refused.push({ index: idx, reason: '条目已可追溯：无需修复（不替调用方做决定）' })
+            continue
+          }
+          if (typeof r.source !== 'string' || !isTrackableRef(normRef(r.source))) {
+            refused.push({ index: idx, reason: '修复来源必须为可追溯形态（material: 或 job: 前缀）' })
+            continue
+          }
+          applied.push({ index: idx, from: e.source, to: r.source })
+          entries[idx] = { ...e, source: r.source }
+        }
+        writeFileSync(out, JSON.stringify({ version: c.payload.version, size: entries.length, entries }))
+        return {
+          repaired: true, path, out, entries: entries.length, applied, refused,
+          note: '修复写新载荷不碰原件（观测/修复权责分离）：只修复不可追溯条目，损坏/已可追溯条目如实拒绝；' +
+                '修复后载荷是否达标请重新审计（审计是修复的验收面）',
+        }
+      },
+    })
+
     ctx.fiber.store.saturdaySamplerOu = { rt, anchorStore }
   },
 }

@@ -5,7 +5,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -299,5 +299,81 @@ test('10. ㊵ 触发判据接容量观测：stats 读数直接喂判据（声明
     assert.equal(strict.readings.size, 3, '判据回呈的读数与观测一致（读数 → 判据不断链）')
   } finally {
     await env.fiber.dispose()
+  }
+})
+
+test('11. ㊸ 修复原语：只修复不可追溯条目 + 写新载荷不碰原件（审计是修复的验收面）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-repair-'))
+  const env = await mount()
+  try {
+    const src = join(dir, 'src.json')
+    const out = join(dir, 'out.json')
+    await writeFile(src, JSON.stringify({ version: 'saturday-anchor-store/2', size: 3, entries: [
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4, source: 'material:cu-r0', composition: { Cu: 4 } },
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4, source: 'inline:adhoc-r1', composition: { Cu: 4 } },
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4, source: 'inline:adhoc-r2', composition: { Cu: 4 } },
+    ] }))
+    const before = await readFile(src, 'utf8')
+    const result = await env.handles.rt.tools.call('sampler.anchor.repair', {
+      path: src, out,
+      repairs: [
+        { index: 1, source: 'material:cu-r1' },
+        { index: 2, source: 'job:j-r2#engine=emt-mock' },
+      ],
+    })
+    assert.equal(result.applied.length, 2, '两条不可追溯条目逐条修复（调用方显式授权）')
+    assert.equal(result.refused.length, 0)
+    assert.deepEqual(result.applied.map(a => [a.index, a.from, a.to]),
+      [[1, 'inline:adhoc-r1', 'material:cu-r1'], [2, 'inline:adhoc-r2', 'job:j-r2#engine=emt-mock']],
+      '修复声明如实回呈（原位索引 + 前后来源）')
+    // 审计是修复的验收面：新载荷全可追溯；原件一字不动（留作证据）
+    const verdict = await env.handles.rt.tools.call('sampler.anchor.audit', { path: out })
+    assert.deepEqual(
+      { t: verdict.files[0].traceable, u: verdict.files[0].untracked, c: verdict.files[0].corrupt },
+      { t: 3, u: 0, c: 0 }, '修复后载荷重新审计：全可追溯')
+    assert.equal(await readFile(src, 'utf8'), before, '修复写新载荷不碰原件（原件留作证据）')
+    assert.equal(env.handles.anchorStore.size(), 0, '修复不回填：库零污染（观测/修复权责分离）')
+  } finally {
+    await env.fiber.dispose()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('12. ㊸ 修复门禁：损坏/已可追溯/越界/非可追溯来源如实拒绝 + 覆盖原件拒绝（修复不是伪造）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-repair-gate-'))
+  const env = await mount()
+  try {
+    const src = join(dir, 'src.json')
+    const out = join(dir, 'out.json')
+    await writeFile(src, JSON.stringify({ version: 'saturday-anchor-store/2', size: 3, entries: [
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4, source: 'material:cu-g0', composition: { Cu: 4 } },
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4, source: 'inline:adhoc-g1', composition: { Cu: 4 } },
+      { entryVersion: 'saturday-anchor-entry/1', graph: graph4 },   // 损坏（来源缺失）
+    ] }))
+    const result = await env.handles.rt.tools.call('sampler.anchor.repair', {
+      path: src, out,
+      repairs: [
+        { index: 2, source: 'material:fake' },     // 损坏条目 → 修复即伪造，必拒
+        { index: 0, source: 'material:already' },  // 已可追溯 → 不替调用方做决定，拒
+        { index: 9, source: 'material:oor' },      // 越界，拒
+        { index: 1, source: 'inline:still-bad' },  // 修复来源非可追溯形态，拒
+        { index: 1, source: 'material:cu-g1' },    // 唯一合法 → 应用
+      ],
+    })
+    assert.equal(result.applied.length, 1, '仅逐条授权的合法修复应用')
+    assert.equal(result.refused.length, 4, '四类非法修复各自如实拒绝')
+    assert.ok(result.refused[0].reason.includes('伪造'), '损坏条目的拒绝理由指向伪造')
+    assert.ok(result.refused[1].reason.includes('已可追溯'), '已可追溯条目的拒绝理由不冒充需修复')
+    // 声明层门禁：覆盖原件拒绝 + 空修复声明拒绝（不静默猜测）
+    await assert.rejects(
+      env.handles.rt.tools.call('sampler.anchor.repair', { path: src, out: src, repairs: [{ index: 1, source: 'material:x' }] }),
+      /不得与 path 相同/, 'out 与 path 相同 → 拒绝覆盖原件')
+    await assert.rejects(
+      env.handles.rt.tools.call('sampler.anchor.repair', { path: src, out, repairs: [] }),
+      /逐条显式/, '空修复声明 → 拒绝（修复不是越权代改）')
+    assert.equal(env.handles.anchorStore.size(), 0, '修复全程不回填：库零污染')
+  } finally {
+    await env.fiber.dispose()
+    await rm(dir, { recursive: true, force: true })
   }
 })

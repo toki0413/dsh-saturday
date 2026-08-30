@@ -16,7 +16,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
 import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin from '@saturday/plugin-sampler-ou'
+import samplerOuPlugin, { trajectoryTriggerAssessment } from '@saturday/plugin-sampler-ou'
 
 async function mountSession() {
   const ctx = new Context()
@@ -91,6 +91,15 @@ try {
     console.log(`联合排序: ${joint.entries.length} 候选全部回算成功；Σw = ${sum.toFixed(12)}；ESS = ${joint.essFraction.toFixed(3)}`)
     console.log(`跨会话恢复完成：落盘 ${savedSize} 个 → 回填 ${loaded.added} 个 → 提案 → 回算 → 排序，谱系不断。`)
   }
+
+  // ㊷ 收尾判据快照：“足够轨迹”读数 → 判据对账（机器可读的裁决依据，可追溯可复算）：
+  // 裁决从“人工对照触发条件”升级为机器可读的判据快照——阈值由调用方显式声明（此处为演示声明的
+  // 原型阈值，非内置常量），结论如实呈报不是门禁（㊵/㉘：先见数据再谈机制）。
+  const stats = await s2.samplerRt.tools.call('sampler.anchor.stats', {})
+  const thresholds = { minSize: 100, minCompositionCoverage: 0.8 }
+  const assessment = trajectoryTriggerAssessment(stats, thresholds)
+  console.log(`判据快照（㊷）: met=${assessment.met}，读数=${JSON.stringify(assessment.readings)}，缺口=${JSON.stringify(assessment.reasons)}`)
+  console.log('裁决依据机器可读：读数 → 阈值 → 结论可复算（“足够轨迹”未达标 → 维持不引入自监督，同 ㉘ 裁决）。')
 } finally {
   await s2.dispose()
   await rm(dir, { recursive: true, force: true })
