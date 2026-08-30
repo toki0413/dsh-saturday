@@ -30,8 +30,9 @@ test('1. 导出/导入往返：无损 JSON 载荷，新库回填后逐字段一�
     src.handles.anchorStore.add({ graph: graph4(), source: 'material:cu-a', composition: { Cu: 4 } })
     src.handles.anchorStore.add({ graph: graph4(47), source: 'job:j-7#engine=emt-mock', composition: { Ag: 1, Cu: 3 }, energy: -1.25 })
     const payload = await src.handles.rt.tools.call('sampler.anchor.export', {})
-    assert.equal(payload.version, 'saturday-anchor-store/1')
+    assert.equal(payload.version, 'saturday-anchor-store/2')
     assert.equal(payload.size, 2)
+    assert.ok(payload.entries.every(e => e.entryVersion === 'saturday-anchor-entry/1'), '㉝ 条目版本戳随导出交付（损坏定位到条目级的载体）')
     // 无损 JSON 对账：序列化往返不丢信息（dsh 出口关卡同款要求的纯层预检）
     assert.deepEqual(JSON.parse(JSON.stringify(payload)), payload, '导出载荷必须是无损 JSON')
     const r = await dst.handles.rt.tools.call('sampler.anchor.import', { entries: payload.entries })

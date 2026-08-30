@@ -230,6 +230,12 @@ export default {
     // ㉓ 持久化锚点库原型：库间搬运原语（导出/导入）——跨会话持久化的第一段。
     // 诚实边界：库自身仍是会话级内存库，导出只交付无损 JSON 有效载荷，
     // 落盘与跨会话恢复由调用方负责（原型不引入文件 I/O，不伪造库外数据）。
+    // ㉝ 载荷形态升版：/2 起条目携带版本戳（损坏定位从“整体非载荷”下沉到条目级）。
+    const STORE_VERSION = 'saturday-anchor-store/2'
+    const ENTRY_VERSION = 'saturday-anchor-entry/1'
+    const stampedEntries = () => anchorStore.entries().map(e => ({ entryVersion: ENTRY_VERSION, ...e }))
+    const normRef = source => (typeof source === 'string' ? source.split('#')[0] : null)
+    const isTrackableRef = ref => !!ref && (ref.startsWith('material:') || ref.startsWith('job:'))
     rt.registerTool({
       name: 'sampler.anchor.export',
       description: '导出会话锚点库全量条目（无损 JSON 有效载荷）：跨会话持久化的原语。' +
@@ -241,24 +247,25 @@ export default {
       },
       async execute() {
         return {
-          version: 'saturday-anchor-store/1',
+          version: STORE_VERSION,
           size: anchorStore.size(),
-          entries: anchorStore.entries(),
-          note: '锚点库全量导出（含 graph 本体）：无损 JSON；跨会话落盘与回填由调用方负责',
+          entries: stampedEntries(),
+          note: '锚点库全量导出（含 graph 本体 + 条目版本戳）：无损 JSON；跨会话落盘与回填由调用方负责',
         }
       },
     })
 
     // ㉓ 库间搬运原语的共享导入循环（导入工具与文件回填共用：门禁不另开旁路）。
     // 谱系门禁复用库层；同谱系幂等跳过（重放安全）；单条拒绝不中断整批（如实记录）。
-    function importEntries(entries) {
+    function importEntries(entries, indexMap) {
       let added = 0
       let skipped = 0
       const rejected = []
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i]
+        const origIndex = indexMap ? indexMap[i] : i   // ㉝ 拒绝索引定位回载荷原位（过滤后不丢定位能力）
         if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
-          rejected.push({ index: i, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
+          rejected.push({ index: origIndex, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
           continue
         }
         if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与 ⑮ 同款）
@@ -266,7 +273,7 @@ export default {
           anchorStore.add(e)   // graph 本体门禁由库层复用（缺 graph 即拒）
           added++
         } catch (err) {
-          rejected.push({ index: i, reason: `库层门禁拒绝：${err.message}` })   // 单条拒绝不中断整批导入（如实记录）
+          rejected.push({ index: origIndex, reason: `库层门禁拒绝：${err.message}` })   // 单条拒绝不中断整批导入（如实记录）
         }
       }
       return { added, skipped, rejected }
@@ -318,61 +325,147 @@ export default {
         if (typeof args.path !== 'string' || args.path.trim().length === 0) {
           throw samplerError('ANCHOR_PERSIST', 'save 必须提供目标路径（路径由调用方显式声明，库不自作主张）')
         }
-        const payload = { version: 'saturday-anchor-store/1', size: anchorStore.size(), entries: anchorStore.entries() }
+        const payload = { version: STORE_VERSION, size: anchorStore.size(), entries: stampedEntries() }
         writeFileSync(args.path, JSON.stringify(payload, null, 2))
         return { saved: true, path: args.path, size: payload.size, note: '锚点库已落盘（无损 JSON；恢复用 sampler.anchor.load）' }
       },
     })
 
+    // ㉝ 载荷门禁与条目审计（load 门禁先行段与 audit 只读观测共用：检查形态不分叉）。
+    // 返回 { ok: false, reason } 或 { ok: true, payload, cleanEntries, indexMap, stampRejected }。
+    function checkPayload(path) {
+      let raw
+      try {
+        raw = readFileSync(path, 'utf8')
+      } catch {
+        return { ok: false, reason: `载荷文件不可读（不存在或无权限）：${path}——不静默返回空库冒充成功` }
+      }
+      let payload
+      try {
+        payload = JSON.parse(raw)
+      } catch {
+        return { ok: false, reason: `载荷不是合法 JSON（文件损坏或非导出载荷）：${path}` }
+      }
+      if (!Array.isArray(payload?.entries)) {
+        return { ok: false, reason: `载荷缺少 entries 数组（非 sampler.anchor.export/save 产物，不猜测冒充）：${path}` }
+      }
+      // ㉜ 完整性校验：版本门禁（未知形态不静默接受）+ size 声明对账（声明 ≠ 实质即拒）。
+      if (payload.version !== STORE_VERSION) {
+        return { ok: false, reason: `载荷版本不受支持（声明 ${payload.version ?? '无'}，当前仅支持 ${STORE_VERSION}）：${path}——不静默接受未知形态` }
+      }
+      if (payload.size !== payload.entries.length) {
+        return { ok: false, reason: `载荷完整性声明与实质不符（声明 size=${payload.size}，实际 entries=${payload.entries.length}）：${path}` }
+      }
+      // ㉝ 条目级版本戳：损坏定位到条目（含载荷原位索引），不连坐合法条目。
+      const cleanEntries = []
+      const indexMap = []
+      const stampRejected = []
+      payload.entries.forEach((e, i) => {
+        if (e?.entryVersion !== ENTRY_VERSION) {
+          stampRejected.push({ index: i, reason: `条目版本戳缺失/未知（声明 ${e?.entryVersion ?? '无'}，当前仅支持 ${ENTRY_VERSION}）：损坏定位到条目级，不连坐` })
+        } else {
+          cleanEntries.push(e)
+          indexMap.push(i)
+        }
+      })
+      return { ok: true, payload, cleanEntries, indexMap, stampRejected }
+    }
+
+    // ㉞ path（单载荷）与 paths（多载荷合并）二选一，路径必须调用方显式声明。
+    function resolveLoadPaths(args, tool) {
+      const hasPath = typeof args.path === 'string' && args.path.trim().length > 0
+      const hasPaths = Array.isArray(args.paths) && args.paths.length > 0
+      if (hasPath === hasPaths) {
+        throw samplerError('ANCHOR_PERSIST', `${tool} 必须且只能提供 path（单载荷）或 paths（多载荷）之一：路径由调用方显式声明`)
+      }
+      const paths = hasPath ? [args.path] : args.paths
+      if (paths.some(p => typeof p !== 'string' || p.trim().length === 0)) {
+        throw samplerError('ANCHOR_PERSIST', `${tool} 的 paths 中存在非法路径（路径必须为非空字符串，调用方显式声明）`)
+      }
+      return paths
+    }
+
     rt.registerTool({
       name: 'sampler.anchor.load',
-      description: '从调用方指定路径回填锚点（落盘载荷 → 会话库）：文件缺失/损坏显式报错（不静默冒充成功）；' +
-                   '版本门禁与 size 对账（完整性声明 ≠ 实质即拒，不连坐单条）；' +
-                   '回填复用导入门禁（谱系/本体/幂等同款）；交付附 lineageRefs（磁盘数据起点的可追溯声明，消费方可从此起点 invalidate）。',
+      description: '从调用方指定路径回填锚点（落盘载荷 → 会话库，支持 path 单载荷或 paths 多载荷合并）：' +
+                   '门禁先行——全部文件先过完整性检查（读/解析/版本/size/条目版本戳），全过才开始回填（出错时库零污染）；' +
+                   '回填复用导入门禁（谱系/本体/幂等同款）；交付附逐文件明细与 lineageRefs（磁盘数据起点的可追溯声明）。',
       parameters: {
-        path: { type: 'string', description: '载荷文件路径（调用方显式声明）' },
+        path: { type: 'string', description: '单载荷文件路径（与 paths 二选一，调用方显式声明）' },
+        paths: { type: 'array', items: { type: 'string' }, description: '多载荷文件路径（与 path 二选一；同谱系幂等门禁天然兜底跨载荷重复）' },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
       },
       async execute(args = {}) {
-        if (typeof args.path !== 'string' || args.path.trim().length === 0) {
-          throw samplerError('ANCHOR_PERSIST', 'load 必须提供载荷路径（路径由调用方显式声明，库不自作主张）')
+        const paths = resolveLoadPaths(args, 'load')
+        // ㉞ 门禁先行：先完成全部文件的完整性检查，任何一份不过 → 整批拒绝（此时尚未写入任何条目，库零污染）。
+        const checked = paths.map(p => ({ path: p, ...checkPayload(p) }))
+        const failed = checked.find(c => !c.ok)
+        if (failed) {
+          throw samplerError('ANCHOR_PERSIST', `${failed.reason}（门禁先行：整批拒绝，未回填任何条目）`)
         }
-        let raw
-        try {
-          raw = readFileSync(args.path, 'utf8')
-        } catch (err) {
-          throw samplerError('ANCHOR_PERSIST', `载荷文件不可读（不存在或无权限）：${args.path}——不静默返回空库冒充成功`)
+        const files = []
+        let added = 0
+        let skipped = 0
+        const rejected = []
+        for (const c of checked) {
+          const r = importEntries(c.cleanEntries, c.indexMap)
+          const fileRejected = [...c.stampRejected, ...r.rejected].sort((a, b) => a.index - b.index)
+          added += r.added
+          skipped += r.skipped
+          rejected.push(...fileRejected)
+          files.push({ path: c.path, added: r.added, skipped: r.skipped, rejected: fileRejected })
         }
-        let payload
-        try {
-          payload = JSON.parse(raw)
-        } catch {
-          throw samplerError('ANCHOR_PERSIST', `载荷不是合法 JSON（文件损坏或非导出载荷）：${args.path}`)
-        }
-        if (!Array.isArray(payload?.entries)) {
-          throw samplerError('ANCHOR_PERSIST', '载荷缺少 entries 数组（非 sampler.anchor.export/save 产物，不猜测冒充）')
-        }
-        // ㉜ 完整性校验：版本门禁（未知形态不静默接受）+ size 声明对账（声明 ≠ 实质即拒）。
-        // 单条损坏不连坐：单条问题由共享导入循环逐条拒绝如实记录（与 ㉓ 同款纪律）。
-        if (payload.version !== 'saturday-anchor-store/1') {
-          throw samplerError('ANCHOR_PERSIST',
-            `载荷版本不受支持（声明 ${payload.version ?? '无'}，当前仅支持 saturday-anchor-store/1）：不静默接受未知形态`)        }
-        if (payload.size !== payload.entries.length) {
-          throw samplerError('ANCHOR_PERSIST',
-            `载荷完整性声明与实质不符（声明 size=${payload.size}，实际 entries=${payload.entries.length}）：完整性校验拒绝，不猜测补齐`)
-        }
-        const { added, skipped, rejected } = importEntries(payload.entries)
         // ㉛ lineageRefs：磁盘数据起点的可追溯声明——归一化后失效传播可从此起点发起（与 ㉑ 归一规则同款：取 # 前段）。
-        const lineageRefs = [...new Set(payload.entries
-          .map(e => typeof e.source === 'string' ? e.source.split('#')[0] : null)
-          .filter(ref => ref && (ref.startsWith('material:') || ref.startsWith('job:'))))]
+        const lineageRefs = [...new Set(checked.flatMap(c => c.payload.entries
+          .map(e => normRef(e.source))
+          .filter(isTrackableRef)))]
         return {
-          loaded: true, path: args.path, added, skipped, rejected,
+          loaded: true,
+          ...(paths.length === 1 ? { path: paths[0] } : { paths }),
+          files, added, skipped, rejected,
           size: anchorStore.size(), lineageRefs,
-          note: '落盘载荷已回填：门禁与导入工具同款（谱系/本体/幂等）；lineageRefs 为磁盘数据起点的可追溯声明；库自身仍会话级',
+          note: '落盘载荷已回填（门禁先行，单条损坏不连坐）：门禁与导入工具同款（谱系/本体/幂等）；lineageRefs 为磁盘数据起点的可追溯声明；库自身仍会话级',
+        }
+      },
+    })
+
+    // ㉟ 载荷血缘审计（只读观测）：回填前的一手数据质量观测面——三态声明可追溯/不可追溯/损坏；
+    // 审计不回填、不污染库；单文件异常如实入报告不连坐其余文件。
+    function classifyEntry(e) {
+      if (e?.entryVersion !== ENTRY_VERSION || typeof e?.source !== 'string' || e.source.trim().length === 0) return 'corrupt'
+      return isTrackableRef(normRef(e.source)) ? 'traceable' : 'untracked'
+    }
+
+    rt.registerTool({
+      name: 'sampler.anchor.audit',
+      description: '审计调用方指定路径载荷的血缘完整率（只读，不回填）：逐条目三态——可追溯（来源归一化为 material:/job:）/' +
+                   '不可追溯（有来源但非可追溯形态）/损坏（版本戳缺失或来源缺失，回填必拒）；异常如实入报告，不连坐。',
+      parameters: {
+        path: { type: 'string', description: '单载荷文件路径（与 paths 二选一）' },
+        paths: { type: 'array', items: { type: 'string' }, description: '多载荷文件路径（与 path 二选一）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        const paths = resolveLoadPaths(args, 'audit')
+        const files = paths.map(p => {
+          const c = checkPayload(p)
+          if (!c.ok) return { path: p, ok: false, reason: c.reason }
+          const tally = { traceable: 0, untracked: 0, corrupt: 0 }
+          for (const e of c.payload.entries) tally[classifyEntry(e)]++
+          return { path: p, ok: true, version: c.payload.version, size: c.payload.size, ...tally }
+        })
+        return {
+          audited: true,
+          ...(paths.length === 1 ? { path: paths[0] } : { paths }),
+          files,
+          size: anchorStore.size(),
+          note: '审计为只读观测：不回填、库不变（size 为审计时库状态）；三态 = 可追溯/不可追溯/损坏',
         }
       },
     })
