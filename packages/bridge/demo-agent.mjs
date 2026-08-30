@@ -24,13 +24,15 @@
 //           回填交付的 lineageRefs（磁盘数据起点的可追溯声明）随阶段日志呈现。
 //   阶段 G（㊱/㉟）：自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)
 //           → 观测先于行动的数据纪律在 Agent 层实证：审计为只读（三态报告回流，库零污染）。
+//   阶段 H（㊴/㊶）：自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）
+//           → load（仅达标载荷）：观测先于行动从单工具升为决策链（报告不达标即不回填）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
 import assert from 'node:assert'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { rmSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore from '@deepseek-ai/dsh-session'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -538,9 +540,80 @@ async function main() {
     JSON.stringify({ ok: auditResult.files[0].ok, traceable: auditResult.files[0].traceable, corrupt: auditResult.files[0].corrupt }))
   console.log('[ok   ] 阶段 G：自然语言 → 载荷血缘审计（观测先于行动：只读三态报告，库零污染）→ 收尾 ✓\n')
 
-  // 10. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 10. 阶段 H（㊴/㊶）：审计驱动的合流回填决策链——审计两份候选载荷（一份全可追溯 /
+  //     一份含不可追溯条目 + 修复建议）→ 按报告只回填达标载荷。诚实声明：决策本身由
+  //     mock 脚本编码，阶段实证的是“报告 → 行动”链路的运行时效果（不达标载荷不进库）。
+  const demoStore = samplerFiber.store.saturdaySamplerOu
+  const hGraph = demoStore.anchorStore.entries()[0].graph
+  const hGoodPath = join(tmpdir(), 'saturday-demo-agent-h-good.json')
+  const hBadPath = join(tmpdir(), 'saturday-demo-agent-h-bad.json')
+  writeFileSync(hGoodPath, JSON.stringify({ version: 'saturday-anchor-store/2', size: 1, entries: [
+    { entryVersion: 'saturday-anchor-entry/1', graph: hGraph, source: 'material:cu-audit-h', composition: { Cu: 4 } },
+  ] }))
+  writeFileSync(hBadPath, JSON.stringify({ version: 'saturday-anchor-store/2', size: 1, entries: [
+    { entryVersion: 'saturday-anchor-entry/1', graph: hGraph, source: 'inline:adhoc-audit-h', composition: { Cu: 4 } },
+  ] }))
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8240,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.audit',
+    toolArguments: JSON.stringify({ paths: [hGoodPath, hBadPath] }),
+    successText: '两份候选载荷审计完成：一份全可追溯，一份含不可追溯条目。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '审计这两份候选载荷的血缘，只回填达标的那份' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const hAuditMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(hAuditMsg, '阶段 H1 应包含 sampler.anchor.audit 结果')
+  const hAuditResult = JSON.parse(hAuditMsg.content)
+  assert.equal(hAuditResult.files[0].traceable, 1, '达标载荷全可追溯')
+  assert.equal(hAuditResult.files[0].repairHints.length, 0, '达标载荷无修复建议')
+  assert.equal(hAuditResult.files[1].untracked, 1, '不达标载荷含不可追溯条目')
+  assert.ok(hAuditResult.files[1].repairHints[0].hint.includes('可追溯'), '修复建议指明出路（建议声明可追溯起源）')
+  console.log('[tool ] sampler.anchor.audit（双载荷）:',
+    JSON.stringify(hAuditResult.files.map(f => ({ traceable: f.traceable, untracked: f.untracked, hints: f.repairHints.length }))))
+
+  // 决策链第二环：按报告只回填达标载荷（不达标载荷不进库）
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8241,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.load',
+    toolArguments: JSON.stringify({ paths: [hGoodPath] }),
+    successText: '仅达标载荷已回填。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '按审计报告回填' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const hLoadMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(hLoadMsg, '阶段 H2 应包含 sampler.anchor.load 结果')
+  const hLoadResult = JSON.parse(hLoadMsg.content)
+  assert.equal(hLoadResult.added, 1, '仅达标载荷回填（一条）')
+  assert.deepEqual(hLoadResult.lineageRefs, ['material:cu-audit-h'], '回填交付的可追溯声明只含达标载荷谱系')
+  assert.ok(!demoStore.anchorStore.entries().some(e => e.source.startsWith('inline:adhoc-audit-h')),
+    '不达标载荷未入库（报告不达标的载荷不进数据燃料）')
+  console.log('[tool ] sampler.anchor.load（按报告选择性回填）:',
+    JSON.stringify({ added: hLoadResult.added, lineageRefs: hLoadResult.lineageRefs }))
+  console.log('[ok   ] 阶段 H：自然语言 → 审计驱动的合流回填决策链（报告不达标即不回填）→ 收尾 ✓\n')
+
+  // 11. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
+  rmSync(hGoodPath, { force: true })
+  rmSync(hBadPath, { force: true })
   await handle.dispose()
   await samplerFiber.dispose()
   await screeningFiber.dispose()

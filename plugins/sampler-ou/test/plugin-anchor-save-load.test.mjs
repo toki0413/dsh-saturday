@@ -9,7 +9,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import plugin from '../src/index.mjs'
+import plugin, { trajectoryTriggerAssessment } from '../src/index.mjs'
 
 const graph4 = {
   nodes: Array.from({ length: 4 }, (_, i) => ({ number: 29, position: [i * 1.8, 0, 0] })),
@@ -249,6 +249,16 @@ test('8. ㉟ 血缘审计（只读）：三态统计如实 + 审计不回填不�
       { t: 2, u: 1, c: 1 },
       '三态统计如实：可追溯/不可追溯/损坏',
     )
+    // ㊶ 修复建议通道：非可追溯条目随报告附可操作的修复声明（指明出路，不代改）
+    assert.deepEqual(
+      report.files[0].repairHints.map(h => [h.index, h.state]),
+      [[2, 'untracked'], [3, 'corrupt']],
+      '修复建议定位到条目（载荷原位索引 + 三态），可追溯条目不附建议',
+    )
+    assert.ok(report.files[0].repairHints.every(h => typeof h.hint === 'string' && h.hint.length > 0),
+      '修复声明可操作（缺什么、回填时会怎样）')
+    assert.ok(report.files[0].repairHints[1].hint.includes('必拒'), '损坏条目的建议如实声明回填必拒')
+    assert.ok(report.files[0].repairHints[0].hint.includes('可回填但不可追溯'), '不可追溯条目的建议区分于损坏（可回填但建议声明可追溯起源）')
     assert.equal(report.files[1].ok, false, '异常文件如实入报告（不连坐其余文件，不冒充可审计）')
     assert.equal(env.handles.anchorStore.size(), 0, '审计为只读观测：不回填、库零污染')
   } finally {
@@ -268,6 +278,25 @@ test('9. ㊳ 库容量观测（只读）：谱系形态分布如实 + 观测不�
     assert.deepEqual(stats.lineage, { material: 1, job: 1, other: 1 }, '谱系形态分布如实（归一化取 # 前段）')
     assert.equal(stats.withComposition, 2, '组分声明覆盖如实')
     assert.equal(env.handles.anchorStore.size(), 3, '观测不变更库')
+  } finally {
+    await env.fiber.dispose()
+  }
+})
+
+test('10. ㊵ 触发判据接容量观测：stats 读数直接喂判据（声明式对账，不是门禁）', async () => {
+  const env = await mount()
+  try {
+    env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-tr', composition: { Cu: 4 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'job:j-tr#engine=emt-mock', composition: { Cu: 4 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'inline:adhoc-tr' })   // 无组分声明 → 拉低覆盖率
+    const stats = await env.handles.rt.tools.call('sampler.anchor.stats', {})
+    // 宽松阈值 → 达标；严格阈值 → 缺口如实（判据随读数变化，不硬编码结论）
+    const loose = trajectoryTriggerAssessment(stats, { minSize: 2, minCompositionCoverage: 0.5 })
+    assert.equal(loose.met, true, '读数满足宽松阈值 → 达标')
+    const strict = trajectoryTriggerAssessment(stats, { minSize: 10, minCompositionCoverage: 0.9 })
+    assert.equal(strict.met, false)
+    assert.equal(strict.reasons.length, 2, '两项缺口各自独立呈报')
+    assert.equal(strict.readings.size, 3, '判据回呈的读数与观测一致（读数 → 判据不断链）')
   } finally {
     await env.fiber.dispose()
   }

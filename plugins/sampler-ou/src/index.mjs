@@ -13,6 +13,7 @@ import { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mj
 
 export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME, uEqFromHarmonicTemperature, KB_EV_PER_K, ouMixtureLogProb, ouSampleMixture } from './sampler.mjs'
 export { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
+export { trajectoryTriggerAssessment } from './anchor-trigger.mjs'
 
 export default {
   name: 'saturday-sampler-ou',
@@ -434,15 +435,26 @@ export default {
 
     // ㉟ 载荷血缘审计（只读观测）：回填前的一手数据质量观测面——三态声明可追溯/不可追溯/损坏；
     // 审计不回填、不污染库；单文件异常如实入报告不连坐其余文件。
+    // ㊶ 修复建议通道：观测面从“呈现问题”走向“指明出路”——对非可追溯条目随报告交付
+    // 可操作的修复声明（缺什么、回填时会怎样）；仍保持只读，不越权代改。
     function classifyEntry(e) {
-      if (e?.entryVersion !== ENTRY_VERSION || typeof e?.source !== 'string' || e.source.trim().length === 0) return 'corrupt'
-      return isTrackableRef(normRef(e.source)) ? 'traceable' : 'untracked'
+      if (e?.entryVersion !== ENTRY_VERSION) {
+        return { state: 'corrupt', hint: `版本戳缺失或未知（期望 ${ENTRY_VERSION}）：条目级损坏，回填必拒` }
+      }
+      if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
+        return { state: 'corrupt', hint: '来源声明缺失：条目级损坏，回填必拒' }
+      }
+      if (!isTrackableRef(normRef(e.source))) {
+        return { state: 'untracked', hint: '来源非可追溯形态（期望 material: 或 job: 前缀）：可回填但不可追溯，建议声明可追溯起源' }
+      }
+      return { state: 'traceable', hint: null }
     }
 
     rt.registerTool({
       name: 'sampler.anchor.audit',
       description: '审计调用方指定路径载荷的血缘完整率（只读，不回填）：逐条目三态——可追溯（来源归一化为 material:/job:）/' +
-                   '不可追溯（有来源但非可追溯形态）/损坏（版本戳缺失或来源缺失，回填必拒）；异常如实入报告，不连坐。',
+                   '不可追溯（有来源但非可追溯形态）/损坏（版本戳缺失或来源缺失，回填必拒）；' +
+                   '非可追溯条目附修复建议（指明出路，不代改）；异常如实入报告，不连坐。',
       parameters: {
         path: { type: 'string', description: '单载荷文件路径（与 paths 二选一）' },
         paths: { type: 'array', items: { type: 'string' }, description: '多载荷文件路径（与 path 二选一）' },
@@ -457,15 +469,20 @@ export default {
           const c = checkPayload(p)
           if (!c.ok) return { path: p, ok: false, reason: c.reason }
           const tally = { traceable: 0, untracked: 0, corrupt: 0 }
-          for (const e of c.payload.entries) tally[classifyEntry(e)]++
-          return { path: p, ok: true, version: c.payload.version, size: c.payload.size, ...tally }
+          const repairHints = []
+          c.payload.entries.forEach((e, index) => {
+            const { state, hint } = classifyEntry(e)
+            tally[state]++
+            if (state !== 'traceable') repairHints.push({ index, state, hint })
+          })
+          return { path: p, ok: true, version: c.payload.version, size: c.payload.size, ...tally, repairHints }
         })
         return {
           audited: true,
           ...(paths.length === 1 ? { path: paths[0] } : { paths }),
           files,
           size: anchorStore.size(),
-          note: '审计为只读观测：不回填、库不变（size 为审计时库状态）；三态 = 可追溯/不可追溯/损坏',
+          note: '审计为只读观测：不回填、库不变（size 为审计时库状态）；三态 = 可追溯/不可追溯/损坏；repairHints 为非可追溯条目的修复建议（指明出路，不代改）',
         }
       },
     })

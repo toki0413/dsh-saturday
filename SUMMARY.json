@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T09:16:46.247Z",
-  "totalPass": 315,
+  "generatedAt": "2026-08-30T12:41:35.232Z",
+  "totalPass": 319,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 51,
+      "pass": 55,
       "fail": 0
     },
     {
@@ -489,6 +489,11 @@
       "index": 70,
       "clause": "审计接 Agent 层 + 多载荷合并后的活性保持 + 锚点库容量观测（㊱/㊲/㊳）：㊱ `demo:agent` 阶段 G——自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)：只读三态报告回流（全部可追溯、无损坏），库状态不变（观测先于行动的数据纪律在 Agent 层实证，㉕ 教训延续）；㊲ 多载荷合并后的活性保持：两份不同来源载荷经 ㉞ 合并回填后，跨载荷汇聚的谱系各自独立可撤回（沿某一来源失效 → 提案失效；失效不删数据，另一来源与库内条目照常在场）；合并后提案锚点归属与载荷谱系逐条一致（汇聚不冒充、不丢、不改写）；㊳ `sampler.anchor.stats` 只读库内容量观测（条目数 + 归一化谱系形态分布 + 组分声明覆盖）：观测不变更库，与 ㉟ 载荷审计构成“库内 + 库外”双观测面（为 ㉘ 触发条件的“足够轨迹”提供量化读数）",
       "evidence": "demo:agent 阶段 G 端到端 + bridge anchor-merge-liveness 测试 1-2（谱系独立可撤回 + 归属逐条一致）+ plugin-sampler-ou plugin-anchor-save-load 测试 9（库容量观测如实与不变更）"
+    },
+    {
+      "index": 71,
+      "clause": "审计驱动的合流回填决策链 + “足够轨迹”触发判据原型 + 审计修复建议通道（㊴/㊵/㊶）：㊴ `demo:agent` 阶段 H——自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）→ 按报告只回填达标载荷（不达标载荷不进数据燃料；决策由 mock 脚本编码，实证的是“报告 → 行动”链路的运行时效果）；㊵ `trajectoryTriggerAssessment` 纯层判据：㊳ 读数对调用方显式声明的阈值（`minSize`/`minCompositionCoverage`）为声明式对账不是门禁，阈值不硬编码不设默认（未声明即拒），两项缺口各自独立呈报，空库覆盖率为 0（不除零崩溃）；㊶ `sampler.anchor.audit` 对非可追溯条目随报告交付修复声明（`repairHints`：原位索引 + 三态 + 建议），损坏与不可追溯区分（前者回填必拒，后者可回填但建议声明可追溯起源），仍保持只读不代改",
+      "evidence": "demo:agent 阶段 H 端到端 + plugin-sampler-ou plugin-anchor-trigger 测试 1-3（达标/缺口独立呈报/未声明阈值拒绝 + 空库）+ plugin-anchor-save-load 测试 8 扩展（修复建议定位与可操作）与测试 10（统计读数直喂判据）"
     }
   ]
 }
