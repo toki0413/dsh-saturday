@@ -377,3 +377,47 @@ test('12. ㊸ 修复门禁：损坏/已可追溯/越界/非可追溯来源如实
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('13. ㊻ 判据快照落盘/回填：结论整体原样跨会话续供 + 快照不进锚点库（回填只读校验）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-trigger-snapshot-'))
+  const src = await mount()
+  const dst = await mount()
+  try {
+    src.handles.anchorStore.add({ graph: graph4, source: 'material:cu-sn', composition: { Cu: 4 } })
+    src.handles.anchorStore.add({ graph: graph4, source: 'job:j-sn#engine=emt-mock', composition: { Cu: 4 } })
+    const stats = await src.handles.rt.tools.call('sampler.anchor.stats', {})
+    const thresholds = { minSize: 1, minCompositionCoverage: 0.5, minTrackableRatio: 0.9 }
+    const assessment = trajectoryTriggerAssessment(stats, thresholds)
+    assert.equal(assessment.met, true)
+    // 落盘：结论整体原样（读数/阈值/结论一并保留）
+    const snapPath = join(dir, 'snapshot.json')
+    const saved = await src.handles.rt.tools.call('sampler.trigger.snapshot.save', { path: snapPath, assessment, batchId: 'snap-b1' })
+    assert.equal(saved.batchId, 'snap-b1')
+    assert.equal(saved.met, assessment.met, '落盘不改判（结论原样）')
+    // 跨会话回填：新会话只读校验后原样交付（裁决依据可续供、可复算）
+    const restored = await dst.handles.rt.tools.call('sampler.trigger.snapshot.load', { path: snapPath })
+    assert.equal(restored.met, assessment.met)
+    assert.deepEqual(restored.readings, assessment.readings, '读数随快照原样续供')
+    assert.deepEqual(restored.thresholds, thresholds, '阈值随快照原样续供（声明可审计）')
+    assert.equal(restored.batchId, 'snap-b1')
+    assert.equal(dst.handles.anchorStore.size(), 0, '快照不是锚点条目：不进锚点库、不进数据燃料')
+    // 门禁如实：缺批次标识拒；版本戳未知拒；形态不完整拒（不静默冒充）
+    await assert.rejects(
+      () => src.handles.rt.tools.call('sampler.trigger.snapshot.save', { path: snapPath, assessment }),
+      /batchId/)
+    const alien = join(dir, 'alien.json')
+    await writeFile(alien, JSON.stringify({ version: 'saturday-trigger-snapshot/9', met: true, readings: {}, thresholds: {} }))
+    await assert.rejects(
+      () => dst.handles.rt.tools.call('sampler.trigger.snapshot.load', { path: alien }),
+      /版本戳/)
+    const incomplete = join(dir, 'incomplete.json')
+    await writeFile(incomplete, JSON.stringify({ version: 'saturday-trigger-snapshot/1', met: true }))
+    await assert.rejects(
+      () => dst.handles.rt.tools.call('sampler.trigger.snapshot.load', { path: incomplete }),
+      /形态不完整/)
+  } finally {
+    await src.fiber.dispose()
+    await dst.fiber.dispose()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

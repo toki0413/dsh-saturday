@@ -26,6 +26,8 @@
 //           → 观测先于行动的数据纪律在 Agent 层实证：审计为只读（三态报告回流，库零污染）。
 //   阶段 H（㊴/㊶）：自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）
 //           → load（仅达标载荷）：观测先于行动从单工具升为决策链（报告不达标即不回填）。
+//   阶段 I（㊺/㊸）：自然语言“修复不可追溯条目并重新审计验收” → repair（逐条显式授权，
+//           写新载荷不碰原件）→ audit（审计是修复的验收面）：观测→修复→验收三步链接。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -609,11 +611,77 @@ async function main() {
     JSON.stringify({ added: hLoadResult.added, lineageRefs: hLoadResult.lineageRefs }))
   console.log('[ok   ] 阶段 H：自然语言 → 审计驱动的合流回填决策链（报告不达标即不回填）→ 收尾 ✓\n')
 
-  // 11. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 11. 阶段 I（㊺/㊸）：修复链接 Agent 层——观测→修复→验收三步：阶段 H 已观测到
+  //     不达标载荷含不可追溯条目 + 修复建议，此处按建议逐条显式授权修复（写新载荷不碰原件）
+  //     → 重新审计验收（审计是修复的验收面）。诚实声明：修复声明由 mock 脚本编码，
+  //     阶段实证的是“观测→修复→验收”链路的运行时效果。
+  const iBadPath = join(tmpdir(), 'saturday-demo-agent-i-bad.json')
+  const iFixedPath = join(tmpdir(), 'saturday-demo-agent-i-fixed.json')
+  writeFileSync(iBadPath, JSON.stringify({ version: 'saturday-anchor-store/2', size: 1, entries: [
+    { entryVersion: 'saturday-anchor-entry/1', graph: hGraph, source: 'inline:adhoc-audit-i', composition: { Cu: 4 } },
+  ] }))
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8242,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.repair',
+    toolArguments: JSON.stringify({ path: iBadPath, out: iFixedPath, repairs: [{ index: 0, source: 'material:cu-repaired-i' }] }),
+    successText: '不可追溯条目已按声明修复（写新载荷不碰原件）。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '按审计建议为不可追溯条目逐条声明可追溯起源并修复（写新载荷）' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const iRepairMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(iRepairMsg, '阶段 I1 应包含 sampler.anchor.repair 结果')
+  const iRepairResult = JSON.parse(iRepairMsg.content)
+  assert.equal(iRepairResult.applied.length, 1, '不可追溯条目修复应用成功')
+  assert.deepEqual(iRepairResult.applied[0], { index: 0, from: 'inline:adhoc-audit-i', to: 'material:cu-repaired-i' },
+    '修复逐条按调用方声明应用（不越权代改）')
+  assert.equal(iRepairResult.refused.length, 0, '无可拒条目（只有一条不可追溯条目）')
+  console.log('[tool ] sampler.anchor.repair:',
+    JSON.stringify({ applied: iRepairResult.applied, refused: iRepairResult.refused }))
+
+  // 验收环：重新审计修复后载荷（审计是修复的验收面；原件未动可对照）
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8243,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.audit',
+    toolArguments: JSON.stringify({ paths: [iFixedPath, iBadPath] }),
+    successText: '修复后载荷重新审计完成：全可追溯；原件保持原状。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '重新审计修复后的载荷验收，并对照原件' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const iAuditMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(iAuditMsg, '阶段 I2 应包含 sampler.anchor.audit 结果')
+  const iAuditResult = JSON.parse(iAuditMsg.content)
+  assert.equal(iAuditResult.files[0].traceable, 1, '修复后载荷全可追溯（验收达标）')
+  assert.equal(iAuditResult.files[0].repairHints.length, 0, '修复后载荷无遗留修复建议')
+  assert.equal(iAuditResult.files[1].untracked, 1, '原件保持原状（修复写新载荷不碰原件）')
+  console.log('[tool ] sampler.anchor.audit（验收）:',
+    JSON.stringify(iAuditResult.files.map(f => ({ traceable: f.traceable, untracked: f.untracked }))))
+  console.log('[ok   ] 阶段 I：自然语言 → 观测→修复→验收三步链（修复逐条授权、原件留证、审计验收）→ 收尾 ✓\n')
+
+  // 12. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
   rmSync(hGoodPath, { force: true })
   rmSync(hBadPath, { force: true })
+  rmSync(iBadPath, { force: true })
+  rmSync(iFixedPath, { force: true })
   await handle.dispose()
   await samplerFiber.dispose()
   await screeningFiber.dispose()

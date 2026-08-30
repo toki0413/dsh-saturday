@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T12:52:18.952Z",
-  "totalPass": 323,
+  "generatedAt": "2026-08-30T13:53:55.299Z",
+  "totalPass": 325,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 57,
+      "pass": 59,
       "fail": 0
     },
     {
@@ -499,6 +499,11 @@
       "index": 72,
       "clause": "收尾判据快照 + 载荷侧修复原语 + 判据对账谱系化（㊷/㊸/㊹）：㊷ `demo:anchor-resume` 会话二收尾：`stats` 读数 → 判据对账 → 判据快照随日志呈现（`met=false`，缺口如实：条目数 2 低于 minSize 100）——“足够轨迹”裁决从人工对照升级为机器可读的判据快照（读数 → 阈值 → 结论可追溯可复算），阈值调用方显式声明（原型阈值非内置常量），维持 ㉘ 裁决；㊸ `sampler.anchor.repair` 载荷侧修复原语（观测/修复权责分离）：审计只指明出路，修复必须调用方逐条显式授权；修复写新载荷不碰原件（原件留作证据，`out` 与 `path` 相同即拒）；只修复不可追溯条目（损坏修复即伪造必拒，已可追溯修复即替调用方做决定亦拒）；修复全程不回填，审计是修复的验收面；㊹ 判据对账谱系化：对账结论可选登记为推导（输入 = 可追溯证据引用，归一化同 ㉑），证据引用失效 → 对账结论沿推导图如实失效（裁决依据可撤回）；无可追溯证据引用不伪登记；未注入推导服务行为不变",
       "evidence": "demo:anchor-resume 收尾判据快照 + plugin-sampler-ou plugin-anchor-save-load 测试 11-12（修复原语正路 + 四类门禁拒绝）+ bridge anchor-trigger-derivation 测试 1-2（结论可撤回 + 不伪登记与零依赖）"
+    },
+    {
+      "index": 73,
+      "clause": "修复链接 Agent 层 + 判据快照跨会话续供 + 判据谱系质量维（㊺/㊻/㊼）：㊺ `demo:agent` 阶段 I——自然语言“按审计建议修复不可追溯条目并重新审计验收” → repair（逐条显式授权，写新载荷不碰原件）→ 重新审计验收（修复后载荷全可追溯、原件保持原状：审计是修复的验收面）——观测→修复→验收三步链在 Agent 层链接（修复声明由 mock 脚本编码，诚实声明）；㊻ `sampler.trigger.snapshot.save`/`load` 判据快照落盘/回填原语：对账结论整体原样落盘（读数/阈值/结论一并保留，落盘不改判）→ 回填只读校验版本戳（`saturday-trigger-snapshot/1`）与形态后原样交付（未知版本戳/形态不完整/缺批次标识均如实拒）；快照不是锚点条目（不进锚点库、不进数据燃料）——裁决依据跨会话可续供、可复算；㊼ 判据谱系质量维：可选阈值 `minTrackableRatio`（可追溯占比）由调用方显式声明——未声明行为不变，声明后读数缺谱系分布维则显式拒绝（不替调用方猜测质量读数），质量维缺口与数量/覆盖维独立呈报不合并糊化（“足够轨迹”不只够多还要够可追溯）",
+      "evidence": "demo:agent 阶段 I 端到端 + plugin-sampler-ou plugin-anchor-save-load 测试 13（快照落盘/回填原样 + 三道门禁拒绝 + 不进锚点库）+ plugin-anchor-trigger 测试 4（质量维对账如实与门禁）"
     }
   ]
 }

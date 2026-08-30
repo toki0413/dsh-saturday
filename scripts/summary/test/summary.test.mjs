@@ -36,53 +36,55 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：72 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：73 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 72, '附录 A 当前应为 72 条实证映射')
-  assert.equal(rows[rows.length - 1].index, 72)
+  assert.equal(rows.length, 73, '附录 A 当前应为 73 条实证映射')
+  assert.equal(rows[rows.length - 1].index, 73)
   assert.ok(rows[35].evidence.includes('scripts/summary'), '第 36 条（摘要层自身）证据必须可追溯到摘要层测试')
-  assert.ok(rows[rows.length - 1].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 1].evidence.includes('anchor-trigger-derivation'),
+  assert.ok(rows[rows.length - 1].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 1].evidence.includes('plugin-anchor-trigger'),
+    '第 73 条证据指向修复链接 Agent 层 + 判据快照跨会话续供 + 判据谱系质量维（㊺/㊻/㊼）')
+  assert.ok(rows[rows.length - 2].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 2].evidence.includes('anchor-trigger-derivation'),
     '第 72 条证据指向收尾判据快照 + 载荷侧修复原语 + 判据对账谱系化（㊷/㊸/㊹）')
-  assert.ok(rows[rows.length - 2].evidence.includes('plugin-anchor-trigger') && rows[rows.length - 2].evidence.includes('plugin-anchor-save-load'),
+  assert.ok(rows[rows.length - 3].evidence.includes('plugin-anchor-trigger') && rows[rows.length - 3].evidence.includes('plugin-anchor-save-load'),
     '第 71 条证据指向审计驱动的合流回填决策链 + 触发判据原型 + 审计修复建议通道（㊴/㊵/㊶）')
-  assert.ok(rows[rows.length - 3].evidence.includes('anchor-merge-liveness') && rows[rows.length - 3].evidence.includes('plugin-anchor-save-load'),
+  assert.ok(rows[rows.length - 4].evidence.includes('anchor-merge-liveness') && rows[rows.length - 4].evidence.includes('plugin-anchor-save-load'),
     '第 70 条证据指向审计接 Agent 层 + 多载荷合并后的活性保持 + 锚点库容量观测（㊱/㊲/㊳）')
-  assert.ok(rows[rows.length - 4].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 4].evidence.includes('plugin-anchor-persist'),
+  assert.ok(rows[rows.length - 5].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 5].evidence.includes('plugin-anchor-persist'),
     '第 69 条证据指向条目级版本戳 + 多载荷合并回填 + 载荷血缘审计（㉝/㉞/㉟）')
-  assert.ok(rows[rows.length - 5].evidence.includes('anchor-lineage-refs') && rows[rows.length - 5].evidence.includes('plugin-anchor-save-load'),
+  assert.ok(rows[rows.length - 6].evidence.includes('anchor-lineage-refs') && rows[rows.length - 6].evidence.includes('plugin-anchor-save-load'),
     '第 68 条证据指向恢复闭环接 Agent 层 + 落盘侧谱系可追溯声明 + 落盘载荷完整性校验（㉚/㉛/㉜）')
-  assert.ok(rows[rows.length - 6].evidence.includes('anchor-resume') && rows[rows.length - 6].evidence.includes('anchor-resume-liveness'),
+  assert.ok(rows[rows.length - 7].evidence.includes('anchor-resume') && rows[rows.length - 7].evidence.includes('anchor-resume-liveness'),
     '第 67 条证据指向跨会话恢复端到端 + 回填后活性保持 + 自监督进场条件裁决（㉗/㉘/㉙）')
-  assert.ok(rows[rows.length - 7].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 7].evidence.includes('proposal-chain'),
+  assert.ok(rows[rows.length - 8].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 8].evidence.includes('proposal-chain'),
     '第 66 条证据指向持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露（㉔/㉕/㉖）')
-  assert.ok(rows[rows.length - 8].evidence.includes('plugin-mixture-derivation') && rows[rows.length - 8].evidence.includes('plugin-anchor-persist') && rows[rows.length - 8].evidence.includes('plugin-ternary'),
+  assert.ok(rows[rows.length - 9].evidence.includes('plugin-mixture-derivation') && rows[rows.length - 9].evidence.includes('plugin-anchor-persist') && rows[rows.length - 9].evidence.includes('plugin-ternary'),
     '第 65 条证据指向提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型（㉑/㉒/㉓）')
-  assert.ok(rows[rows.length - 9].evidence.includes('plugin-null-distance') && rows[rows.length - 9].evidence.includes('demo:anchor-auto'),
+  assert.ok(rows[rows.length - 10].evidence.includes('plugin-null-distance') && rows[rows.length - 10].evidence.includes('demo:anchor-auto'),
     '第 64 条证据指向全自动锚点闭环 + 不可考组分诚实降级链（⑱/⑲/⑳）')
-  assert.ok(rows[rows.length - 10].evidence.includes('plugin-mixture-quota') && rows[rows.length - 10].evidence.includes('demo:agent'),
+  assert.ok(rows[rows.length - 11].evidence.includes('plugin-mixture-quota') && rows[rows.length - 11].evidence.includes('demo:agent'),
     '第 63 条证据指向锚点工具 Agent 层暴露 + 配额闭式对账（⑯/⑰）')
-  assert.ok(rows[rows.length - 11].evidence.includes('anchor-autoingest'), '第 62 条证据指向闭环轨迹自动入库测试（⑮）')
-  assert.ok(rows[rows.length - 12].evidence.includes('demo:anchor-guided') && rows[rows.length - 12].evidence.includes('plugin-anchor-tools'),
+  assert.ok(rows[rows.length - 12].evidence.includes('anchor-autoingest'), '第 62 条证据指向闭环轨迹自动入库测试（⑮）')
+  assert.ok(rows[rows.length - 13].evidence.includes('demo:anchor-guided') && rows[rows.length - 13].evidence.includes('plugin-anchor-tools'),
     '第 61 条证据指向锚点引导闭环端到端 + 工具链契约审查（⑫/⑭）')
-  assert.ok(rows[rows.length - 13].evidence.includes('plugin-anchor-tools'), '第 60 条证据指向锚点引导混合提案工具层测试（⑩）')
-  assert.ok(rows[rows.length - 14].evidence.includes('anchor-store'), '第 59 条证据指向锚点库测试（⑦）')
-  assert.ok(rows[rows.length - 15].evidence.includes('availability'), '第 58 条证据指向可用性预检工具测试（⑥）')
-  assert.ok(rows[rows.length - 16].evidence.includes('evidence'), '第 57 条证据指向证据源独立性机器审计测试（⑤）')
-  assert.ok(rows[rows.length - 17].evidence.includes('plugin-screening'), '第 56 条证据指向混合熵第二内置源测试')
-  assert.ok(rows[rows.length - 18].evidence.includes('demo-mixture-sampling'), '第 55 条证据指向多锚点混合采样真实演示')
-  assert.ok(rows[rows.length - 19].evidence.includes('demo-availability'), '第 54 条证据指向可用性预检演示')
-  assert.ok(rows[rows.length - 20].evidence.includes('units.test') && rows[rows.length - 20].evidence.includes('potential.test'),
+  assert.ok(rows[rows.length - 14].evidence.includes('plugin-anchor-tools'), '第 60 条证据指向锚点引导混合提案工具层测试（⑩）')
+  assert.ok(rows[rows.length - 15].evidence.includes('anchor-store'), '第 59 条证据指向锚点库测试（⑦）')
+  assert.ok(rows[rows.length - 16].evidence.includes('availability'), '第 58 条证据指向可用性预检工具测试（⑥）')
+  assert.ok(rows[rows.length - 17].evidence.includes('evidence'), '第 57 条证据指向证据源独立性机器审计测试（⑤）')
+  assert.ok(rows[rows.length - 18].evidence.includes('plugin-screening'), '第 56 条证据指向混合熵第二内置源测试')
+  assert.ok(rows[rows.length - 19].evidence.includes('demo-mixture-sampling'), '第 55 条证据指向多锚点混合采样真实演示')
+  assert.ok(rows[rows.length - 20].evidence.includes('demo-availability'), '第 54 条证据指向可用性预检演示')
+  assert.ok(rows[rows.length - 21].evidence.includes('units.test') && rows[rows.length - 21].evidence.includes('potential.test'),
     '第 53 条证据指向指纹实测态回读测试（通配三态 + 盖章三态）')
-  assert.ok(rows[rows.length - 21].evidence.includes('plugin-screening'), '第 52 条证据指向换算审计通道测试')
-  assert.ok(rows[rows.length - 22].evidence.includes('plugin-screening'), '第 51 条证据指向工具层参考态声明形态测试')
-  assert.ok(rows[rows.length - 23].evidence.includes('demo-cross-engine'), '第 50 条证据指向跨引擎对照演示')
-  assert.ok(rows[rows.length - 24].evidence.includes('potential.test'), '第 49 条证据指向 M2 激活门禁测试')
-  assert.ok(rows[rows.length - 25].evidence.includes('units.test') && rows[rows.length - 25].evidence.includes('plugin-screening'),
+  assert.ok(rows[rows.length - 22].evidence.includes('plugin-screening'), '第 52 条证据指向换算审计通道测试')
+  assert.ok(rows[rows.length - 23].evidence.includes('plugin-screening'), '第 51 条证据指向工具层参考态声明形态测试')
+  assert.ok(rows[rows.length - 24].evidence.includes('demo-cross-engine'), '第 50 条证据指向跨引擎对照演示')
+  assert.ok(rows[rows.length - 25].evidence.includes('potential.test'), '第 49 条证据指向 M2 激活门禁测试')
+  assert.ok(rows[rows.length - 26].evidence.includes('units.test') && rows[rows.length - 26].evidence.includes('plugin-screening'),
     '第 48 条证据指向单位/指纹门禁测试（core 纯层 + 筛选层 M3）')
-  assert.ok(rows[rows.length - 26].evidence.includes('plugin-sampler-ou'), '第 47 条证据指向多锚点混合采样测试')
-  assert.ok(rows[rows.length - 27].evidence.includes('plugin-sampler-ou'), '第 46 条证据指向采样温度标定测试')
-  assert.ok(rows[rows.length - 28].evidence.includes('plugin-screening'), '第 45 条证据指向证据源注册表化测试')
+  assert.ok(rows[rows.length - 27].evidence.includes('plugin-sampler-ou'), '第 47 条证据指向多锚点混合采样测试')
+  assert.ok(rows[rows.length - 28].evidence.includes('plugin-sampler-ou'), '第 46 条证据指向采样温度标定测试')
+  assert.ok(rows[rows.length - 29].evidence.includes('plugin-screening'), '第 45 条证据指向证据源注册表化测试')
   assert.ok(rows[33].evidence.includes('plugin-free-energy'), '第 34 条证据指向自由能测试')
   assert.ok(rows.every(r => r.clause.length > 0 && r.evidence.length > 0))
 })

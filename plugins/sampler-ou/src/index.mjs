@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto'
 import { writeFileSync, readFileSync } from 'node:fs'
 import { ouSampler, samplerError, ouSampleMixture } from './sampler.mjs'
 import { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
+import { trajectoryTriggerAssessment } from './anchor-trigger.mjs'
 
 export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME, uEqFromHarmonicTemperature, KB_EV_PER_K, ouMixtureLogProb, ouSampleMixture } from './sampler.mjs'
 export { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
@@ -574,6 +575,70 @@ export default {
           note: '修复写新载荷不碰原件（观测/修复权责分离）：只修复不可追溯条目，损坏/已可追溯条目如实拒绝；' +
                 '修复后载荷是否达标请重新审计（审计是修复的验收面）',
         }
+      },
+    })
+
+    // ㊻ 判据快照落盘/回填原语（跨会话续供）：把 ㊷ 的判据快照从“会话内日志”升级为可落盘的
+    // 证据载荷——快照整体原样落盘（读数/阈值/结论一并保留，不替调用方改写结论）；
+    // 回填只读校验版本戳与形态后原样交付（快照不是锚点条目，不进锚点库、不进数据燃料）。
+    rt.registerTool({
+      name: 'sampler.trigger.snapshot.save',
+      description: '判据快照落盘（跨会话续供）：判据对账结论整体原样落盘——读数/阈值/结论一并保留，' +
+                   '落盘不改判（不替调用方改写结论）。',
+      parameters: {
+        path: { type: 'string', description: '快照落盘路径' },
+        assessment: { type: 'object', additionalProperties: true, description: '判据对账结论（trajectoryTriggerAssessment 交付）' },
+        batchId: { type: 'string', description: '判据批次标识' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        const { path, assessment, batchId } = args
+        if (typeof path !== 'string' || path.trim().length === 0) throw new Error('snapshot.save: 落盘路径必须显式声明')
+        if (!assessment || typeof assessment !== 'object') throw new Error('snapshot.save: 判据结论 assessment 必须显式提供（先对账再落盘，不代算）')
+        if (typeof batchId !== 'string' || batchId.trim().length === 0) throw new Error('snapshot.save: 批次标识 batchId 必须显式声明')
+        const snapshot = {
+          version: 'saturday-trigger-snapshot/1',
+          batchId,
+          savedAt: new Date().toISOString(),
+          met: assessment.met,
+          reasons: assessment.reasons,
+          readings: assessment.readings,
+          thresholds: assessment.thresholds,
+        }
+        writeFileSync(path, JSON.stringify(snapshot))
+        return { path, batchId, met: assessment.met, version: snapshot.version, note: '快照整体原样落盘：落盘不改判（㊻）' }
+      },
+    })
+
+    rt.registerTool({
+      name: 'sampler.trigger.snapshot.load',
+      description: '判据快照回填（只读校验后原样交付）：校验版本戳与形态，快照不进锚点库、不进数据燃料——' +
+                   '裁决依据跨会话可续供、可复算。',
+      parameters: {
+        path: { type: 'string', description: '快照文件路径' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        const { path } = args
+        if (typeof path !== 'string' || path.trim().length === 0) throw new Error('snapshot.load: 快照路径必须显式声明')
+        let raw
+        try { raw = readFileSync(path, 'utf8') } catch { throw new Error('snapshot.load: 快照文件不可读') }
+        let snap
+        try { snap = JSON.parse(raw) } catch { throw new Error('snapshot.load: 快照不是合法 JSON') }
+        if (!snap || typeof snap !== 'object' || snap.version !== 'saturday-trigger-snapshot/1') {
+          throw new Error('snapshot.load: 版本戳缺失或未知（期望 saturday-trigger-snapshot/1）')
+        }
+        if (typeof snap.met !== 'boolean' || !snap.readings || typeof snap.readings !== 'object'
+            || !snap.thresholds || typeof snap.thresholds !== 'object') {
+          throw new Error('snapshot.load: 快照形态不完整（met/readings/thresholds 必须齐备）')
+        }
+        return { ...snap, note: '快照回填只读校验后原样交付：不进锚点库、不进数据燃料（㊻）' }
       },
     })
 

@@ -5,6 +5,9 @@
 // ㊹ 判据对账谱系化：对账结论可选登记为推导（输入 = 调用方声明的可追溯证据引用）——
 // 证据引用失效 → 对账结论沿推导图如实失效（裁决依据可撤回，与 ㉑ 提案登记同款纪律：
 // 无可追溯证据引用不伪登记）。
+// ㊼ 判据的谱系质量维：“足够轨迹”不只是够多，还要够可追溯——可选阈值 `minTrackableRatio`
+// （material:/job: 占比）由调用方显式声明；未声明行为不变（不硬编码、不设默认），
+// 声明了但读数缺谱系分布维 → 显式拒绝（不替调用方猜测质量读数）。
 
 import { randomUUID } from 'node:crypto'
 
@@ -20,12 +23,25 @@ export function trajectoryTriggerAssessment(readings, thresholds, context = {}) 
   const size = readings.size ?? 0
   const withComposition = readings.withComposition ?? 0
   const coverage = size > 0 ? withComposition / size : 0
+  // ㊼ 谱系质量维：可追溯占比（读数需带谱系形态分布，如 ㊳ 观测交付的 lineage 段）
+  const lineage = readings.lineage ?? null
+  const trackableRatio = lineage === null
+    ? null
+    : (size > 0 ? ((lineage.material ?? 0) + (lineage.job ?? 0)) / size : 0)
   const reasons = []
   if (size < thresholds.minSize) {
     reasons.push(`条目数 ${size} 低于 minSize ${thresholds.minSize}`)
   }
   if (coverage < thresholds.minCompositionCoverage) {
     reasons.push(`组分声明覆盖 ${coverage} 低于 minCompositionCoverage ${thresholds.minCompositionCoverage}`)
+  }
+  if (typeof thresholds.minTrackableRatio === 'number') {
+    if (trackableRatio === null) {
+      throw new Error('TRAJECTORY_TRIGGER_LINEAGE_REQUIRED：声明了 minTrackableRatio 但读数缺谱系形态分布（lineage 段，如 ㊳ 观测交付）——不替调用方猜测质量读数')
+    }
+    if (trackableRatio < thresholds.minTrackableRatio) {
+      reasons.push(`可追溯占比 ${trackableRatio} 低于 minTrackableRatio ${thresholds.minTrackableRatio}`)
+    }
   }
   // ㊹ 对账结论入推导登记簿（可选：未注入推导服务行为不变，与 ㉑ 同款零依赖纪律）
   const { derivation = null, evidenceRefs = [], batchId = null } = context ?? {}
@@ -47,7 +63,7 @@ export function trajectoryTriggerAssessment(readings, thresholds, context = {}) 
   return {
     met: reasons.length === 0,
     reasons,
-    readings: { size, withComposition, coverage },
+    readings: { size, withComposition, coverage, ...(trackableRatio !== null ? { trackableRatio } : {}) },
     thresholds,
     ...(derivationRecord ? { derivation: derivationRecord } : {}),
     note: '触发判据原型（㊵）：读数对阈值为声明式对账，不是门禁——达标与否只如实呈报，机制进场仍由裁决者决定（㉘ 先见数据再谈机制）',
