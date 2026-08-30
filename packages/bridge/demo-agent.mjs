@@ -14,12 +14,18 @@
 //           OU 采样候选）→ 逐候选真实单点回算 + 能量证据×似然证据联合权重 →
 //           编排链谱系不断（§4.5：采样器交付的 {graph, source, logProb} 原样透传）。
 //   阶段 D（⑯/⑮）：自然语言“把铜入库为锚点并做混合提案” → tool_call(sampler.anchor.add
-//           + sampler.mixture）→ 锚点工具在 Agent 层暴露验证 + 阶段 B 弛豫收敛结构已自动入库，
+//           + sampler.mixture)→ 锚点工具在 Agent 层暴露验证 + 阶段 B 弛豫收敛结构已自动入库，
 //           混合提案走会话库路径（锚点来源层随交付呈现）。
+//   阶段 E（㉕/㉔）：自然语言“把锚点库落盘再回填” → tool_call(sampler.anchor.save
+//           + sampler.anchor.load)→ 持久化原语在 Agent 层暴露验证（含全量 graph 的无损
+//           JSON 出口关卡压测）+ 同谱系重放幂等（落盘→回填→跳过，重放安全）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
 import assert from 'node:assert'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { rmSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore from '@deepseek-ai/dsh-session'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -402,8 +408,66 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 D：自然语言 → 锚点入库 + 混合提案（会话库）→ 收尾 ✓\n')
 
-  // 7. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 7. 阶段 E（㉕/㉔）：持久化原语在 Agent 层暴露——落盘 + 回填（同谱系幂等）。
+  //    出口关卡压测：save 交付含全量 graph 的载荷，无损 JSON 校验直接覆盖（⑯ 教训：
+  //    新工具的宿主出口实证是必要验收环节）。两次调用分两个 server（与 B/C/D 同款无竞态）。
+  const persistPath = join(tmpdir(), 'saturday-demo-agent-anchors.json')
   await server.close()
+  server = await startMockLlmServer({
+    port: 8236,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.save',
+    toolArguments: JSON.stringify({ path: persistPath }),
+    successText: '锚点库已落盘。',
+  })
+  adapter.baseURL = server.baseURL
+
+  console.log('[user ] 把会话锚点库落盘保存')
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '把会话锚点库落盘保存' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const saveToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(saveToolMsg, '阶段 E1 应包含 sampler.anchor.save 结果')
+  const saveResult = JSON.parse(saveToolMsg.content)
+  assert.equal(saveResult.saved, true, '锚点库经 Agent 工具落盘成功（含全量 graph 的无损 JSON 出口）')
+  assert.equal(saveResult.size, 2, '落盘两锚点（阶段 B 自动入库 + 阶段 D 手动入库）')
+  console.log('[tool ] sampler.anchor.save:', JSON.stringify({ path: saveResult.path, size: saveResult.size }))
+
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8237,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.load',
+    toolArguments: JSON.stringify({ path: persistPath }),
+    successText: '落盘载荷已回填。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '再把落盘载荷回填验证一遍' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const loadToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(loadToolMsg, '阶段 E2 应包含 sampler.anchor.load 结果')
+  const persistLoadResult = JSON.parse(loadToolMsg.content)
+  assert.equal(persistLoadResult.loaded, true, '落盘载荷经 Agent 工具回填成功')
+  assert.equal(persistLoadResult.added, 0, '同库回填：无新增')
+  assert.equal(persistLoadResult.skipped, 2, '同谱系重放幂等（落盘→回填→跳过，重放安全）')
+  console.log('[tool ] sampler.anchor.load:',
+    JSON.stringify({ added: persistLoadResult.added, skipped: persistLoadResult.skipped, size: persistLoadResult.size }))
+  console.log('[ok   ] 阶段 E：自然语言 → 落盘 + 回填（无损 JSON 出口 + 重放幂等）→ 收尾 ✓\n')
+
+  // 8. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  await server.close()
+  rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
   await handle.dispose()
   await samplerFiber.dispose()
   await screeningFiber.dispose()

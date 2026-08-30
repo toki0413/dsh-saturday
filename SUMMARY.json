@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T07:54:52.675Z",
-  "totalPass": 295,
+  "generatedAt": "2026-08-30T08:08:45.548Z",
+  "totalPass": 301,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@saturday/bridge",
       "version": "0.3.0",
-      "pass": 35,
+      "pass": 38,
       "fail": 0
     },
     {
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 42,
+      "pass": 45,
       "fail": 0
     },
     {
@@ -464,6 +464,11 @@
       "index": 65,
       "clause": "提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型（㉑/㉒/㉓）：㉑ `sampler.mixture` 提案层谱系登记（活性上下文 §8.2）——注入推导服务时登记一层提案推导（锚点来源归一化为 `material:<id>`/`job:<id>` 输入，输出 `result:mixture-<batchId>`）；锚点失效沿推导图传播到提案（活性接通实证）；不可追溯来源不冒充输入（全不可追溯不伪登记）；未注入行为不变；㉒ 三元系端到端：{Cu,Ag,Au} 三锚点检索排序（含不可考排尾不回归）、三权重配额闭式 [0.5,0.3,0.2]×9 → [4,3,2]（余数降序顺次补一）+ 多 seed 扫描不变、同参数两次提案逐候选严格一致（确定性复现）；㉓ 持久化原型：`sampler.anchor.export`（无损 JSON 全量导出，序列化往返不丢信息）/ `sampler.anchor.import`（库层门禁复用 + 同谱系幂等跳过 + 单条拒绝不中断整批），回填锚点即刻可参与混合提案（数据燃料跨会话续供）；诚实边界：库自身仍会话级，落盘由调用方负责",
       "evidence": "plugin-sampler-ou plugin-mixture-derivation 测试 1-4（登记 + 失效传播 + 不伪登记 + 未注入不变）+ plugin-ternary 测试 1-3（检索排序 + 配额闭式 + 确定性）+ plugin-anchor-persist 测试 1-3（往返无损 + 幂等 + 门禁）"
+    },
+    {
+      "index": 66,
+      "clause": "持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露（㉔/㉕/㉖）：㉔ `sampler.anchor.save`/`load`（搬运原语的文件端）——落盘→跨会话回填逐字段一致且即刻可提案；错误路径如实：文件缺失/损坏/非载荷形态显式报错（`ANCHOR_PERSIST`，不静默冒充成功）；路径调用方显式声明；同库重载同谱系幂等；导入循环提取为共享助手（导入工具与文件回填门禁不另开旁路）；㉕ `demo:agent` 阶段 E：`save`/`load` 经 dsh harness 暴露（含全量 graph 的无损 JSON 出口关卡压测，⑯ 教训延续：新工具的宿主出口实证是必要验收环节）+ 落盘→回填→跳过重放幂等在 Agent 层实证；㉖ `workflow.screen` 直收 `proposalRef` 登记为排序层推导输入：锚点失效 → 提案失效 → 排序失效三级链全活性实证；未声明行为不变（不伪造推导输入）；非法引用登记簿显式拒绝；与 ⑬ 裁决分工：不直收的是 `anchors`（结构本体 + 采样逻辑），直收的是推导引用（编排层谱系接线），组合律不破",
+      "evidence": "plugin-sampler-ou plugin-anchor-save-load 测试 1-3（往返 + 错误路径 + 幂等门禁）+ demo:agent 阶段 E 端到端 + bridge proposal-chain 测试 1-3（三级传播 + 未声明不变 + 非法引用拒绝）"
     }
   ]
 }

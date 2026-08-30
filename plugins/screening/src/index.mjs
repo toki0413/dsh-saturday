@@ -65,6 +65,11 @@ export default {
           description: '枚举候选联合排序的额外证据源（显式启用，缺省只按能量排）；内置 ["hull"]（凸包距离，需参考态）' +
                        '与 ["mixing-entropy"]（理想混合熵组分先验，只消费组分）；可同启，退化关联由机器审计随交付呈现',
         },
+        proposalRef: {
+          type: 'string',
+          description: '提案推导引用（㉖，可选；如 "result:mixture-<batchId>"，来自 sampler.mixture 的交付）：' +
+                       '声明后登记为排序层推导输入——提案失效沿推导图传播到排序（锚点→提案→排序全链活性）',
+        },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
@@ -155,6 +160,7 @@ export default {
           sampled,
           temperatureK: args.temperatureK,
           evidenceSources: args.evidenceSources,
+          proposalRef: args.proposalRef,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })

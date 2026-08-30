@@ -7,6 +7,7 @@
 import { createCordisAdapter } from '@saturday/kernel'
 import { compositionFromNumbers } from '@saturday/core'
 import { randomUUID } from 'node:crypto'
+import { writeFileSync, readFileSync } from 'node:fs'
 import { ouSampler, samplerError, ouSampleMixture } from './sampler.mjs'
 import { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
 
@@ -248,6 +249,29 @@ export default {
       },
     })
 
+    // ㉓ 库间搬运原语的共享导入循环（导入工具与文件回填共用：门禁不另开旁路）。
+    // 谱系门禁复用库层；同谱系幂等跳过（重放安全）；单条拒绝不中断整批（如实记录）。
+    function importEntries(entries) {
+      let added = 0
+      let skipped = 0
+      const rejected = []
+      for (let i = 0; i < entries.length; i++) {
+        const e = entries[i]
+        if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
+          rejected.push({ index: i, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
+          continue
+        }
+        if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与 ⑮ 同款）
+        try {
+          anchorStore.add(e)   // graph 本体门禁由库层复用（缺 graph 即拒）
+          added++
+        } catch (err) {
+          rejected.push({ index: i, reason: `库层门禁拒绝：${err.message}` })   // 单条拒绝不中断整批导入（如实记录）
+        }
+      }
+      return { added, skipped, rejected }
+    }
+
     rt.registerTool({
       name: 'sampler.anchor.import',
       description: '从导出载荷回填锚点：逐条入库（谱系门禁复用库层：无来源即拒），' +
@@ -267,27 +291,74 @@ export default {
         if (!Array.isArray(args.entries)) {
           throw samplerError('ANCHOR_INVALID', 'import 必须提供 entries 数组（导出载荷的 entries 字段）')
         }
-        let added = 0
-        let skipped = 0
-        const rejected = []
-        for (let i = 0; i < args.entries.length; i++) {
-          const e = args.entries[i]
-          if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
-            rejected.push({ index: i, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
-            continue
-          }
-          if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与 ⑮ 同款）
-          try {
-            anchorStore.add(e)   // graph 本体门禁由库层复用（缺 graph 即拒）
-            added++
-          } catch (err) {
-            rejected.push({ index: i, reason: `库层门禁拒绝：${err.message}` })   // 单条拒绝不中断整批导入（如实记录）
-          }
-        }
+        const { added, skipped, rejected } = importEntries(args.entries)
         return {
           added, skipped, rejected,
           size: anchorStore.size(),
           note: '导入完成：谱系门禁复用库层，同谱系幂等跳过；导出载荷由调用方提供（库不伪造库外数据）',
+        }
+      },
+    })
+
+    // ㉔ 持久化落盘侧：库间搬运原语的文件端（导出载荷 ↔ 磁盘）。
+    // 诚实边界：路径由调用方显式声明（库不自作主张读写文件系统）；
+    // 文件缺失/损坏显式报错（不静默返回空库冒充成功）。
+    rt.registerTool({
+      name: 'sampler.anchor.save',
+      description: '把会话锚点库落盘到调用方指定路径（导出载荷的磁盘端）：无损 JSON，' +
+                   '跨会话恢复用 sampler.anchor.load。路径显式声明（库不自作主张读写文件系统）。',
+      parameters: {
+        path: { type: 'string', description: '目标文件路径（调用方显式声明）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        if (typeof args.path !== 'string' || args.path.trim().length === 0) {
+          throw samplerError('ANCHOR_PERSIST', 'save 必须提供目标路径（路径由调用方显式声明，库不自作主张）')
+        }
+        const payload = { version: 'saturday-anchor-store/1', size: anchorStore.size(), entries: anchorStore.entries() }
+        writeFileSync(args.path, JSON.stringify(payload, null, 2))
+        return { saved: true, path: args.path, size: payload.size, note: '锚点库已落盘（无损 JSON；恢复用 sampler.anchor.load）' }
+      },
+    })
+
+    rt.registerTool({
+      name: 'sampler.anchor.load',
+      description: '从调用方指定路径回填锚点（落盘载荷 → 会话库）：文件缺失/损坏显式报错（不静默冒充成功）；' +
+                   '回填复用导入门禁（谱系/本体/幂等同款）。',
+      parameters: {
+        path: { type: 'string', description: '载荷文件路径（调用方显式声明）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute(args = {}) {
+        if (typeof args.path !== 'string' || args.path.trim().length === 0) {
+          throw samplerError('ANCHOR_PERSIST', 'load 必须提供载荷路径（路径由调用方显式声明，库不自作主张）')
+        }
+        let raw
+        try {
+          raw = readFileSync(args.path, 'utf8')
+        } catch (err) {
+          throw samplerError('ANCHOR_PERSIST', `载荷文件不可读（不存在或无权限）：${args.path}——不静默返回空库冒充成功`)
+        }
+        let payload
+        try {
+          payload = JSON.parse(raw)
+        } catch {
+          throw samplerError('ANCHOR_PERSIST', `载荷不是合法 JSON（文件损坏或非导出载荷）：${args.path}`)
+        }
+        if (!Array.isArray(payload?.entries)) {
+          throw samplerError('ANCHOR_PERSIST', '载荷缺少 entries 数组（非 sampler.anchor.export/save 产物，不猜测冒充）')
+        }
+        const { added, skipped, rejected } = importEntries(payload.entries)
+        return {
+          loaded: true, path: args.path, added, skipped, rejected,
+          size: anchorStore.size(),
+          note: '落盘载荷已回填：门禁与导入工具同款（谱系/本体/幂等）；库自身仍会话级',
         }
       },
     })

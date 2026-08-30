@@ -129,7 +129,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 295 项，18 个包）
+npm test                # 全部 workspace 测试（当前 301 项，19 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
@@ -182,7 +182,8 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）**：⑫`demo:anchor-guided` 全程工具层四段（入库 → 会话库检索 → 混合提案 → 工具间只传交付接 `workflow.screen` 联合排序：真实 EMT 回算、双源证据组合、Σw = 1 配分函数归一，谱系不断）；⑬裁决：`workflow.screen` 不直收 `anchors`（直收 = 筛选插件内嵌采样逻辑破坏插件边界；两步编排即组合律）；⑭审查：锚点工具不新增进 `StructureSampler` seam，交付仍是 `SampledStructure` 形态（`generative:` 前缀 + 可回算构造形态测试）
 - **闭环轨迹自动入库 + 锚点工具 Agent 层暴露 + 配额闭式对账（⑮/⑯/⑰）**：⑮自监督数据管道第二段——弛豫收敛且引擎交付终态时弛豫后结构自动入会话锚点库（谱系自动声明 `job:<id>#engine=<name>`）；三道门禁：未收敛不入库 / 旧协议无终态不入库（不拿输入结构冒充）/ 同谱系幂等；引擎 `relax` 交付协议扩展终态坐标/晶胞（ase sidecar 补齐，旧版诚实缺省）；薄事件纪律：结构体不重复落 Trajectory；只积累数据燃料不引入学习组件；⑯`demo:agent` 阶段 D：锚点工具经 dsh harness 暴露给 Agent（工具出口关卡实证：`graph: undefined` 触发 'not lossless JSON' 拒付 → 改显式剔除），阶段 B 弛豫产物自动入库后会话库命中双锚点；⑰最大余数法配额闭式对账：配额只依赖 (n, 归一权重) 与 seed 无关，小数平手取靠前锚点，未归一与归一形态同配额
 - **全自动锚点引导闭环 + 不可考组分诚实降级链（⑱/⑲/⑳）**：⑲`demo:anchor-auto` 无人工入库形态——真实弛豫（收敛 + 终态交付）→ ⑮自动入库 → 会话库检索 → 配额 → 提案 → 回算 + 联合排序，全程零手动锚点操作谱系不断；⑳`distance: null` 诚实降级链：缺组分锚点检索排尾（不冒充可比不编造数值）→ 混合提案不因不可考拒绝（排尾不是排除：均匀配额实证参与混合不是陪跑）→ 距离声明随工具层交付如实透传；⑱裁决：会话锚点库不引入淘汰/上限（库与闭环同生命周期，淘汰属持久化关注点；`topK` 已是提案侧参与上限）
-- **提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型（㉑/㉒/㉓）**：㉑ `sampler.mixture` 注入推导服务时登记一层提案推导（锚点来源归一化 `material:<id>`/`job:<id>`，锚点失效沿推导图传播到提案）；不可追溯来源不冒充输入，全不可追溯不伪登记；未注入行为不变（与 `workflow.screen` 同款）；㉒三元系 {Cu,Ag,Au} 端到端：检索排序/配额闭式 [0.5,0.3,0.2]×9 → [4,3,2]（多 seed 不变）/ 确定性复现——配额与提案不为二元系特化；㉓持久化原型：`sampler.anchor.export`/`import`（无损 JSON 全量导出 + 库层门禁复用 + 同谱系幂等 + 单条拒绝不中断整批），回填锚点即刻可参与混合提案；诚实边界：库自身仍会话级，落盘由调用方负责
+- **提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型（㉑/㉒/㉓）**：㉑ `sampler.mixture` 注入推导服务时登记一层提案推导（锚点来源归一化 `material:<id>`/`job:<id>`，锚点失效沿推导图传播到提案）；不可追溯来源不冒充输入，全不可追溯不伪登记；未注入行为不变（与 `workflow.screen` 同款）；㉒三元系 {Cu,Ag,Au} 端到端：检索排序/配额闭式 [0.5,0.3,0.2]×9 → [4,3,2]（多 seed 不变）/ 确定性复现——配额与提案不为二元系特化；㉓持久化原型：`sampler.anchor.export`/`import`（无损 JSON 全量导出 + 库层门禁复用 + 同谱系幂等 + 单条拒绝不中断整批），回填锚点即刻可参与混合提案；诚实边界：库自身仍会话级，落盘由调用方负责。
+- **持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露（㉔/㉕/㉖）**：㉔ `sampler.anchor.save`/`load`（搬运原语的文件端：落盘→跨会话回填逐字段一致且即刻可提案；错误路径如实——文件缺失/损坏/非载荷形态显式报错 `ANCHOR_PERSIST`，不静默冒充成功；路径调用方显式声明；同库重载同谱系幂等；导入走共享循环，门禁不另开旁路）；㉕ `demo:agent` 阶段 E：`save`/`load` 经 dsh harness 暴露（含全量 graph 的无损 JSON 出口关卡压测 + 落盘→回填→跳过重放幂等）；㉖ `workflow.screen` 直收 `proposalRef` 登记为排序层推导输入——锚点→提案→排序全链活性（三级传播实证）；未声明行为不变，非法引用登记簿显式拒绝；与 ⑬ 分工：不直收的是 `anchors`（结构本体 + 采样逻辑），直收的是推导引用（编排层谱系接线），组合律不破
 - **Agent 编排链三段实证**：`demo:agent` 阶段 C 把采样→联合排序推到 Agent 层（OU 交付打包进工具参数，谱系在编排层不断）；dsh 工具三连坑入纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`；回归/摘要脚本包内串行（并发拉 sidecar + OpenBLAS 线程内存竞态实证，确定性优先于耗时）
 - **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证

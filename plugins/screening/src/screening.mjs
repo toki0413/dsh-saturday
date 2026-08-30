@@ -55,7 +55,7 @@ const KB_EV_PER_K = 8.617333262145e-5
  *        第三方可注入自定义描述符（{ name, requires, logWeights, independenceNote }），
  *        新证据源接入不改筛选代码（注册表化实证）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources, evidenceSourceRegistry }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources, evidenceSourceRegistry, proposalRef }) {
   const maxSites = maxDopedSites ?? 1
   if (!Number.isInteger(maxSites) || maxSites < 1) {
     throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
@@ -448,11 +448,13 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     })
     const rankRef = `result:screen-${bid}`
     derivation.record({
-      inputs: [`material:${material.id}`, ...energyRefs],
+      // ㉖ 提案推导引用（可选）：声明后登记为排序层输入——锚点→提案→排序全链活性（§8.2）；
+      // 未声明时行为不变（不伪造推导输入）；非法引用由登记簿 parseRef 显式拒绝。
+      inputs: [`material:${material.id}`, ...(proposalRef ? [proposalRef] : []), ...energyRefs],
       output: rankRef,
       producer: 'workflow.screen',
     })
-    derivationRecord = { batchId: bid, rankRef, energyRefs }
+    derivationRecord = { batchId: bid, rankRef, energyRefs, ...(proposalRef ? { proposalRef } : {}) }
   }
 
   return {
