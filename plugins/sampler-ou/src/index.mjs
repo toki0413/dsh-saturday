@@ -470,6 +470,35 @@ export default {
       },
     })
 
+    // ㊳ 锚点库容量观测（只读）：与 ㉟ 载荷审计构成“库内 + 库外”双观测面——
+    // 为 ㉘ 触发条件的“足够轨迹”提供量化读数；观测不变更库。
+    rt.registerTool({
+      name: 'sampler.anchor.stats',
+      description: '会话锚点库容量观测（只读，不变更）：条目数 + 谱系形态分布（material:/job:/其他）+ 组分声明覆盖——' +
+                   '与 sampler.anchor.audit（库外载荷观测）构成双观测面。',
+      parameters: {},
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute() {
+        const entries = anchorStore.entries()
+        const lineage = { material: 0, job: 0, other: 0 }
+        let withComposition = 0
+        for (const e of entries) {
+          const ref = normRef(e.source)
+          if (ref?.startsWith('material:')) lineage.material++
+          else if (ref?.startsWith('job:')) lineage.job++
+          else lineage.other++
+          if (e.composition && typeof e.composition === 'object' && Object.keys(e.composition).length > 0) withComposition++
+        }
+        return {
+          size: entries.length, lineage, withComposition,
+          note: '库内观测（只读不变更）：lineage 为归一化谱系形态分布（取 # 前段）；withComposition 为带组分声明的条目数',
+        }
+      },
+    })
+
     ctx.fiber.store.saturdaySamplerOu = { rt, anchorStore }
   },
 }

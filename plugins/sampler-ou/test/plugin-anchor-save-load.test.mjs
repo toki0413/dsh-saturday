@@ -256,3 +256,19 @@ test('8. ㉟ 血缘审计（只读）：三态统计如实 + 审计不回填不�
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('9. ㊳ 库容量观测（只读）：谱系形态分布如实 + 观测不变更库（与 ㉟ 载荷审计构成双观测面）', async () => {
+  const env = await mount()
+  try {
+    env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-s', composition: { Cu: 4 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'job:j-s#engine=emt-mock', composition: { Cu: 3, Ag: 1 } })
+    env.handles.anchorStore.add({ graph: graph4, source: 'inline:adhoc-s' })   // 其他形态 + 无组分声明（库层允许即如实观测）
+    const stats = await env.handles.rt.tools.call('sampler.anchor.stats', {})
+    assert.equal(stats.size, 3)
+    assert.deepEqual(stats.lineage, { material: 1, job: 1, other: 1 }, '谱系形态分布如实（归一化取 # 前段）')
+    assert.equal(stats.withComposition, 2, '组分声明覆盖如实')
+    assert.equal(env.handles.anchorStore.size(), 3, '观测不变更库')
+  } finally {
+    await env.fiber.dispose()
+  }
+})

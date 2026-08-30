@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-30T09:02:47.389Z
+生成时间：2026-08-30T09:16:46.246Z
 
-**回归基线：312/312**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：315/315**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 44/44 |
+| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 46/46 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -22,11 +22,11 @@
 | `@saturday/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@saturday/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
-| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 50/50 |
+| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 51/51 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
 | `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，69 条）
+## 实证条款（契约文档附录 A，70 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -97,6 +97,7 @@
 - **#67** 跨会话恢复端到端 + 回填后活性保持 + 自监督进场条件裁决（㉗/㉘/㉙）：㉗ `demo:anchor-resume` 编排层兑现“落盘由调用方负责”的诚实边界——会话一真实弛豫（收敛 + 终态交付）→ ⑮ 自动入库 → `save` 落盘（路径调用方显式声明）→ 会话终结全部回收；会话二全新挂载（空库不伪造库外数据）→ `load` 回填 → 检索（谱系跨会话保留）→ 提案 → 回算 + 联合排序（Σw = 1）；行为级无损对账：落盘往返不改变任何采样行为（同参数逐候选结构/似然/归属/谱系严格一致）；两“会话”是同一进程内两次独立挂载，跨会话唯一通道是磁盘载荷（诚实声明入演示注释）；㉙ 回填后活性不降级：回填锚点的提案照常登记推导（㉑ 归一规则不因回填改变），锚点失效沿推导图传播到提案、再传播到排序（㉖ 全链活性跨会话不降级）；归一引用与检索来源与原会话逐条一致（不冒充、不丢、不改写）；材料会话级：跨会话引用不冒充在场（会话 B 内重新加载基体）；㉘ 裁决：对照触发条件逐项呈报后维持“不引入自监督”——管道两段 + 跨会话续供机制已备齐（触发条件第一项的基础设施全部就位），但“足够轨迹”与“探索效率瓶颈”均未出现（先见数据再谈机制，同 ⑬/⑱）；进场挂载点与不变纪律重申（证据：demo:anchor-resume 端到端 + bridge anchor-resume 测试 1-2（跨会话闭环参与 + 行为级无损对账）+ bridge anchor-resume-liveness 测试 1-2（全链活性跨会话不降级 + 谱系登记如实））
 - **#68** 恢复闭环接 Agent 层 + 落盘侧谱系可追溯声明 + 落盘载荷完整性校验（㉚/㉛/㉜）：㉚ `demo:agent` 阶段 F——自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)：回填锚点即刻参与提案（来源层/谱系跨恢复保留），回填交付的 `lineageRefs` 随阶段日志呈现（恢复闭环在 Agent 层收口，㉕ 教训延续：新编排形态的宿主出口实证）；㉛ `load` 交付附 `lineageRefs`（载荷内可追溯来源的归一化声明，与 ㉑ 归一规则同款：取 # 前段）——声明不是装饰：沿 `lineageRefs` 起点 invalidate，提案推导如实失效（谱系从“跨会话保留”升为“跨会话可撤回”，消费方不必翻库）；㉜ 完整性校验：版本门禁（仅 `saturday-anchor-store/1`，未知/缺失不静默接受）+ `size` 声明对账（声明 ≠ 实质即拒，不猜测补齐）；单条损坏不连坐（共享导入循环逐条拒绝，合法条目照常入库，与 ㉓ 同款）；三条门禁都不得污染库（证据：demo:agent 阶段 F 端到端 + bridge anchor-lineage-refs 测试 1-2（声明与载荷一致 + 沿声明起点失效传播实证）+ plugin-sampler-ou plugin-anchor-save-load 测试 4-5（版本/无版本/size 三态拒绝 + 单条损坏不连坐））
 - **#69** 条目级版本戳 + 多载荷合并回填 + 载荷血缘审计（㉝/㉞/㉟）：㉝ 载荷形态升版 `saturday-anchor-store/2`（条目附 `entryVersion: 'saturday-anchor-entry/1'`）——`load` 逐条校验版本戳：缺失/未知版本戳按条目级损坏定位到载荷原位索引拒绝（过滤后不丢定位能力），合法条目照常入库不连坐（损坏检测从“整体非载荷”下沉到条目级）；㉞ `load`/`audit` 支持 `path`（单载荷）或 `paths`（多载荷合并）二选一（不静默猜测调用方意图）；门禁先行——全部文件先过完整性检查，全过才开始回填（任一文件不过 → 整批拒绝，出错时库零污染）；同谱系幂等门禁天然兜底跨载荷重复（数据燃料多源汇聚）；逐文件明细随交付；㉟ `sampler.anchor.audit` 只读血缘三态审计（可追溯/不可追溯/损坏）：审计不回填不污染库，异常文件如实入报告不连坐——回填前的一手数据质量观测面（证据：plugin-sampler-ou plugin-anchor-save-load 测试 6-8（条目版本戳定位 + 多载荷合并/门禁先行/二选一门禁 + 审计三态与库零污染）+ plugin-anchor-persist 测试 1（版本戳随导出交付））
+- **#70** 审计接 Agent 层 + 多载荷合并后的活性保持 + 锚点库容量观测（㊱/㊲/㊳）：㊱ `demo:agent` 阶段 G——自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)：只读三态报告回流（全部可追溯、无损坏），库状态不变（观测先于行动的数据纪律在 Agent 层实证，㉕ 教训延续）；㊲ 多载荷合并后的活性保持：两份不同来源载荷经 ㉞ 合并回填后，跨载荷汇聚的谱系各自独立可撤回（沿某一来源失效 → 提案失效；失效不删数据，另一来源与库内条目照常在场）；合并后提案锚点归属与载荷谱系逐条一致（汇聚不冒充、不丢、不改写）；㊳ `sampler.anchor.stats` 只读库内容量观测（条目数 + 归一化谱系形态分布 + 组分声明覆盖）：观测不变更库，与 ㉟ 载荷审计构成“库内 + 库外”双观测面（为 ㉘ 触发条件的“足够轨迹”提供量化读数）（证据：demo:agent 阶段 G 端到端 + bridge anchor-merge-liveness 测试 1-2（谱系独立可撤回 + 归属逐条一致）+ plugin-sampler-ou plugin-anchor-save-load 测试 9（库容量观测如实与不变更））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

@@ -22,6 +22,8 @@
 //   阶段 F（㉚/㉛）：自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)
 //           → 恢复闭环在 Agent 层收口：回填锚点即刻参与提案（来源层/谱系跨恢复保留）；
 //           回填交付的 lineageRefs（磁盘数据起点的可追溯声明）随阶段日志呈现。
+//   阶段 G（㊱/㉟）：自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)
+//           → 观测先于行动的数据纪律在 Agent 层实证：审计为只读（三态报告回流，库零污染）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -507,7 +509,36 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 F：自然语言 → 恢复后混合提案（回填锚点即刻是数据燃料，谱系跨恢复不断）→ 收尾 ✓\n')
 
-  // 9. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 9. 阶段 G（㊱/㉟）：观测先于行动——自然语言驱动载荷血缘审计（只读：三态报告回流，库零污染）。
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8239,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.audit',
+    toolArguments: JSON.stringify({ path: persistPath }),
+    successText: '落盘载荷血缘审计完成：全部可追溯。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '先审计落盘载荷的血缘再决定回填' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const auditToolMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(auditToolMsg, '阶段 G 应包含 sampler.anchor.audit 结果')
+  const auditResult = JSON.parse(auditToolMsg.content)
+  assert.equal(auditResult.files[0].ok, true, '落盘载荷可审计')
+  assert.equal(auditResult.files[0].traceable, 2, '落盘两锚点全部可追溯（阶段 B 自动入库 + 阶段 D 手动入库）')
+  assert.equal(auditResult.files[0].corrupt, 0, '无损坏条目（版本戳随落盘交付）')
+  assert.equal(auditResult.size, 2, '审计为只读观测：库状态不变（观测先于行动，不污染库）')
+  console.log('[tool ] sampler.anchor.audit:',
+    JSON.stringify({ ok: auditResult.files[0].ok, traceable: auditResult.files[0].traceable, corrupt: auditResult.files[0].corrupt }))
+  console.log('[ok   ] 阶段 G：自然语言 → 载荷血缘审计（观测先于行动：只读三态报告，库零污染）→ 收尾 ✓\n')
+
+  // 10. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
   await handle.dispose()
