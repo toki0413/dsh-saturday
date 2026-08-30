@@ -15,7 +15,9 @@
     "demo:concentrations": "node demo-concentrations.mjs",
     "demo:freeenergy": "node demo-free-energy.mjs",
     "demo:agent": "node demo-agent.mjs",
-        "demo:cross-engine": "node demo-cross-engine.mjs"
+        "demo:cross-engine": "node demo-cross-engine.mjs",
+        "demo:availability": "node demo-availability.mjs",
+        "demo:mixture-sampling": "node demo-mixture-sampling.mjs"
   },
   "dependencies": {
     "@saturday/core": "^0.3.0",
@@ -37,6 +39,8 @@
     "@saturday/plugin-ase": "^0.3.0",
     "@saturday/plugin-derivation": "^0.3.0",
     "@saturday/plugin-free-energy": "^0.3.0",
+    "@saturday/plugin-lammps": "^0.3.0",
+    "@saturday/plugin-mace": "^0.3.0",
     "@saturday/plugin-sampler-ou": "^0.3.0",
     "@saturday/plugin-screening": "^0.3.0"
   },

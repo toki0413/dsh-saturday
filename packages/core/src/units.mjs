@@ -143,9 +143,11 @@ export function validateEngineFingerprint(fingerprint) {
 }
 
 /**
- * 指纹一致性判定：两指纹的 software + method + version 全同才视为同源。
- * 返回 { same, reason }——不抛异常，由消费方决定拒绝还是声明（凸包拒绝，
- * 演示对照可声明后继续）。
+ * 指纹一致性判定：两指纹的 software + method 全同，且 version 维不矛盾才视为同源。
+ * version 维 unknown 通配（① 实测态纪律）：'unknown' = 未探测/不可得，不构成差异证据——
+ * 一侧 unknown 时不按 version 判异源，但 reason 如实声明"含未验证维"（声明 ≠ 放行冒充）；
+ * 两侧皆已知且不同才判异源。返回 { same, reason }——不抛异常，
+ * 由消费方决定拒绝还是声明（凸包拒绝，演示对照可声明后继续）。
  */
 export function fingerprintEqual(a, b) {
   if (!a || !b) return { same: false, reason: '指纹缺失（至少一方未声明）' }
@@ -153,6 +155,11 @@ export function fingerprintEqual(a, b) {
   if (a.method !== b.method) return { same: false, reason: `method 不同（${a.method} vs ${b.method}）` }
   const va = a.version ?? 'unknown'
   const vb = b.version ?? 'unknown'
-  if (va !== vb) return { same: false, reason: `version 不同（${va} vs ${vb}）` }
+  if (va !== 'unknown' && vb !== 'unknown' && va !== vb) {
+    return { same: false, reason: `version 不同（${va} vs ${vb}）` }
+  }
+  if (va !== vb) {
+    return { same: true, reason: `version 维一侧未探测（${va} vs ${vb}，unknown 通配）——同源判定成立但含未验证维` }
+  }
   return { same: true, reason: null }
 }

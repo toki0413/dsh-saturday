@@ -33,9 +33,42 @@ export const hullEvidenceSource = {
     '（包上点凸包证据恒 0），组合仅在有区分度的包外点上实质生效——如实声明不冒充独立',
 }
 
+/** 理想混合熵证据（④ 注册表第二内置源）：逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，无量纲）。
+ *  熵增有利的无序固溶候选获提升；纯元素候选按定义 = 0（无混合可言，不伪造梯度）。
+ *  只消费组分——与焓/凸包证据零能量信息共享，无需参考态/温度之外的任何输入。 */
+export const mixingEntropyEvidenceSource = {
+  name: 'mixing-entropy',
+  requires({ ranked }) {
+    for (const r of ranked) {
+      if (!r.composition || typeof r.composition !== 'object' || Object.keys(r.composition).length === 0) {
+        throw evidenceError('EVIDENCE_INVALID_INPUT',
+          `mixing-entropy evidence requires candidates to carry composition (候选 ${r.label ?? r.formula ?? '?'} 缺组分)`)
+      }
+    }
+  },
+  logWeights({ ranked }) {
+    // composition 是计数形态（与凸包构造同源）→ 先归一为分数再求每点位熵；
+    // −β·(−TΔS) = ΔS/k_B 与 β 无关（理想混合熵的温度线性恰好在 log 权重中消去）
+    return ranked.map(r => {
+      const total = Object.values(r.composition).reduce((acc, n) => acc + n, 0)
+      let s = 0
+      for (const n of Object.values(r.composition)) {
+        const x = n / total
+        s -= x * Math.log(x)
+      }
+      return s
+    })
+  },
+  independenceNote:
+    '混合熵证据 −Σ x·ln x 只依赖候选组分（组合简并度先验，与 β 无关），' +
+    '与焓证据不共享任何能量信息；声明为给定组分下条件独立——' +
+    '与凸包证据共享组分变量（凸包坐标即组分），如实声明非全独立',
+}
+
 /** 内置证据源注册表（名字 → 描述符）；第三方插件可构造自己的注册表传入筛选 */
 export const builtinEvidenceSources = {
   hull: hullEvidenceSource,
+  'mixing-entropy': mixingEntropyEvidenceSource,
 }
 
 /**

@@ -47,6 +47,21 @@ export class AseProvider {
     this.calculatorParams = calculatorParams
   }
 
+  /**
+   * 运行时版本回读（① 实测态）：sidecar 握手携带 ASE 实际版本。
+   * 探测成功返回实测版本（调用方经 stampFingerprint 升级指纹）；
+   * 探测失败/无 ASE 返回 null——诚实降级保持 'unknown'，绝不冒充。
+   */
+  async probeVersion() {
+    try {
+      const hello = await this.bridge.call('hello', {})
+      const v = hello?.aseVersion
+      return typeof v === 'string' && v.length > 0 ? v : null
+    } catch {
+      return null
+    }
+  }
+
   async relax(material, params = {}) {
     const jobId = randomUUID()
     const t0 = Date.now()

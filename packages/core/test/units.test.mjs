@@ -100,3 +100,19 @@ test('8. 白名单与基准单位自洽：每维度基准单位在白名单内�
     assert.equal(UNIT_WHITELIST[dim][base], 1, '基准单位换算因子恒为 1')
   }
 })
+
+test('9. version 维 unknown 通配（① 实测态纪律）：未探测不构成差异证据，但如实声明未验证维', () => {
+  const measured = { software: 'ase', method: 'ASE-calculator', version: '3.23.0' }
+  const unprobed = { software: 'ase', method: 'ASE-calculator', version: 'unknown' }
+  // 一侧实测一侧未探测 → 同源（不按 version 判异源），但 reason 声明未验证维（不冒充全验证）
+  const w1 = fingerprintEqual(measured, unprobed)
+  assert.equal(w1.same, true, 'unknown 是通配：未探测 ≠ 差异证据')
+  assert.ok(/未探|通配/.test(w1.reason), '未验证维必须如实声明')
+  assert.equal(fingerprintEqual(unprobed, measured).same, true, '通配对称')
+  // 两侧皆未探测 → 声明态对账（现状兼容），无附加声明（两侧同等未知，无额外信息可说）
+  assert.deepEqual(fingerprintEqual(unprobed, { ...unprobed }), { same: true, reason: null })
+  // 两侧皆实测且不同 → 才是真正的异源证据（实测态升级后的拦截能力不丢）
+  const clash = fingerprintEqual(measured, { ...measured, version: '3.22.1' })
+  assert.equal(clash.same, false)
+  assert.ok(/version 不同/.test(clash.reason))
+})

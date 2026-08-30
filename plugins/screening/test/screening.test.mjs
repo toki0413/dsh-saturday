@@ -6,7 +6,7 @@ import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import plugin, { screenDopants } from '../src/index.mjs'
-import { builtinEvidenceSources, resolveEvidenceSources, hullEvidenceSource } from '../src/evidence-sources.mjs'
+import { builtinEvidenceSources, resolveEvidenceSources, hullEvidenceSource, mixingEntropyEvidenceSource } from '../src/evidence-sources.mjs'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
 import { workflowContract } from '@saturday/contract-tests'
 
@@ -744,6 +744,51 @@ test('21. 工具层：自产参考态同源声明（provenance 声明态）+ 指
     // 指纹/单位随交付投影（render 全量序列化，宿主侧可核对能量来源可比性）
     assert.deepEqual(result.providerFingerprint, { software: 'ref-engine', method: 'stub-ref', version: 'unknown' })
     assert.deepEqual(result.providerUnits, { energy: 'eV', length: 'Å', time: 'fs' })
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+// ── ④ 证据源注册表第二内置源：理想混合熵（只消费组分，零能量信息共享）──
+test('22. 混合熵证据源：每点位熵闭式 + 端到端联合排序（注册表化实证：第二源不改筛选代码）', async () => {
+  // 纯层闭式（先手算再对账）：纯元素 = 0；Cu3Ag（x=0.75/0.25）= −(0.75 ln 0.75 + 0.25 ln 0.25)
+  //   = 0.5623351446188083；组分是计数形态，源内归一（与凸包构造同源同形）
+  const s = mixingEntropyEvidenceSource.logWeights({
+    ranked: [{ composition: { Cu: 4 } }, { composition: { Cu: 3, Ag: 1 } }],
+  })
+  assert.ok(s[0] === 0, '纯元素无混合可言：按定义 0，不伪造梯度')
+  assert.ok(Math.abs(s[1] - 0.5623351446188083) < 1e-12, '每点位理想混合熵闭式（手算对账）')
+  assert.throws(() => mixingEntropyEvidenceSource.requires({ ranked: [{ composition: null }] }),
+    /composition/, '缺组分即无证据（输入门禁与 hull 源同款诚实）')
+  assert.deepEqual(resolveEvidenceSources(['mixing-entropy']), [mixingEntropyEvidenceSource], '内置注册表已含第二源')
+
+  // 端到端（复用测试 18 能量模型）：未启用 hull，log 权重 = 焓 [0,+1,−1] + 混合熵 [0, S1, S1]
+  const S1 = 0.5623351446188083
+  const energies = { Cu: -12.0, Cu3Ag: -12.04, Cu3Ni: -11.96 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const result = await screenDopants({
+      material: cu, dopants: ['Ag', 'Ni'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+      evidenceSources: ['mixing-entropy'],
+      temperatureK: 1 / (100 * 8.617333262145e-5),   // β = 100 eV⁻¹
+    })
+    const joint = result.joint
+    assert.ok(joint.sourceNames.some(n => n.startsWith('mixing-entropy:')), '第二源名随交付呈现')
+    // 降序：Cu3Ag(1+S1) > Cu(0) > Cu3Ni(−1+S1)——排序不变但权重位移（熵证据如实叠加）
+    const Z = Math.exp(1 + S1) + 1 + Math.exp(-1 + S1)
+    assert.deepEqual(joint.entries.map(e => e.formula), ['Cu3Ag', 'Cu', 'Cu3Ni'])
+    const ag = joint.entries.find(e => e.formula === 'Cu3Ag')
+    assert.ok(Math.abs(ag.logJointWeight - (1 + S1)) < 1e-9, 'Cu3Ag：焓 +1 + 混合熵 +S1（双源闭式相加）')
+    assert.ok(Math.abs(ag.weight - Math.exp(1 + S1) / Z) < 1e-12, '混合熵进归一权重（闭式）')
+    const ni = joint.entries.find(e => e.formula === 'Cu3Ni')
+    assert.ok(Math.abs(ni.logJointWeight - (-1 + S1)) < 1e-9, 'Cu3Ni：焓 −1 被同形状混合熵部分抵消（熵不敌焓，如实呈现）')
+    assert.match(joint.independence, /混合熵/, '第二源独立性声明随组合呈现（与凸包共享组分变量的退化关联如实声明）')
   } finally {
     await coreFiber.dispose()
   }

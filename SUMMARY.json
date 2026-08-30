@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T05:05:44.081Z",
-  "totalPass": 255,
+  "generatedAt": "2026-08-30T05:24:22.110Z",
+  "totalPass": 261,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@saturday/core",
       "version": "0.3.0",
-      "pass": 26,
+      "pass": 28,
       "fail": 0
     },
     {
@@ -44,7 +44,7 @@
       "dir": "plugins\\ase",
       "name": "@saturday/plugin-ase",
       "version": "0.3.0",
-      "pass": 11,
+      "pass": 12,
       "fail": 0
     },
     {
@@ -86,14 +86,14 @@
       "dir": "plugins\\lammps",
       "name": "@saturday/plugin-lammps",
       "version": "0.3.0",
-      "pass": 11,
+      "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\mace",
       "name": "@saturday/plugin-mace",
       "version": "0.3.0",
-      "pass": 10,
+      "pass": 11,
       "fail": 0
     },
     {
@@ -135,7 +135,7 @@
       "dir": "plugins\\screening",
       "name": "@saturday/plugin-screening",
       "version": "0.3.0",
-      "pass": 33,
+      "pass": 34,
       "fail": 0
     }
   ],
@@ -399,6 +399,26 @@
       "index": 52,
       "clause": "单位换算审计通道（⑧）：参考态 `convertedFrom` 声明\"原值为该单位、调用方已显式换算到引擎单位\"——声明 ≠ 替换（不改变 energyPerAtom 的消费、不绕过单位门禁），换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）；未知单位/跨维度声明即拒（带码），换算痕迹从此不落在暗处",
       "evidence": "plugin-screening 测试 20（因子闭式对账 + 声明≠替换 + 不绕过门禁三态）"
+    },
+    {
+      "index": 53,
+      "clause": "指纹实测态回读（①）：声明态 ≠ 实测态，两态各自诚实——`stampFingerprint` 把归一指纹 version 从 'unknown' 升级为探测实测值（只丰富 version：software/method 是静态声明不在回读范畴；非实测值/空值/再盖 unknown 均拒，探测失败方不盖章）；三引擎探测路径按形态各异：ase 走 sidecar 握手（aseVersion）、lammps 解析 `binary -h` 横幅、mace 读 `mace.__version__`，探测失败一律 null 保持声明态；配套 version 维 unknown 通配：未探测不构成差异证据（一侧 unknown 同源放行但 reason 声明\"含未验证维\"，两侧实测不同才判异源）——实测态升级不破坏既有组合，拦截能力不丢",
+      "evidence": "core units.test 9（通配三态）+ potential.test 5（盖章三态）；ase/lammps/mace 各自探测测试（伪桥/伪子进程）"
+    },
+    {
+      "index": 54,
+      "clause": "可用性预检演示（②）：`demo:availability` 对四引擎逐一探测 + 实测态回读——注册 = 声明层（M1 注册即验，不可用不移除注册），可用 = 运行时层（使用时 ENGINE_UNAVAILABLE 拦，绝不静默替换）；同一份代码在装了/没装 LAMMPS/MACE 的机器上给出不同的表，两种输出都正确（环境依赖的诚实报告即预检的意义；本机实测：ase 3.28.0 / mace 0.3.16 盖章实测态，lammps 缺失保持 unknown）",
+      "evidence": "demo:availability 端到端（四引擎三态如实运行，packages/bridge/demo-availability.mjs）"
+    },
+    {
+      "index": 55,
+      "clause": "多锚点混合采样真实演示（③）：`demo:mixture-sampling` 三段——A 双锚点（Cu / Cu3Ag 同拓扑）按 [0.6,0.4] 最大余数法配额采样 10 个（锚点归属随谱系 #anchor=k）；B 混合似然逐一独立重算（相对全部锚点，最大偏差 0：'exact' 声明机械可验）；C 回算闭环（候选不自证：采样似然 ≠ 物理能量，候选[0] 经真实 ASE EMT 单点 oracle 裁定，生成 → 回算 → 核对谱系不断）",
+      "evidence": "demo:mixture-sampling 端到端（真实 EMT 回算，packages/bridge/demo-mixture-sampling.mjs）"
+    },
+    {
+      "index": 56,
+      "clause": "证据源注册表第二内置源（④）：理想混合熵 `mixing-entropy`——逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，与 β 无关：−β·(−TΔS) 的温度线性在 log 权重中消去）；纯元素候选按定义 0（不伪造梯度）；只消费组分与焓/凸包证据零能量信息共享，独立性声明如实含\"与凸包共享组分变量\"退化关联；接入不改筛选代码（注册表化实证：第二源 = 可扩展性本身的第二次实证）；端到端闭式：焓 [0,+1,−1] + 熵 [0, S1, S1]（S1 = 0.5623351446188083 手算），排序不变但权重位移如实呈现",
+      "evidence": "plugin-screening 测试 22（每点位熵闭式 + 双源相加闭式 + 独立性声明）"
     }
   ]
 }

@@ -7,7 +7,7 @@
 //    能量不得进入任何组合路径（凸包/焓比较），指纹不可追溯即不可组合。
 //    校验结果以 _units/_fingerprint 挂在 provider 上（不改写原 manifest）。
 
-import { validateEngineUnits, validateEngineFingerprint, fingerprintEqual } from './units.mjs'
+import { validateEngineUnits, validateEngineFingerprint, fingerprintEqual, unitsError } from './units.mjs'
 
 export class NoCapableProviderError extends Error {
   constructor(type) { super(`No provider can handle task type "${type}"`); this.code = 'NO_CAPABLE_PROVIDER' }
@@ -59,6 +59,22 @@ export class PotentialRegistry {
     provider._units = validateEngineUnits(provider.manifest.units)
     provider._fingerprint = validateEngineFingerprint(provider.manifest.fingerprint)
     this.providers.set(provider.name, provider)
+  }
+
+  /**
+   * 实测态回读升级（①）：引擎运行时探测到自己的实际版本后，把归一指纹的
+   * version 从声明态 'unknown' 升级为实测值。只允许丰富 version：software/method
+   * 是注册时的静态声明，实测不符属引擎冒充身份，不在回读范畴；原 manifest 仍不
+   * 被改写（与 M1 同款）。探测失败方应保持 'unknown'，不得拿 'unknown'/空值盖章。
+   */
+  stampFingerprint(name, { version } = {}) {
+    const provider = this.get(name)
+    if (typeof version !== 'string' || version.length === 0 || version === 'unknown') {
+      throw unitsError('FINGERPRINT_STAMP_INVALID',
+        `stampFingerprint(${name})：version 必须是非空实测值（探测失败应保持 unknown 声明，不盖章）`)
+    }
+    provider._fingerprint = { ...provider._fingerprint, version }
+    return provider._fingerprint
   }
 
   /** 注销（引擎插件卸载路径）；若注销的是当前激活引擎，重置激活指针 */

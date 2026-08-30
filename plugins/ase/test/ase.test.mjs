@@ -170,3 +170,17 @@ potentialProviderContract({
     code: 'ENGINE_UNAVAILABLE',
   },
 })
+
+test('7. 实测态回读（①）：probeVersion 取 sidecar 握手 ASE 版本；探测失败诚实返回 null', async () => {
+  // 握手携带实测版本 → 回读成功（调用方据此经 stampFingerprint 升级指纹）
+  const helloBridge = {
+    async call(method) { return method === 'hello' ? { aseVersion: '3.23.0' } : {} },
+  }
+  assert.equal(await new AseProvider({ bridge: helloBridge }).probeVersion(), '3.23.0')
+  // 无 ASE（aseVersion 为 null/空）→ null（保持 'unknown' 声明态，不冒充已知）
+  const noAse = { async call() { return { aseVersion: null } } }
+  assert.equal(await new AseProvider({ bridge: noAse }).probeVersion(), null)
+  // sidecar 异常 → null（探测失败不抛错，留给调用方诚实降级）
+  const broken = { async call() { throw new Error('sidecar gone') } }
+  assert.equal(await new AseProvider({ bridge: broken }).probeVersion(), null)
+})

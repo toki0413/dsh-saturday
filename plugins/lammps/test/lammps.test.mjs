@@ -150,3 +150,19 @@ potentialProviderContract({
     code: 'ENGINE_UNAVAILABLE',
   },
 })
+
+test('7. 实测态回读（①）：probeVersion 解析 `binary -h` 横幅；探测失败诚实返回 null', async () => {
+  // LAMMPS 横幅在 stdout 且退出码 0 → 实测版本（调用方据此盖章升级指纹）
+  const ok = new LammpsProvider({
+    spawnImpl: () => fakeChild({ stdout: 'Large-scale Atomic Massively Parallel Simulator\nLAMMPS (2 Aug 2023)\nusage: lmp ...' }),
+  })
+  assert.equal(await ok.probeVersion(), '2 Aug 2023')
+  // 无二进制 → null（诚实降级，保持 'unknown' 声明态）
+  const missing = new LammpsProvider({
+    spawnImpl: () => fakeChild({ spawnError: Object.assign(new Error('spawn lmp ENOENT'), { code: 'ENOENT' }) }),
+  })
+  assert.equal(await missing.probeVersion(), null)
+  // 输出无横幅 → null（不猜测版本，与"不静默近似"同款）
+  const noBanner = new LammpsProvider({ spawnImpl: () => fakeChild({ stdout: 'unexpected output' }) })
+  assert.equal(await noBanner.probeVersion(), null)
+})

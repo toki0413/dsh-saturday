@@ -107,6 +107,29 @@ export class LammpsProvider {
     this.spawnImpl = spawnImpl ?? spawn
   }
 
+  /**
+   * 运行时版本回读（① 实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
+   * 探测失败（无二进制/启动异常/无横幅）返回 null——诚实降级保持 'unknown'，
+   * 绝不拿非实测值盖章（与 M1 诚实降级同款纪律）。
+   */
+  probeVersion() {
+    return new Promise(resolve => {
+      let out = ''
+      let child
+      try {
+        child = this.spawnImpl(this.binary, ['-h'])
+      } catch {
+        return resolve(null)
+      }
+      child.stdout.on('data', d => out += d)
+      child.on('error', () => resolve(null))
+      child.on('close', code => {
+        const m = out.match(/LAMMPS\s*\(([^)]+)\)/)
+        resolve(code === 0 && m ? m[1].trim() : null)
+      })
+    })
+  }
+
   async relax(material, params = {}) {
     if (!this.potentialFile) {
       throw new EngineUnavailableError(this.binary, 'no potential file configured (config.potentialFile)')

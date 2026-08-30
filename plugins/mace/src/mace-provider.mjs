@@ -82,6 +82,25 @@ export class MaceProvider {
     })
   }
 
+  /**
+   * 运行时版本回读（① 实测态）：`python -c "import mace; print(mace.__version__)"`。
+   * 探测失败（模块缺失/退出异常/无输出）返回 null——诚实降级保持 'unknown'，不冒充。
+   */
+  probeVersion() {
+    return new Promise(resolve => {
+      let out = ''
+      let child
+      try {
+        child = this.spawnImpl(this.python, ['-c', 'import mace; print(mace.__version__)'])
+      } catch {
+        return resolve(null)
+      }
+      child.stdout.on('data', d => out += d)
+      child.on('error', () => resolve(null))
+      child.on('close', code => resolve(code === 0 && out.trim() ? out.trim() : null))
+    })
+  }
+
   /** 默认真实执行：结构 JSON 走 stdin，结果 JSON 走 stdout */
   runOnce(material, params = {}) {
     return new Promise((resolve, reject) => {

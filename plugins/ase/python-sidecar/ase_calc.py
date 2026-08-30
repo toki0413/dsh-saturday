@@ -245,6 +245,13 @@ def harmonic(spec: dict) -> dict:
 
 def handle(method: str, params: dict):
     if method == "hello":
+        # 实测态回读（①）：ASE 可导入时携带实际版本，供引擎指纹从声明态升级；
+        # 不可用时 None（诚实降级，不冒充已知）
+        try:
+            import ase as _ase  # noqa: PLC0415
+            ase_version = getattr(_ase, "__version__", None)
+        except Exception:
+            ase_version = None
         return {
             "sidecar": "saturday-ase-calc",
             "version": "0.1.0",
@@ -252,6 +259,7 @@ def handle(method: str, params: dict):
             # 契约 §5.1：md 能力声明（遍历对账时间平均侧，§4.5）；harmonic：谐波锚点数据面（§9 第二档锚点物理化）
             "operations": {"relax": True, "calculate": True, "md": True, "harmonic": True},
             "eventGranularity": "iteration",
+            "aseVersion": ase_version,
         }
     if method == "relax":
         return relax(params)

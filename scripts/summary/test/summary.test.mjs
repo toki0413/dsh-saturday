@@ -36,21 +36,26 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：52 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：56 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 52, '附录 A 当前应为 52 条实证映射')
-  assert.equal(rows[rows.length - 1].index, 52)
+  assert.equal(rows.length, 56, '附录 A 当前应为 56 条实证映射')
+  assert.equal(rows[rows.length - 1].index, 56)
   assert.ok(rows[35].evidence.includes('scripts/summary'), '第 36 条（摘要层自身）证据必须可追溯到摘要层测试')
-  assert.ok(rows[rows.length - 1].evidence.includes('plugin-screening'), '第 52 条证据指向换算审计通道测试')
-  assert.ok(rows[rows.length - 2].evidence.includes('plugin-screening'), '第 51 条证据指向工具层参考态声明形态测试')
-  assert.ok(rows[rows.length - 3].evidence.includes('demo-cross-engine'), '第 50 条证据指向跨引擎对照演示')
-  assert.ok(rows[rows.length - 4].evidence.includes('potential.test'), '第 49 条证据指向 M2 激活门禁测试')
-  assert.ok(rows[rows.length - 5].evidence.includes('units.test') && rows[rows.length - 5].evidence.includes('plugin-screening'),
+  assert.ok(rows[rows.length - 1].evidence.includes('plugin-screening'), '第 56 条证据指向混合熵第二内置源测试')
+  assert.ok(rows[rows.length - 2].evidence.includes('demo-mixture-sampling'), '第 55 条证据指向多锚点混合采样真实演示')
+  assert.ok(rows[rows.length - 3].evidence.includes('demo-availability'), '第 54 条证据指向可用性预检演示')
+  assert.ok(rows[rows.length - 4].evidence.includes('units.test') && rows[rows.length - 4].evidence.includes('potential.test'),
+    '第 53 条证据指向指纹实测态回读测试（通配三态 + 盖章三态）')
+  assert.ok(rows[rows.length - 5].evidence.includes('plugin-screening'), '第 52 条证据指向换算审计通道测试')
+  assert.ok(rows[rows.length - 6].evidence.includes('plugin-screening'), '第 51 条证据指向工具层参考态声明形态测试')
+  assert.ok(rows[rows.length - 7].evidence.includes('demo-cross-engine'), '第 50 条证据指向跨引擎对照演示')
+  assert.ok(rows[rows.length - 8].evidence.includes('potential.test'), '第 49 条证据指向 M2 激活门禁测试')
+  assert.ok(rows[rows.length - 9].evidence.includes('units.test') && rows[rows.length - 9].evidence.includes('plugin-screening'),
     '第 48 条证据指向单位/指纹门禁测试（core 纯层 + 筛选层 M3）')
-  assert.ok(rows[rows.length - 6].evidence.includes('plugin-sampler-ou'), '第 47 条证据指向多锚点混合采样测试')
-  assert.ok(rows[rows.length - 7].evidence.includes('plugin-sampler-ou'), '第 46 条证据指向采样温度标定测试')
-  assert.ok(rows[rows.length - 8].evidence.includes('plugin-screening'), '第 45 条证据指向证据源注册表化测试')
+  assert.ok(rows[rows.length - 10].evidence.includes('plugin-sampler-ou'), '第 47 条证据指向多锚点混合采样测试')
+  assert.ok(rows[rows.length - 11].evidence.includes('plugin-sampler-ou'), '第 46 条证据指向采样温度标定测试')
+  assert.ok(rows[rows.length - 12].evidence.includes('plugin-screening'), '第 45 条证据指向证据源注册表化测试')
   assert.ok(rows[33].evidence.includes('plugin-free-energy'), '第 34 条证据指向自由能测试')
   assert.ok(rows.every(r => r.clause.length > 0 && r.evidence.length > 0))
 })

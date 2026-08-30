@@ -12,12 +12,16 @@ import { LammpsProvider } from '@saturday/plugin-lammps'
 import { PotentialRegistry } from '@saturday/core'
 import { potentialProviderContract } from '@saturday/contract-tests'
 
-/** 伪子进程：可控地发 close / error（探测路径不用 stdout/stdin） */
-function fakeChild({ exitCode = 0, spawnError = null } = {}) {
+/** 伪子进程：可控地发 stdout / close / error（版本回读路径需 stdout） */
+function fakeChild({ stdout = '', exitCode = 0, spawnError = null } = {}) {
   const child = new EventEmitter()
   child.stdout = new EventEmitter()
   child.stderr = new EventEmitter()
-  setImmediate(() => spawnError ? child.emit('error', spawnError) : child.emit('close', exitCode))
+  setImmediate(() => {
+    if (spawnError) return child.emit('error', spawnError)
+    if (stdout) child.stdout.emit('data', Buffer.from(stdout))
+    child.emit('close', exitCode)
+  })
   return child
 }
 
@@ -94,4 +98,17 @@ potentialProviderContract({
     createProvider: () => new MaceProvider({ checkImpl: async () => false }),
     code: 'ENGINE_UNAVAILABLE',
   },
+})
+
+test('6. 实测态回读（①）：probeVersion 读 mace.__version__；探测失败诚实返回 null', async () => {
+  // 模块在且可输出版本 → 实测值（调用方据此经 stampFingerprint 升级指纹）
+  const ok = new MaceProvider({ spawnImpl: () => fakeChild({ stdout: '0.3.6\n' }) })
+  assert.equal(await ok.probeVersion(), '0.3.6')
+  // 模块缺失（退出码 1）/ 无输出 → null（保持 'unknown' 声明态，不冒充已知）
+  const missing = new MaceProvider({ spawnImpl: () => fakeChild({ exitCode: 1 }) })
+  assert.equal(await missing.probeVersion(), null)
+  const silent = new MaceProvider({ spawnImpl: () => fakeChild({}) })
+  assert.equal(await silent.probeVersion(), null)
+  const noPython = new MaceProvider({ spawnImpl: () => fakeChild({ spawnError: new Error('no python') }) })
+  assert.equal(await noPython.probeVersion(), null)
 })
