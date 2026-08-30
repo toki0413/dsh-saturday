@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T07:25:21.052Z",
-  "totalPass": 283,
+  "generatedAt": "2026-08-30T07:37:48.722Z",
+  "totalPass": 285,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 30,
+      "pass": 32,
       "fail": 0
     },
     {
@@ -454,6 +454,11 @@
       "index": 63,
       "clause": "锚点工具 Agent 层暴露 + 配额闭式对账补强（⑯/⑰）：⑯ `demo:agent` 阶段 D——`sampler.anchor.add`/`sampler.mixture` 经 dsh harness 暴露给 Agent（工具出口关卡实证：`graph: undefined` 覆盖触发 'not lossless JSON' 拒付，改显式剔除），阶段 B 弛豫收敛结构由 ⑮ 自动入库后会话库命中双锚点（自动 + 手动，同拓扑）→ 混合提案来源层 `session-store` 随交付呈现；⑰ 最大余数法配额闭式对账：配额只依赖 (n, 归一权重) 与 seed 无关（多 seed 扫描）；余数按小数降序补一、小数平手取靠前锚点（[0.5,0.5]×5 → [3,2]、[1,1,1]×10 → [4,3,3]）；未归一权重与归一形态同配额；三锚点余数顺次补一（[0.5,0.3,0.2]×9 → [4,3,2]）",
       "evidence": "demo:agent 阶段 D 端到端 + plugin-sampler-ou plugin-mixture-quota 测试 1-4（配额闭式 + 平手确定性 + 归一不变 + seed 无关扫描）"
+    },
+    {
+      "index": 64,
+      "clause": "全自动锚点引导闭环 + 不可考组分诚实降级链（⑱/⑲/⑳）：⑲ `demo:anchor-auto` 无人工入库形态——Cu/Cu3Ag 真实弛豫（收敛 + 终态交付）→ ⑮ 自动入库（谱系 `job:<id>#engine=<name>`，全程零手动锚点操作）→ 会话库检索（距离 0/0.5）→ 配额 [5,3] → 提案 → 回算 + 联合排序（Σw = 1，谱系不断）；⑳ 组分不可考（`distance: null`）诚实降级链：缺组分锚点检索排尾（不冒充可比不编造数值）→ 混合提案不因不可考拒绝（排尾不是排除：目标构造照常、均匀配额实证参与混合不是陪跑）→ 距离声明随工具层交付如实透传；⑱ 裁决：会话锚点库不引入淘汰/上限（库与闭环同生命周期，淘汰属持久化关注点；`topK` 已是提案侧参与上限）",
+      "evidence": "demo:anchor-auto 端到端 + plugin-sampler-ou plugin-null-distance 测试 1-2（纯层排尾 + 目标构造照常；工具层距离透传 + 配额参与实证）"
     }
   ]
 }

@@ -129,7 +129,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 283 项，18 个包）
+npm test                # 全部 workspace 测试（当前 285 项，18 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
@@ -141,6 +141,7 @@ npm run demo:cross-engine --workspace @saturday/bridge # 跨引擎对照演示�
 npm run demo:availability --workspace @saturday/bridge # 可用性预检演示（四引擎环境诚实报告 + 实测态版本回读）
 npm run demo:mixture-sampling --workspace @saturday/bridge # 多锚点混合采样演示（闭式似然重算 + 真实 EMT 回算闭环）
 npm run demo:anchor-guided --workspace @saturday/bridge # 锚点引导闭环演示（入库 → 检索 → 提案 → 回算 → 联合排序）
+npm run demo:anchor-auto --workspace @saturday/bridge  # 全自动锚点引导闭环（弛豫自动入库 → 检索 → 提案 → 回算 → 联合排序，零手动锚点操作）
 ```
 
 ## 挂载到 dsh（完整运行时，已实测验证）
@@ -180,6 +181,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **锚点库接 Agent 层 + 发布打磨（⑩⑪）**：⑩锚点引导混合提案工具化——`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取，直交付无谱系即拒）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案，`anchorOrigin` 声明来源层，空库拒伪造，两路径共用同一条纯层目标构造——门禁不另开旁路）；会话级内存库与闭环运行同生命周期（不跨会话持久化，不伪造库外数据）；候选回算后经 `workflow.screen` 的 `sampled` 透传，谱系在编排层不断；⑪发布打磨：19 包 `files` 白名单（发布物只含实现与必要数据面：python-bridge 含 sidecar.py/adapters，ase 含 python-sidecar，bridge 含 docs/profiles/demo）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）
 - **锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）**：⑫`demo:anchor-guided` 全程工具层四段（入库 → 会话库检索 → 混合提案 → 工具间只传交付接 `workflow.screen` 联合排序：真实 EMT 回算、双源证据组合、Σw = 1 配分函数归一，谱系不断）；⑬裁决：`workflow.screen` 不直收 `anchors`（直收 = 筛选插件内嵌采样逻辑破坏插件边界；两步编排即组合律）；⑭审查：锚点工具不新增进 `StructureSampler` seam，交付仍是 `SampledStructure` 形态（`generative:` 前缀 + 可回算构造形态测试）
 - **闭环轨迹自动入库 + 锚点工具 Agent 层暴露 + 配额闭式对账（⑮/⑯/⑰）**：⑮自监督数据管道第二段——弛豫收敛且引擎交付终态时弛豫后结构自动入会话锚点库（谱系自动声明 `job:<id>#engine=<name>`）；三道门禁：未收敛不入库 / 旧协议无终态不入库（不拿输入结构冒充）/ 同谱系幂等；引擎 `relax` 交付协议扩展终态坐标/晶胞（ase sidecar 补齐，旧版诚实缺省）；薄事件纪律：结构体不重复落 Trajectory；只积累数据燃料不引入学习组件；⑯`demo:agent` 阶段 D：锚点工具经 dsh harness 暴露给 Agent（工具出口关卡实证：`graph: undefined` 触发 'not lossless JSON' 拒付 → 改显式剔除），阶段 B 弛豫产物自动入库后会话库命中双锚点；⑰最大余数法配额闭式对账：配额只依赖 (n, 归一权重) 与 seed 无关，小数平手取靠前锚点，未归一与归一形态同配额
+- **全自动锚点引导闭环 + 不可考组分诚实降级链（⑱/⑲/⑳）**：⑲`demo:anchor-auto` 无人工入库形态——真实弛豫（收敛 + 终态交付）→ ⑮自动入库 → 会话库检索 → 配额 → 提案 → 回算 + 联合排序，全程零手动锚点操作谱系不断；⑳`distance: null` 诚实降级链：缺组分锚点检索排尾（不冒充可比不编造数值）→ 混合提案不因不可考拒绝（排尾不是排除：均匀配额实证参与混合不是陪跑）→ 距离声明随工具层交付如实透传；⑱裁决：会话锚点库不引入淘汰/上限（库与闭环同生命周期，淘汰属持久化关注点；`topK` 已是提案侧参与上限）
 - **Agent 编排链三段实证**：`demo:agent` 阶段 C 把采样→联合排序推到 Agent 层（OU 交付打包进工具参数，谱系在编排层不断）；dsh 工具三连坑入纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`；回归/摘要脚本包内串行（并发拉 sidecar + OpenBLAS 线程内存竞态实证，确定性优先于耗时）
 - **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
