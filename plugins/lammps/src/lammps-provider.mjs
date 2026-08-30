@@ -89,6 +89,10 @@ export class LammpsProvider {
     ],
     constraints: { requiresLicense: false },
     eventGranularity: 'job',   // 批处理二进制：只有任务级事件，无逐迭代回调
+    // M1（单位与指纹）：输入脚本走 metal 单位制（eV/Å/fs）；势函数类型随配势
+    // 变化（默认 EAM），运行时版本未探测 → unknown（诚实降级）
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'lammps', method: 'metal-EAM', version: 'unknown' },
   }
 
   /**

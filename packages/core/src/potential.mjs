@@ -3,6 +3,11 @@
 //  - 评分公式修正：speed/cost 语义统一，screening 画像必须选出快引擎
 //  - license 是前置门禁，不是可逆效果
 //  - 引擎切换不影响在运行任务
+//  - M1（单位与指纹）：注册即校验 manifest.units/fingerprint——无单位声明的
+//    能量不得进入任何组合路径（凸包/焓比较），指纹不可追溯即不可组合。
+//    校验结果以 _units/_fingerprint 挂在 provider 上（不改写原 manifest）。
+
+import { validateEngineUnits, validateEngineFingerprint } from './units.mjs'
 
 export class NoCapableProviderError extends Error {
   constructor(type) { super(`No provider can handle task type "${type}"`); this.code = 'NO_CAPABLE_PROVIDER' }
@@ -44,7 +49,15 @@ export class PotentialRegistry {
     this.licenseChecker = async () => true   // 默认放行；部署时注入真实检查
   }
 
+  /**
+   * 注册门禁 M1：manifest.units（三元组）与 manifest.fingerprint（software/method）
+   * 必须显式声明且白名单合法——异构引擎生态下"单位未声明/来源不可追溯"的
+   * 能量一旦混入组合路径（凸包、焓排序）即产生"看起来合法但物理无意义"的结论。
+   * 归一后的声明挂 _units/_fingerprint（消费方只读归一形态，原 manifest 不被改写）。
+   */
   register(provider) {
+    provider._units = validateEngineUnits(provider.manifest.units)
+    provider._fingerprint = validateEngineFingerprint(provider.manifest.fingerprint)
     this.providers.set(provider.name, provider)
   }
 

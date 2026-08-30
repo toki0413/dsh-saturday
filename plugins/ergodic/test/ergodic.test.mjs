@@ -79,6 +79,8 @@ function stubEngine({ calculateShift = 0, mdBase = -12 } = {}) {
       ],
       constraints: {},
       eventGranularity: 'job',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'stub-engine', method: 'stub' },
     },
     async calculate(material) {
       const cand = material.lineage.find(l => l.operation === 'sampled-candidate')
@@ -249,6 +251,8 @@ test('4c. checkErgodic 端到端（纯层 + 谐波解析引擎）：exact 声明
       ],
       constraints: {},
       eventGranularity: 'job',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'harmonic-analytic', method: 'analytic' },
     },
     async calculate(material) {
       const cand = material.lineage.find(l => l.operation === 'sampled-candidate')

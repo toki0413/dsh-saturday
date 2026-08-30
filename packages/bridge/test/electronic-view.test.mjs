@@ -29,6 +29,8 @@ function makePotentialLikeProvider(name = 'pot-like') {
       ],
       constraints: { requiresLicense: false },
       eventGranularity: 'iteration',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: name, method: 'potential-mock' },
     },
     async calculate(material) {
       return { jobId: randomUUID(), engine: name, energy: -1.23, calculator: 'fake' }
@@ -47,6 +49,8 @@ function makeDftLikeProvider(name = 'dft-like') {
       ],
       constraints: { requiresLicense: false },
       eventGranularity: 'job',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: name, method: 'DFT-mock' },
     },
     async calculate(material, params = {}) {
       // 声明的性质全部真实给出（dos 大数组走对象存储引用，路线第 11 章形态）

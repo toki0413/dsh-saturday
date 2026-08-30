@@ -39,6 +39,8 @@ function stubCorePlugin(getRelaxImpl) {
           capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
           constraints: {},
           eventGranularity: 'job',
+          units: { energy: 'eV', length: 'Å', time: 'fs' },
+          fingerprint: { software: 'stub-engine', method: 'stub' },
         },
         relax: relaxImpl,
       })
@@ -606,6 +608,65 @@ test('18. 证据源注册表化：解析三态 + 描述符闭式 + 自定义源�
   }
 })
 
+// ── M3 能量组合门禁（参考态指纹/单位一致性）：进凸包前必须与候选引擎同源可比 ──
+test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显式拒绝（不静默换算、不静默混源）', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.04 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const sameSource = { software: 'stub-engine', method: 'stub' }
+    // ① 同指纹（version 归一 unknown，两边缺视同）+ eV 单位 → 放行，provenance 声明态；
+    //    能量来源可追溯性随交付呈现（消费方可据此核对跨批次可比性）
+    const ok = await screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: {
+        Cu: { energyPerAtom: -3.0, fingerprint: sameSource, energyUnit: 'eV' },
+        Ag: { energyPerAtom: -3.0, fingerprint: { ...sameSource, version: 'unknown' }, energyUnit: 'eV' },
+      },
+    })
+    assert.equal(ok.thermo.referenceProvenance, 'declared', '指纹全声明 → 来源声明态')
+    assert.deepEqual(ok.providerFingerprint, { software: 'stub-engine', method: 'stub', version: 'unknown' })
+    assert.deepEqual(ok.providerUnits, { energy: 'eV', length: 'Å', time: 'fs' })
+    // ② 指纹不同源 → 显式拒绝（DFT 参考态混进 mock 引擎凸包 = 物理无意义的包络）
+    await assert.rejects(() => screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: {
+        Cu: { energyPerAtom: -3.0, fingerprint: sameSource },
+        Ag: { energyPerAtom: -3.7, fingerprint: { software: 'vasp', method: 'DFT-PBE' } },
+      },
+    }), /不同源/, '异源能量混入凸包必须显式拒绝')
+    // ③ 单位不一致 → UNIT_MISMATCH（不自动换算：是否可比推回调用方显式决策）
+    await assert.rejects(() => screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: {
+        Cu: { energyPerAtom: -3.0, fingerprint: sameSource },
+        Ag: { energyPerAtom: -0.22, energyUnit: 'Ry' },
+      },
+    }), err => err.code === 'UNIT_MISMATCH')
+    // ④ 纯数值形态（无声明）→ 诚实降级 provenance=undeclared，既有行为不变（门禁不追溯拦截）
+    const legacy = await screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0 },
+    })
+    assert.equal(legacy.thermo.referenceProvenance, 'undeclared')
+    // ⑤ 升级形态缺能量 → 显式拒绝（不得拿空壳声明冒充参考态）
+    await assert.rejects(() => screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: { fingerprint: sameSource }, Ag: -3.0 },
+    }), /energyPerAtom/)
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
 //    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
 workflowContract({
@@ -621,6 +682,8 @@ workflowContract({
         capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
         constraints: {},
         eventGranularity: 'job',
+        units: { energy: 'eV', length: 'Å', time: 'fs' },
+        fingerprint: { software: 'contract-stub', method: 'stub' },
       },
       relax: relaxImpl,
     })

@@ -129,7 +129,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 240 项，18 个包）
+npm test                # 全部 workspace 测试（当前 252 项，18 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
@@ -162,6 +162,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **修订 #8**：formula-only 构建必须显式 StructureResolver，来源写谱系（测试 2/4）
 - **修订 #10**：license 是前置门禁不是可逆效果；工具注册即 effect，卸载自动回收（测试 8）
 - **契约即宪法**：`@saturday/contract-tests` 提供 structure-resolver / potential-provider / workflow / sampler / derivation 五条 seam 的标准断言集，新插件 `npm test` 即过宪法；兼容性由测试而非文档承诺（§8.3）
+- **单位与能力指纹入契约（M1/M3，异构引擎生态的泛化地基）**：量纲分析最小落点——引擎注册即校验 `manifest.units`（energy/length/time 三元组，白名单外/维度错位显式拒绝）与 `manifest.fingerprint`（software/method 必填，version 不可得诚实降级 'unknown'）；换算只能由调用方显式发起（`unitConvert`），绝不自动进入能量比较路径；筛选层参考态升级形态声明了指纹/单位就对账，异源/异单位进凸包前显式拒绝（不静默混源、不静默换算），`providerFingerprint/providerUnits` 与 `referenceProvenance` 随交付呈现（能量来源可追溯性即消费方可核对的交付物）
 - **sampler seam（§4.5，两个实证落地）**：生成式逆设计的唯一入口——采样语义强制声明、似然与可逆性诚实声明、候选必须可回算验证（生成 → 弛豫 → 核对闭环）；`samplerContract` 套件已随首个实现（plugin-sampler-perturb 微扰采样）入包，第二实证（plugin-sampler-ou）把似然声明从 'none' 升档到 'exact'（OU 闭式转移核，逐候选附可独立重算的 `logProb`；诚实声明提议核≠玻尔兹曼、局部采样器定位）；闭环由 `workflow.explore` 首个实证（候选不自证，引擎是唯一 oracle），遍历对账由 `workflow.ergodic` 补齐并**已实质升档**（OU 接入后判据升为重要性重加权均值对 MD 时间平均，解析对账体系不靠数值巧合）；Boltzmann 生成器 / 潜空间 normalizing flow 后续挂载于此
 - **活性上下文地基（§8.2，首个实证落地）**：plugin-derivation 把“响应式谱系图”从目标形态变成测试——每个导出量登记推导来源，上游失效沿推导图向下游传播（重复失效幂等），冻结结果（实验数据/已交付，§7）只追加修正不重算，重算惰性且预算受控（超预算显式报错）；不可变 fork（§6）不是失效源；`derivationContract` 第五套件同步入包；**已接真实工作流：排序 = f(基体, 引擎)——`workflow.screen` 完成即登记两层推导，势函数热替换（`activate` 事件）沿 `engine:<id>` 全链失效**；响应式依赖声明（`getService` 下沉）仍为演进方向
 - **热力学第一档（§9 欠账清偿）**：能量零点显式化——筛选排序从“近似形成焓”升级为严格形成焓（能量零点 = 各元素参考态经引擎显式弛豫，数据面 `reference_energy` 算子）+ 形成焓空间凸包判据（`energyAboveHull`）；`thermo.level` 声明凸包精度等级（不冒充更高精度），参考态不可得时诚实降级保留“近似”声明；纯层 `formationEnthalpy/convexHull/energyAboveHull` 入 `@saturday/core`（缺参考态/超成分范围显式报错）

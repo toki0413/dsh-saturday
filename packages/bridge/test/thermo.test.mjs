@@ -101,6 +101,8 @@ test('4. 诚实降级：引擎无参考态原语时记录原因，不伪造严�
       capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
       constraints: {},
       eventGranularity: 'job',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'no-ref-engine', method: 'stub' },
     },
     relax: async (m) => ({ jobId: `job-${m.formula}`, engine: 'no-ref-engine', converged: true, energy: -12.0, n_steps: 3 }),
   })

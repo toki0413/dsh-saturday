@@ -128,6 +128,8 @@ function linearMdEngine(c) {
       ],
       constraints: {},
       eventGranularity: 'job',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'linear-analytic', method: 'analytic' },
     },
     async md(material, params = {}) {
       const t = params.temperature_K ?? 300

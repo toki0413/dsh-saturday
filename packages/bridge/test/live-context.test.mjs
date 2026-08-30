@@ -82,6 +82,8 @@ test('2. 势函数热替换：沿 engine:<旧引擎> 全链失效（候选 + 排
       capabilities: [{ type: 'relax', accuracy: 0.9, speed: 0.2, cost: 0.5, maxAtoms: 200 }],
       constraints: {},
       eventGranularity: 'iteration',
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'stub-dft', method: 'DFT-mock' },
     },
     relax: async () => { throw new Error('live-context 测试不应真跑第二引擎') },
   })

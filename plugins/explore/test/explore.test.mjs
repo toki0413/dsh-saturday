@@ -40,6 +40,8 @@ function stubCorePlugin(getRelaxImpl) {
           capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
           constraints: {},
           eventGranularity: 'job',
+          units: { energy: 'eV', length: 'Å', time: 'fs' },
+          fingerprint: { software: 'stub-engine', method: 'stub' },
         },
         relax: relaxImpl,
       })
@@ -177,6 +179,8 @@ workflowContract({
         capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
         constraints: {},
         eventGranularity: 'job',
+        units: { energy: 'eV', length: 'Å', time: 'fs' },
+        fingerprint: { software: 'contract-stub', method: 'stub' },
       },
       relax: relaxImpl,
     })

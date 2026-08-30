@@ -28,6 +28,10 @@ export class AseProvider {
     ],
     constraints: { requiresLicense: false },
     eventGranularity: 'iteration',   // 常驻 sidecar：逐调用同步形态
+    // M1（单位与指纹）：ASE 原生 eV/Å/fs；计算器由调用方显式指定（lj/emt），
+    // method 声明为计算器家族；运行时版本未探测 → unknown（诚实降级，不冒充已知）
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'ase', method: 'ASE-calculator', version: 'unknown' },
   }
 
   /**

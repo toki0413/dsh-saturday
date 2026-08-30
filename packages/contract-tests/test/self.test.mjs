@@ -40,6 +40,8 @@ const mockProvider = {
     capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.9, cost: 0.1, maxAtoms: 10 }],
     constraints: { requiresLicense: false },
     eventGranularity: 'iteration',
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'mock-engine', method: 'mock' },
   },
   async relax(material, params = {}) {
     return { jobId: 'mock-job', engine: 'mock-engine', converged: true, energy: -1.234, n_steps: 3 }

@@ -12,7 +12,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
+import { Material, PrototypeLibResolver, PotentialRegistry, validateEngineUnits, validateEngineFingerprint } from '@saturday/core'
 
 const dummyRt = { on() {}, emit() {} }
 
@@ -108,6 +108,13 @@ export function potentialProviderContract({
     assert.equal(typeof m.constraints, 'object')
     // §5.2：粒度必须显式声明（未声明者按 iteration 对待是兼容宽容，新插件应显式）
     assert.ok(['iteration', 'job'].includes(m.eventGranularity), 'eventGranularity must be declared')
+    // M1（单位与指纹）：异构引擎生态的泛化地基——无单位声明的能量不得进入
+    // 组合路径；指纹不可追溯即不可组合（注册门禁同款断言，这里双保险）
+    const units = validateEngineUnits(m.units)
+    assert.deepEqual(Object.keys(units).sort(), ['energy', 'length', 'time'], 'units 三元组必须齐全')
+    const fp = validateEngineFingerprint(m.fingerprint)
+    assert.ok(fp.software.length > 0 && fp.method.length > 0, 'fingerprint.software/method 必填')
+    assert.ok(typeof fp.version === 'string', 'version 不可得时降级 unknown（诚实声明，不空缺）')
   })
 
   test(`[contract:${subject}] §5.2 事件粒度门禁`, async () => {

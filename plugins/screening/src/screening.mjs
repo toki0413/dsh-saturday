@@ -17,6 +17,7 @@ import {
   multiConvexHull, energyAboveHullMulti,
   compositionFromNumbers,
   Material,
+  fingerprintEqual, assertSameUnits,
 } from '@saturday/core'
 import { combineEvidence, essFraction, evidenceError } from './evidence.mjs'
 import { builtinEvidenceSources, resolveEvidenceSources } from './evidence-sources.mjs'
@@ -33,7 +34,9 @@ const KB_EV_PER_K = 8.617333262145e-5
  * @param {Function}[opts.emit]      事件发射器 (type, event) => Promise
  * @param {DerivationRegistry} [opts.derivation] 推导登记簿（注入则登记活性推导）
  * @param {string}  [opts.batchId]   筛选批次号（缺省自动生成）
- * @param {Object}  [opts.references] 元素参考态每原子能量（如 {Cu: -0.001}），注入则算严格形成焓+凸包
+ * @param {Object}  [opts.references] 元素参考态每原子能量（如 {Cu: -0.001}），注入则算严格形成焓+凸包；
+ *        可选升级形态 {Cu: { energyPerAtom, fingerprint?, energyUnit? }}——声明了来源指纹/单位时，
+ *        必须与候选引擎的归一声明一致（M3 门禁），不一致显式拒绝（不自动换算、不静默混源）
  * @param {string}  [opts.thermoUnavailable] 参考态不可得的原因（诚实记录，不静默降级）
  * @param {number}  [opts.maxDopedSites] 每掺杂的最大取代位数（浓度扫描：k=1..max 各一个变体，默认 1）
  * @param {Array<{elements: string[], sites?: number[]}>} [opts.codopants]
@@ -151,12 +154,42 @@ export async function screenDopants({ material, dopants, potential, topK, engine
   // 缺参考态诚实降级：保留"近似"声明，不伪造严格量。
   let thermo
   if (references) {
+    // M3（能量组合门禁）：参考态能量与候选能量进同一凸包/形成焓前必须同源可比。
+    // 纯数值形态 = 调用方声明"与候选引擎同源"（工具层路径即由本引擎 referenceEnergy 产出，
+    // 既有行为不变）；升级形态可携带来源指纹与能量单位——声明了就对账：
+    // 指纹不同源或单位不一致都显式拒绝，绝不自动换算/静默混源（异构引擎生态第一风险源）。
+    // 未声明者诚实降级（声明 ≠ 强制：无声明的旧路径不被新门禁追溯拦截）。
+    const refValues = {}
+    let fingerprintDeclared = true
+    for (const [el, v] of Object.entries(references)) {
+      if (typeof v === 'number') {
+        refValues[el] = v
+        fingerprintDeclared = false
+        continue
+      }
+      if (!v || !Number.isFinite(v.energyPerAtom)) {
+        throw evidenceError('EVIDENCE_INVALID_INPUT',
+          `references.${el} 升级形态必须携带有限能量 energyPerAtom（收到 ${JSON.stringify(v)}）`)
+      }
+      refValues[el] = v.energyPerAtom
+      if (v.fingerprint) {
+        const cmp = fingerprintEqual(provider._fingerprint, v.fingerprint)
+        if (!cmp.same) {
+          throw evidenceError('EVIDENCE_INVALID_INPUT',
+            `references.${el} 参考态能量与候选引擎不同源：${cmp.reason}——` +
+            '凸包判据要求全部能量同源（跨引擎混入即得"看起来合法但物理无意义"的包络）')
+        }
+      } else {
+        fingerprintDeclared = false
+      }
+      if (v.energyUnit) assertSameUnits(provider._units?.energy ?? 'eV', v.energyUnit, `references.${el} 参考态能量单位`)
+    }
     for (const r of ranked) {
       r.formationEnthalpy = formationEnthalpy({
-        energy: r.energy, composition: r.composition, references,
+        energy: r.energy, composition: r.composition, references: refValues,
       })
     }
-    const elements = Object.keys(references)
+    const elements = Object.keys(refValues)
     if (elements.length >= 3) {
       // 多组分凸包：端点（每元素纯元素点）+ 候选点（归一成分，能量 = 形成焓）
       const normalize = (composition) => {
@@ -179,7 +212,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         level: provider.name,
         mode: 'multi-component',
         hullDimension: hull.d,
-        references,
+        references: refValues,
+        referenceProvenance: fingerprintDeclared ? 'declared' : 'undeclared',
         note: `多组分凸包判据（${elements.length} 元素，d=${hull.d} 单形下包络 + 重心插值）；` +
               '端点 = 各元素参考态（形成焓零点经本引擎显式弛豫计算）',
       }
@@ -207,7 +241,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       thermo = {
         level: provider.name,
         mode: 'binary',
-        references,
+        references: refValues,
+        referenceProvenance: fingerprintDeclared ? 'declared' : 'undeclared',
         note: '形成焓能量零点 = 各元素参考态经本引擎显式弛豫计算；' +
               'energyAboveHull 为形成焓空间凸包判据（单内点时退化为 0-0 弦）',
       }
@@ -407,6 +442,9 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     base: material.formula,
     dopants,
     provider: provider.name,
+    // 能量来源可追溯性随交付呈现（M1/M3 的消费入口：消费方可据此核对跨批次可比性）
+    ...(provider._fingerprint ? { providerFingerprint: provider._fingerprint } : {}),
+    ...(provider._units ? { providerUnits: provider._units } : {}),
     ranked: topK ? ranked.slice(0, topK) : ranked,
     failed: results.filter(r => r.status === 'failed'),
     ...(derivationRecord ? { derivation: derivationRecord } : {}),

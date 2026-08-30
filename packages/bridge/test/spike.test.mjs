@@ -74,10 +74,14 @@ test('5. autoRoute 评分修正：screening 选快引擎（修订 #7）', () => 
   reg.register({ name: 'emt-mock', manifest: {
     capabilities: [{ type: 'calculate', accuracy: 0.5, speed: 0.99, cost: 0.05, maxAtoms: 200 }],
     constraints: {},
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'emt-mock', method: 'LJ-mock' },
   } })
   reg.register({ name: 'vasp', manifest: {
     capabilities: [{ type: 'calculate', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 }],
     constraints: { requiresLicense: true },
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'vasp', method: 'DFT-PBE' },
   } })
   assert.equal(reg.autoRoute({ type: 'calculate', nAtoms: 8, profile: 'screening' }).name, 'emt-mock')
   assert.equal(reg.autoRoute({ type: 'calculate', nAtoms: 8, profile: 'validation' }).name, 'vasp')

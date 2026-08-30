@@ -51,6 +51,10 @@ export class MaceProvider {
     ],
     constraints: { requiresLicense: false },
     eventGranularity: 'job',   // 一次性子进程推理：只有任务级事件
+    // M1（单位与指纹）：MACE-MP 输出 eV/Å/fs；档位（small/medium/large）是配置项，
+    // 运行时版本/档位未回读 → unknown（诚实降级，不冒充已知）
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'mace', method: 'ML-MACE', version: 'unknown' },
   }
 
   /**

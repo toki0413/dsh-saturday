@@ -18,6 +18,10 @@ export class EmtMockProvider {
       ],
       constraints: { requiresLicense: false },
       eventGranularity: 'iteration',   // 契约 §5.2：逐迭代回调可用（sidecar 同步调用形态）
+      // M1（单位与指纹）：sidecar 实现 LJ 玩具势（eV/Å/fs）；method 如实声明
+      // LJ-mock——与真实 EMT 指纹不同，跨引擎组合时门禁会拦下混用（这正是目的）
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'emt-mock', method: 'LJ-mock', version: 'unknown' },
     }
   }
 
@@ -62,5 +66,7 @@ export const VASP_LIKE_MANIFEST = {
                    { type: 'relax', accuracy: 0.95, speed: 0.3, cost: 0.9, maxAtoms: 500 }],
     constraints: { requiresLicense: true },
     eventGranularity: 'job',           // 批处理形态示意：仅任务级事件，拒绝细粒度监听
+    units: { energy: 'eV', length: 'Å', time: 'fs' },
+    fingerprint: { software: 'vasp', method: 'DFT-PBE', version: 'unknown' },
   },
 }

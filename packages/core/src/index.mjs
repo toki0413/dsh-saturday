@@ -21,3 +21,14 @@ export {
 } from './thermo.mjs'
 export { PrototypeLibResolver, StructureNotFoundError } from './structure-resolver.mjs'
 export { Z, SYMBOL, composeFormula } from './elements.mjs'
+export {
+  unitsError,
+  UNIT_WHITELIST,
+  BASE_UNITS,
+  assertValidUnit,
+  unitConvert,
+  assertSameUnits,
+  validateEngineUnits,
+  validateEngineFingerprint,
+  fingerprintEqual,
+} from './units.mjs'
