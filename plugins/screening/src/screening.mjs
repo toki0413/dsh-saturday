@@ -19,6 +19,7 @@ import {
   Material,
 } from '@saturday/core'
 import { combineEvidence, essFraction, evidenceError } from './evidence.mjs'
+import { builtinEvidenceSources, resolveEvidenceSources } from './evidence-sources.mjs'
 
 const KB_EV_PER_K = 8.617333262145e-5
 
@@ -43,10 +44,13 @@ const KB_EV_PER_K = 8.617333262145e-5
  *        不弛豫（弛豫会抹掉待加权的涨落信息），不入凸包（成分点与基体重合）
  * @param {number} [opts.temperatureK] 联合排序的目标温度（K；提供 sampled 或 evidenceSources 时必填——焓证据 −βE 无温度即无标度）
  * @param {string[]} [opts.evidenceSources] 枚举候选联合排序的额外证据源（显式启用，默认只按能量排）；
- *        支持 ['hull']：凸包距离证据（需 references 已构包）——稳定性证据随候选呈现，
+ *        内置 ['hull']：凸包距离证据（需 references 已构包）——稳定性证据随候选呈现，
  *        检验组合律的可扩展性（证据源可增，独立性声明随源数变化如实更新）
+ * @param {Object<string, Object>} [opts.evidenceSourceRegistry] 证据源注册表（默认内置）；
+ *        第三方可注入自定义描述符（{ name, requires, logWeights, independenceNote }），
+ *        新证据源接入不改筛选代码（注册表化实证）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources, evidenceSourceRegistry }) {
   const maxSites = maxDopedSites ?? 1
   if (!Number.isInteger(maxSites) || maxSites < 1) {
     throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
@@ -224,32 +228,23 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         'temperatureK is required when evidenceSources are enabled: ' +
         'Boltzmann evidence −βΔH_f has no scale without a declared temperature')
     }
-    for (const src of extraSources) {
-      if (src !== 'hull') {
-        throw evidenceError('EVIDENCE_INVALID_INPUT',
-          `unknown evidence source "${src}" (supported: hull)——证据源须显式实现，不静默近似`)
-      }
-    }
-    if (!thermo || thermo.level === 'unavailable' || ranked.some(r => r.energyAboveHull === undefined)) {
-      throw evidenceError('EVIDENCE_INVALID_INPUT',
-        'hull evidence requires references (convex hull must be built from ' +
-        'explicit reference states—no hull, no stability evidence)')
-    }
+    // 证据源注册表化：筛选层只做通用循环（解析 → 校验输入要求 → 取逐候选 log 权重），
+    // 新证据源在 evidence-sources.mjs 注册描述符即可接入，不改筛选代码；
+    // 未知源由 resolveEvidenceSources 显式拒绝，输入缺门由各描述符 requires 报错。
+    const descriptors = resolveEvidenceSources(extraSources, evidenceSourceRegistry ?? builtinEvidenceSources)
     const betaE = 1 / (KB_EV_PER_K * temperatureK)
+    const ctx = { ranked, thermo, betaEVInv: betaE }
     const jointSources = [
       { name: `boltzmann:${provider.name}`, logWeights: ranked.map(r => -betaE * r.formationEnthalpy) },
     ]
-    if (extraSources.includes('hull')) {
-      jointSources.push({
-        name: `hull:${thermo.mode}`,
-        logWeights: ranked.map(r => -betaE * Math.max(0, r.energyAboveHull)),
-      })
+    for (const d of descriptors) {
+      d.requires(ctx)
+      jointSources.push({ name: `${d.name}:${thermo?.mode ?? 'builtin'}`, logWeights: d.logWeights(ctx) })
     }
     const combinedE = combineEvidence({
       sources: jointSources,
-      independence: '焓证据 −βΔH_f 与凸包证据 −β·max(0,energyAboveHull) 均由同一批候选能量构造，' +
-                    '声明为**给定候选能量下条件独立**（凸包距离是候选能量的确定性函数，无额外随机性）；' +
-                    '两源存在退化关联（包上点凸包证据恒 0），组合仅在有区分度的包外点上实质生效——如实声明不冒充独立',
+      independence: '焓证据 −βΔH_f 来自同一 provider 逐候选单点；'
+                    + descriptors.map(d => d.independenceNote).join('；'),
     })
     const jointEntries = ranked.map((r, i) => ({
       label: r.label,

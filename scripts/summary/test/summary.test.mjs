@@ -36,14 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：44 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：47 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 44, '附录 A 当前应为 44 条实证映射')
-  assert.equal(rows[rows.length - 1].index, 44)
+  assert.equal(rows.length, 47, '附录 A 当前应为 47 条实证映射')
+  assert.equal(rows[rows.length - 1].index, 47)
   assert.ok(rows[35].evidence.includes('scripts/summary'), '第 36 条（摘要层自身）证据必须可追溯到摘要层测试')
-  assert.ok(rows[rows.length - 1].evidence.includes('demo:agent'), '第 44 条证据指向 Agent 编排链阶段 C')
-  assert.ok(rows[rows.length - 2].evidence.includes('plugin-screening'), '第 43 条证据指向第三证据源测试')
+  assert.ok(rows[rows.length - 1].evidence.includes('plugin-sampler-ou'), '第 47 条证据指向多锚点混合采样测试')
+  assert.ok(rows[rows.length - 2].evidence.includes('plugin-sampler-ou'), '第 46 条证据指向采样温度标定测试')
+  assert.ok(rows[rows.length - 3].evidence.includes('plugin-screening'), '第 45 条证据指向证据源注册表化测试')
   assert.ok(rows[33].evidence.includes('plugin-free-energy'), '第 34 条证据指向自由能测试')
   assert.ok(rows.every(r => r.clause.length > 0 && r.evidence.length > 0))
 })

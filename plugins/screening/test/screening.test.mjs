@@ -6,6 +6,7 @@ import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import plugin, { screenDopants } from '../src/index.mjs'
+import { builtinEvidenceSources, resolveEvidenceSources, hullEvidenceSource } from '../src/evidence-sources.mjs'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
 import { workflowContract } from '@saturday/contract-tests'
 
@@ -533,6 +534,75 @@ test('17. 温差诚实声明（⑳）：采样器声明温度与目标不一致�
     assert.equal(undeclared.sampledJoint.temperatureMismatch, undefined)
   } finally {
     await coreFiber.dispose()
+  }
+})
+
+// ── 证据源注册表化（②）：新证据源接入不改筛选代码 ──────────────
+// 描述符形态 = { name, requires, logWeights, independenceNote }；筛选层只做通用循环。
+test('18. 证据源注册表化：解析三态 + 描述符闭式 + 自定义源端到端注入', async () => {
+  // 纯层：解析三态（内置命中 / 未知拒绝 / 自定义注册表）
+  assert.deepEqual(resolveEvidenceSources(['hull']), [hullEvidenceSource])
+  assert.throws(() => resolveEvidenceSources(['phonon']), /unknown evidence source "phonon"/)
+  const bias = {
+    name: 'bias',
+    requires() {},
+    logWeights({ ranked }) { return ranked.map(r => (r.formula === 'Cu3Ag' ? 0.5 : 0)) },
+    independenceNote: '先验偏置证据为确定性常数，与能量证据条件独立（测试用自定义源）',
+  }
+  assert.deepEqual(resolveEvidenceSources(['bias'], { bias }), [bias])
+  // 描述符闭式：包内点掩码 0，包外点 −β·hull（β=100）
+  const descriptorCtx = {
+    ranked: [{ energyAboveHull: -0.02 }, { energyAboveHull: 0.05 }],
+    thermo: { level: 'ok', mode: 'multi-component' }, betaEVInv: 100,
+  }
+  const logW = hullEvidenceSource.logWeights(descriptorCtx)
+  assert.ok(logW[0] === 0 && logW[1] === -5, '掩码 0（包内）与 −β·hull（包外）闭式；用 === 比较避开 −0 的 SameValue 陷阱')
+  assert.throws(() => hullEvidenceSource.requires({ ...descriptorCtx, thermo: { level: 'unavailable' } }),
+    /hull evidence requires references/)
+
+  // 端到端：自定义注册表注入（复用测试 15 能量模型），新源不改筛选代码即参与组合律。
+  // 未启用 hull 源：log 权重 = 焓 [0, +1, −1] + 偏置 [0, +0.5, 0] → [0, 1.5, −1]
+  const energies = { Cu: -12.0, Cu3Ag: -12.04, Cu3Ni: -11.96 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const result = await screenDopants({
+      material: cu, dopants: ['Ag', 'Ni'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: -3.0, Ag: -3.0, Ni: -3.0 },
+      evidenceSources: ['bias'],
+      evidenceSourceRegistry: { bias },
+      temperatureK: 1 / (100 * 8.617333262145e-5),   // β = 100 eV⁻¹
+    })
+    const joint = result.joint
+    assert.ok(joint.sourceNames.includes('bias:multi-component'), '自定义源名随交付呈现')
+    // 未启用 hull：log 权重 = 焓 [0, +1, −1] + 偏置 [0, +0.5, 0] → [0, 1.5, −1]；
+    // 降序 Cu3Ag(1.5) > Cu(0) > Cu3Ni(−1)：偏置证据足以把稳定候选推上首位（闭式）
+    const Z = Math.exp(1.5) + 1 + Math.exp(-1)
+    assert.deepEqual(joint.entries.map(e => e.formula), ['Cu3Ag', 'Cu', 'Cu3Ni'])
+    const ag = joint.entries.find(e => e.formula === 'Cu3Ag')
+    assert.ok(Math.abs(ag.logJointWeight - 1.5) < 1e-9, 'Cu3Ag：焓 +1 + 偏置 +0.5，双源 log 权重相加（组合律闭式）')
+    assert.ok(Math.abs(ag.weight - Math.exp(1.5) / Z) < 1e-12, '偏置证据进归一权重（闭式）')
+    assert.ok(Math.abs(joint.entries[1].weight - 1 / Z) < 1e-12, '基体（无偏置）权重闭式')
+    assert.match(joint.independence, /先验偏置/, '自定义源的独立性声明随组合呈现（不丢失）')
+    // 内置注册表对未知源依然拒绝（注入注册表不绕过门禁）
+    await assert.rejects(
+      () => screenDopants({
+        material: cu, dopants: ['Ag'], potential: coreFiber.store.stub.potential,
+        references: { Cu: -3.0, Ag: -3.0 }, evidenceSources: ['phonon'], temperatureK: 300,
+      }),
+      /unknown evidence source "phonon"/)
+  } finally {
+    await coreFiber.dispose()
+  }
+  // 内置注册表完整性：描述符三要素齐全（缺一即接入即坏）
+  for (const d of Object.values(builtinEvidenceSources)) {
+    assert.ok(typeof d.name === 'string' && typeof d.requires === 'function' &&
+      typeof d.logWeights === 'function' && typeof d.independenceNote === 'string',
+      `内置证据源 ${d?.name} 描述符必须三要素齐全`)
   }
 })
 

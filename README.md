@@ -46,7 +46,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ## 当前状态：Phase 0 结论 —— Go
 
-- 裸 cordis：**回归 242/242**（19 个回归单元：18 个 workspace 235 项 + 摘要层脚本 7 项；含 bridge 30 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 14 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、采样器确定性/精确似然升档、遍历对账重要性重加权解析对账、活性上下文失效传播、严格形成焓+二元/多组分凸包判据（三元筛选与多浓度/共掺非退化闭式对账）、构型自由能热力学积分解析对账（真实 EMT 端到端演示 + 谐波锚点）、Logits 多证据源组合律与采样候选联合排序（真 OU + 真 EMT 完整工具链，第三证据源=凸包距离可扩展性实证）、Agent 会话三阶段编排实证（含采样→联合排序）、可再生摘要机械汇编；回归/摘要脚本均包内串行防 sidecar 内存竞态）；项目级摘要见 `SUMMARY.md`（`npm run summary` 再生，勿手改）
+- 裸 cordis：**回归 247/247**（19 个回归单元：18 个 workspace 240 项 + 摘要层脚本 7 项；含 bridge 30 项集成验收 + 契约测试套件自检 24 项 + core 热力学纯层 14 项 + 各插件契约测试，含 ASE EMT 真物理、真实 sidecar 集成、NEB 势垒对账、Cu EOS 拟合集成、采样器确定性/精确似然升档、温度标定与声明、多锚点混合采样闭式对账、遍历对账重要性重加权解析对账、活性上下文失效传播、严格形成焓+二元/多组分凸包判据（三元筛选与多浓度/共掺非退化闭式对账）、构型自由能热力学积分解析对账（真实 EMT 端到端演示 + 谐波锚点）、Logits 多证据源组合律与采样候选联合排序（真 OU + 真 EMT 完整工具链，第三证据源=凸包距离可扩展性实证，证据源已注册表化）、Agent 会话三阶段编排实证（含采样→联合排序）、可再生摘要机械汇编；回归/摘要脚本均包内串行防 sidecar 内存竞态）；项目级摘要见 `SUMMARY.md`（`npm run summary` 再生，勿手改）
 - **真实 dsh web 运行时：profile 级挂载验证通过（0 错误，工具通过真实注册表校验，Python sidecar 由 dsh 拉起）**
 - 已验证最小闭环："Agent 工具调用 → 真实计算 → 事件回流 Trajectory → 回放重建索引"
 
@@ -58,13 +58,13 @@ Saturday 把论文的两个正交维度落到材料计算域：
 |---|---|---|
 | 材料加载 | `material.load` | 化学式 → 结构（原型库，TiO2 多晶型可选） |
 | 结构弛豫 | `potential.relax` | **ASE EMT 真实物理**（UnitCellFilter+BFGS），LJ 玩具势兜底 |
-| 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体 Trajectory 溯源；注入参考态后元素数 ≥ 3 自动升级为统一成分空间多组分凸包判据（`thermo.mode/hullDimension` 声明形态）；多浓度扫描与共掺候选（`maxDopedSites/codopants`）让包络从端点弦演进为非退化判据；采样候选联合排序（`sampled`+`temperatureK`：逐候选单点回算不弛豫，能量证据 −βU × 提议似然 q 组合为重要性权重，独立性声明/覆盖掩码/ESS 诊断随交付呈现；`evidenceSources: ['hull']` 可加凸包距离第三证据源，包内点掩码不伪造稳定性梯度；采样器声明温度与目标不一致时温差诚实呈现）；演示 `demo:screening-ternary`（三元混掺）、`demo:concentrations`（多浓度非退化包络，独立插件 `@saturday/plugin-screening`） |
+| 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体 Trajectory 溯源；注入参考态后元素数 ≥ 3 自动升级为统一成分空间多组分凸包判据（`thermo.mode/hullDimension` 声明形态）；多浓度扫描与共掺候选（`maxDopedSites/codopants`）让包络从端点弦演进为非退化判据；采样候选联合排序（`sampled`+`temperatureK`：逐候选单点回算不弛豫，能量证据 −βU × 提议似然 q 组合为重要性权重，独立性声明/覆盖掩码/ESS 诊断随交付呈现；`evidenceSources: ['hull']` 可加凸包距离第三证据源，包内点掩码不伪造稳定性梯度；证据源已注册表化（描述符 { name, requires, logWeights, independenceNote }，`evidenceSourceRegistry` 可注入自定义源，新源接入不改筛选代码）；采样器声明温度与目标不一致时温差诚实呈现）；演示 `demo:screening-ternary`（三元混掺）、`demo:concentrations`（多浓度非退化包络，独立插件 `@saturday/plugin-screening`） |
 | MP 结构源 | `structure.resolve` | Materials Project 远端解析（独立插件 `@saturday/plugin-mp`，需 MP_API_KEY） |
 | 轨迹回放 | `trajectory.replay` | 从 append-only 事件流重建计算索引，回放事件带 `saturday/replay/` 防回灌前缀（独立插件 `@saturday/plugin-replay`） |
 | 势垒分析 | `analysis.neb` | NEB 最小能量路径与过渡态势垒：§4.4 analysis seam 首个实证，纯 Node、能量/梯度注入式，内置 LJ 双阱玩具体系（独立插件 `@saturday/plugin-neb`） |
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合：§4.4 第二个实证；显式 (V, E) 序列或按缩放体积静态单点自产，四参数联合辨识，收敛/rmse/r² 诚实声明（独立插件 `@saturday/plugin-eos`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样：§4.5 sampler seam 首个实证；采样语义强制声明、似然诚实（none）、种子确定性、候选带 `generative:` 谱系前缀且可回算构造 Material（独立插件 `@saturday/plugin-sampler-perturb`） |
-| OU 候选采样 | `sampler.ou` | OU（Ornstein-Uhlenbeck）参考结构采样：§4.5 第二实证；闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，逐候选附 `logProb`）；均值回归锚定参考的受控扩散，诚实声明提议核≠玻尔兹曼、局部采样器定位、γΔ 有效性窗口（独立插件 `@saturday/plugin-sampler-ou`） |
+| OU 候选采样 | `sampler.ou` | OU（Ornstein-Uhlenbeck）参考结构采样：§4.5 第二实证；闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，逐候选附 `logProb`）；均值回归锚定参考的受控扩散，诚实声明提议核≠玻尔兹曼、局部采样器定位、γΔ 有效性窗口；温度标定闭式 `u_eq = √(k_B·T/k_eff)`（力常数显式注入）与显式温度声明（声明 ≠ 替换，进谱系不改序列）；多锚点混合采样纯层 `ouSampleMixture`（高斯混合转移密度仍闭式，跨盆地探索，似然不降档）（独立插件 `@saturday/plugin-sampler-ou`） |
 | 采样回算闭环 | `workflow.explore` | §4.5 oracle 条款首个实证：候选逐送入引擎回算验证后按能量排序，候选不自证；谱系标记 + 逐变体事件全程可溯源（独立插件 `@saturday/plugin-explore`） |
 | 遍历对账 | `workflow.ergodic` | §4.5 oracle 条款对账实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明三档分级（升档实证：`sampler.ou` 接入后判据升为重要性重加权均值对时间平均，ESS 占比随判定呈现；声明与交付不一致降级并明说）；依赖 `md` 能力（§4.2 契约化扩展，独立插件 `@saturday/plugin-ergodic`） |
 | 构型自由能 | `workflow.freeEnergy` | 热力学第二档：温度网格逐点恒温 MD（复用 `md` 原语）得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线（d(βF_conf)/dβ = ⟨U⟩）；自由能零点（锚点）显式注入不得静默假设，锚点来源声明随交付呈现；逐点附统计标准误，诚实声明不含动量部分；锚点支持谐波近似物理化（`anchorMode: 'harmonic'`：Hessian→简正模→量子谐振子闭式自由能，零模与虚频显式区分声明）；端到端演示 `demo:freeenergy`（真实 ASE/EMT Langevin，独立插件 `@saturday/plugin-free-energy`） |
@@ -129,7 +129,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 235 项，18 个包）
+npm test                # 全部 workspace 测试（当前 240 项，18 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
@@ -170,7 +170,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **自由能端到端演示 + 分析事件溯源闭环**：`demo:freeenergy` 用真实 ASE/EMT Langevin MD 跑出 Cu 构型自由能曲线（⟨U⟩ 随温单调升、ΔF 单调降，锚点显式声明）；分析事件 `saturday/analysis/complete` 落 Trajectory（`analysis_complete`，与计算事件同一溯源链）；dsh profile 示例补齐工作流插件挂载行（新工具自动暴露给 Agent）
 - **多组分凸包走到真实候选（三元 + 多浓度）**：`demo:screening-ternary` 五元素统一成分空间真实 EMT 筛选（Cu-Pt/Cu-Au 负形成焓候选成为稳定相顶点；单点掺杂位于端点连线上，包络内仍由 0-0 弦主导——几何诚实声明入演示注释）；`demo:concentrations` 以多浓度内点 + 共掺候选把包络从退化弦推向非退化包络（闭式对账：4 元素共掺插值 −0.08·(2/3)，距离 7/75）；筛选纯层新增 `maxDopedSites`（浓度扫描）与 `codopants`（共掺）两参数，二元分支同步泛化为多内点构包
 - **谐波锚点（自由能零点物理化）**：`anchorMode: 'harmonic'` 把演示锚点从“显式零点声明”升级为谐波近似计算——ase sidecar 新增 `harmonic` 算子（有限差分 Hessian→质量加权对角化→简正模），纯层量子谐振子闭式自由能（含零点能项）入 free-energy 插件；周期体系平动零模与真虚频显式区分声明；谱形对账不靠数值巧合（LJ 单原子胞无横向恢复力的物理事实入注释，数值对账而非构造论证）；`demo:freeenergy` 已端到端切至谐波锚点（F₀ 由闭式计算而非声明零点，⟨U⟩ 随温单调升、ΔF 单调降）
-- **Logits 组合律（多证据源联合排序）**：仓库既有孤立 log 权重实例（遍历重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层 `combineEvidence`——独立证据源 log 权重相加，三条诚实纪律强制：独立性声明必填（缺失即拒）、候选级证据掩码缺失即缺失（零填充禁止）、全源缺失候选拒排；筛选接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫/不入凸包/不自证），能量证据 × 提议似然 → 重要性权重；候选来自系综而非枚举（`sampler.ou` → `workflow.screen` 真实接线，logProb 可闭式独立重算）；**可扩展性已实证：第三证据源 = 凸包距离（`evidenceSources: ['hull']`，包内点 max(0,·) 掩码不伪造稳定性梯度，退化关联如实声明）；采样器声明温度与目标不一致时温差随交付诚实呈现不纠正**
+- **Logits 组合律（多证据源联合排序）**：仓库既有孤立 log 权重实例（遍历重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层 `combineEvidence`——独立证据源 log 权重相加，三条诚实纪律强制：独立性声明必填（缺失即拒）、候选级证据掩码缺失即缺失（零填充禁止）、全源缺失候选拒排；筛选接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫/不入凸包/不自证），能量证据 × 提议似然 → 重要性权重；候选来自系综而非枚举（`sampler.ou` → `workflow.screen` 真实接线，logProb 可闭式独立重算）；**可扩展性已实证：第三证据源 = 凸包距离（`evidenceSources: ['hull']`，包内点 max(0,·) 掩码不伪造稳定性梯度，退化关联如实声明），且证据源已注册表化（描述符四要素 + 可注入注册表，新源接入不改筛选代码——组合律纪律与源的数量/种类无关）；采样器声明温度与目标不一致时温差随交付诚实呈现不纠正，采样温度标定闭式（u_eq = √(k_B·T/k_eff)，力常数显式注入）与显式温度声明（声明 ≠ 替换）已落地，多锚点混合采样（`ouSampleMixture`）把局部采样器推广为跨盆地的高斯混合提案（似然保持 exact）**
 - **Agent 编排链三段实证**：`demo:agent` 阶段 C 把采样→联合排序推到 Agent 层（OU 交付打包进工具参数，谱系在编排层不断）；dsh 工具三连坑入纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`；回归/摘要脚本包内串行（并发拉 sidecar + OpenBLAS 线程内存竞态实证，确定性优先于耗时）
 - **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证

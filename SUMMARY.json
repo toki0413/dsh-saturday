@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-29T18:21:40.813Z",
-  "totalPass": 235,
+  "generatedAt": "2026-08-30T04:28:36.287Z",
+  "totalPass": 240,
   "totalFail": 0,
   "packageCount": 19,
   "testedCount": 18,
@@ -121,7 +121,7 @@
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 13,
+      "pass": 17,
       "fail": 0
     },
     {
@@ -135,7 +135,7 @@
       "dir": "plugins\\screening",
       "name": "@saturday/plugin-screening",
       "version": "0.3.0",
-      "pass": 29,
+      "pass": 30,
       "fail": 0
     }
   ],
@@ -359,6 +359,21 @@
       "index": 44,
       "clause": "Agent 编排链扩展到采样→联合排序（㉑）：`demo:agent` 阶段 C——自然语言 → tool_call(workflow.screen，args 携带 OU 采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具三连坑实证入纪律：工作流插件需自行动态 import `defineTool`（否则工具落本地注册表对 dsh 不可见）、`output.render` 必填（工具出口投影）、object 型 `items` 必须显式 `additionalProperties`（UNSUPPORTED_SCHEMA）；根依赖补 `@deepseek-ai/dsh-timeout`（dsh-llm 导入但未声明的隐性依赖）",
       "evidence": "demo:agent 阶段 C 端到端（真实 EMT，三阶段全绿）"
+    },
+    {
+      "index": 45,
+      "clause": "证据源注册表化（②）：`evidenceSources` 白名单分支重构为描述符注册表（{ name, requires, logWeights, independenceNote } 四要素，缺一即接入即坏）；筛选层只做通用循环（解析 → 校验输入要求 → 取逐候选 log 权重 → 追加独立性声明），新证据源在 evidence-sources.mjs 注册描述符即可接入不改筛选代码；`evidenceSourceRegistry` 可注入（第三方自定义源端到端参与组合律，闭式对账），未知源仍显式拒绝（注入注册表不绕过门禁）；组合律三条诚实纪律由 combineEvidence 强制，与源的数量和种类无关——这就是可扩展性本身",
+      "evidence": "plugin-screening 测试 18（解析三态 + 描述符闭式 + 自定义源端到端注入）"
+    },
+    {
+      "index": 46,
+      "clause": "采样温度标定与声明（③）：`uEqFromHarmonicTemperature` 闭式 u_eq = √(k_B·T/k_eff)（能量均分语义：温度翻倍幅度 ×√2；力常数必须显式注入——无势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度）；`sampler.ou` 接受显式 `temperatureK` 声明：声明 ≠ 替换（不改变采样行为，uEq 仍是直接参数）——随逐候选交付 `samplerTemperatureK`（⑳ 温差诚实声明的消费源落地）并进谱系（&T=300K，同参数不同声明 = 不同批）；声明前后采样序列与似然逐位一致（闭式回归）",
+      "evidence": "plugin-sampler-ou 测试 14-15（标定闭式 + 五门禁 + 声明不改行为）"
+    },
+    {
+      "index": 47,
+      "clause": "多锚点混合采样（④）：OU 单峰 = 局部采样器，跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度仍闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然声明保持 'exact' 不降档；交付的 logProb 是相对**全部锚点**的混合似然（非单锚点似然冒充，可独立重算 1e-9）；候选按锚点配比最大余数法确定性分配（平手取靠前）；归一混合权重随交付呈现（诚实声明的输入）；谱系记所属锚点（#mixture#anchor=k，可追到具体盆地）；同拓扑门禁（跨锚点位移仅在节点数一致时有定义，不静默近似）；单锚点退化与单核采样逐坐标一致（严格推广无隐式行为变化）",
+      "evidence": "plugin-sampler-ou 测试 16-17（一维双锚点手算闭式 + 配额/似然自洽/谱系/四门禁）"
     }
   ]
 }

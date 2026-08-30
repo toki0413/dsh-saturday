@@ -8,7 +8,10 @@ import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver } from '@saturday/core'
 import { samplerContract } from '@saturday/contract-tests'
-import plugin, { ouSampler, ouStd, ouLogProb } from '../src/index.mjs'
+import plugin, {
+  ouSampler, ouStd, ouLogProb, uEqFromHarmonicTemperature, KB_EV_PER_K,
+  ouMixtureLogProb, ouSampleMixture,
+} from '../src/index.mjs'
 
 // ── 契约套件（§4.5）：纯层直接接入（第三个接入者）────────────
 const cuRef = () => Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
@@ -110,6 +113,140 @@ function stubMaterialPlugin() {
     },
   }
 }
+
+// ── 温度标定与声明（③：σ² = k_B·T/k_eff，声明 ≠ 替换）────────────────
+
+test('14. 谐波温度标定闭式：u_eq = √(k_B·T/k_eff)，力常数缺失即拒绝', async () => {
+  // 手算：k_B·300/1.0 = 0.025851999786435 → √ = 0.160785570827842
+  const u300 = uEqFromHarmonicTemperature({ temperatureK: 300, forceConstantEVPerA2: 1.0 })
+  assert.ok(Math.abs(u300 - Math.sqrt(KB_EV_PER_K * 300)) < 1e-12, '闭式（300 K，k=1 eV/Å²）')
+  assert.ok(Math.abs(u300 - 0.160785570827842) < 1e-9, '与独立手算值对账')
+  // 温度翻倍 → 涨落能翻倍 → 幅度 ×√2；力常数翻倍 → 幅度 ÷√2（能量均分语义）
+  const u600 = uEqFromHarmonicTemperature({ temperatureK: 600, forceConstantEVPerA2: 1.0 })
+  assert.ok(Math.abs(u600 / u300 - Math.SQRT2) < 1e-12, '温度翻倍：幅度 ×√2')
+  const uStiff = uEqFromHarmonicTemperature({ temperatureK: 300, forceConstantEVPerA2: 2.0 })
+  assert.ok(Math.abs(uStiff * Math.SQRT2 - u300) < 1e-12, '力常数翻倍：幅度 ÷√2')
+  // 门禁：力常数无来源时不静默假设；温度非法显式拒绝
+  for (const bad of [
+    { temperatureK: 300 },                              // 缺力常数：涨落幅度无来源
+    { temperatureK: 300, forceConstantEVPerA2: 0 },
+    { temperatureK: 300, forceConstantEVPerA2: -1 },
+    { temperatureK: 0, forceConstantEVPerA2: 1.0 },
+    { temperatureK: NaN, forceConstantEVPerA2: 1.0 },
+  ]) {
+    assert.throws(() => uEqFromHarmonicTemperature(bad),
+      err => err.code === 'SAMPLER_UNAVAILABLE',
+      `参数 ${JSON.stringify(bad)} 必须显式拒绝`)
+  }
+})
+
+test('15. 采样器温度声明：随交付呈现且进谱系，但不改变采样行为（声明 ≠ 替换）', async () => {
+  const reference = await cuRef()
+  const params = { n: 4, seed: 7, uEq: 0.05, gammaDt: 1.0 }
+  const declared = await ouSampler.sample({ reference }, { ...params, temperatureK: 300 })
+  const undeclared = await ouSampler.sample({ reference }, params)
+  // 声明随逐候选交付（筛选层采样入口读入 → 温差诚实声明 ⑳ 的消费源）
+  for (const c of declared) assert.equal(c.samplerTemperatureK, 300)
+  for (const c of undeclared) assert.equal(c.samplerTemperatureK, undefined)
+  // 温度声明进谱系（同参数不同声明 = 不同批，不得混淆）
+  assert.ok(declared[0].source.endsWith('&T=300K'))
+  assert.ok(!undeclared[0].source.includes('&T='))
+  // 声明 ≠ 替换：采样序列与似然完全不受温度声明影响（uEq 仍是直接参数）
+  assert.deepEqual(declared.map(c => c.logProb), undeclared.map(c => c.logProb))
+  assert.deepEqual(
+    declared.map(c => c.graph.nodes.map(n => n.position)),
+    undeclared.map(c => c.graph.nodes.map(n => n.position)),
+  )
+  // 非法温度声明显式拒绝（声明即承诺）
+  await assert.rejects(
+    () => ouSampler.sample({ reference }, { ...params, temperatureK: -10 }),
+    err => err.code === 'SAMPLER_UNAVAILABLE',
+  )
+})
+
+// ── 多锚点混合采样（④：跨盆地 = 编排层多锚点，混合似然仍闭式）────────
+
+test('16. 混合似然闭式：一维双锚点手算对账（独立公式，非实现重跑）', () => {
+  const params = { uEq: 0.08, gammaDt: 1.5 }
+  const s = ouStd(params.uEq, params.gammaDt)
+  const g = (d) => Math.exp(-0.5 * d * d / (s * s)) / (s * Math.sqrt(2 * Math.PI))
+  // 手算：log( (2·g(0.03) + 3·g(0.10)) / 5 )（权重未归一，内部归一）
+  const expected = Math.log((2 * g(0.03) + 3 * g(0.1)) / 5)
+  const actual = ouMixtureLogProb([[0.03], [0.1]], [2, 3], params)
+  assert.ok(Math.abs(actual - expected) < 1e-12, `混合 log 密度闭式（理论 ${expected}，实测 ${actual}）`)
+  // 单锚点退化 = 单核：混合不得改变单锚点语义（'exact' 声明不降档的退化一致性）
+  assert.ok(Math.abs(ouMixtureLogProb([[0.03]], [1], params) - ouLogProb([0.03], params)) < 1e-12)
+  // 门禁：权重非正/长度不齐显式拒绝（零权重锚点不得参与混合）
+  assert.throws(() => ouMixtureLogProb([[0.1]], [0], params), err => err.code === 'SAMPLER_UNAVAILABLE')
+  assert.throws(() => ouMixtureLogProb([[0.1], [0.2]], [1], params), err => err.code === 'SAMPLER_UNAVAILABLE')
+})
+
+test('17. 多锚点混合采样：配额闭式 + 似然自洽 + 谱系 + 门禁（纯层）', async () => {
+  const reference = await cuRef()
+  // 锚点 2：同拓扑平移 0.1 Å（构造第二个盆地中心）；只克隆 graph，避开 Material 实例的可克隆性边界
+  const shifted = { graph: structuredClone(reference.graph) }
+  for (const node of shifted.graph.nodes) {
+    node.position = node.position.map((x, c) => (c === 0 ? x + 0.1 : x))
+  }
+  const params = { uEq: 0.05, gammaDt: 1.0 }
+
+  // 配额闭式：[0.6, 0.4]·5 → [3, 2]；[1, 1]·5 平手取靠前 → [3, 2]（最大余数法确定性）
+  const mixed = await ouSampleMixture(
+    { references: [{ reference, weight: 0.6 }, { reference: shifted, weight: 0.4 }] },
+    { n: 5, seed: 9, ...params })
+  assert.equal(mixed.length, 5)
+  assert.equal(mixed.filter(c => c.anchorIndex === 0).length, 3, '配额闭式：锚点 0 得 3 个')
+  assert.equal(mixed.filter(c => c.anchorIndex === 1).length, 2)
+  const tied = await ouSampleMixture(
+    { references: [{ reference, weight: 1 }, { reference: shifted, weight: 1 }] },
+    { n: 5, seed: 9, ...params })
+  assert.equal(tied.filter(c => c.anchorIndex === 0).length, 3, '平手取靠前锚点（确定性）')
+  assert.deepEqual(mixed[0].mixtureWeights, [0.6, 0.4], '归一混合权重随交付呈现（诚实声明的输入）')
+  // 谱系：混合标记 + 所属锚点（谱系不断，可追到具体盆地）
+  assert.ok(mixed[0].source.includes('#mixture#seed=9#anchor=0'))
+  assert.ok(mixed[3].source.includes('#anchor=1'))
+  // 似然自洽：交付的 logProb 可被独立重算（从交付 graph 重提逐锚点位移）
+  for (const c of mixed) {
+    const dispsAll = [reference, shifted].map(ref => {
+      const out = []
+      c.graph.nodes.forEach((node, i) => {
+        const refPos = ref.graph.nodes[i].position
+        node.position.forEach((x, k) => out.push(x - refPos[k]))
+      })
+      return out
+    })
+    const recomputed = ouMixtureLogProb(dispsAll, [0.6, 0.4], params)
+    assert.ok(Math.abs(c.logProb - recomputed) < 1e-9, '混合似然必须可独立重算（非单锚点似然冒充）')
+    assert.ok(Number.isFinite(c.logProb))
+  }
+  // 单锚点退化：与单核采样同序列同似然（混合是严格推广，无隐式行为变化；
+  // 容差 1e-9：log-sum-exp 与单核路径的浮点运算顺序尾差，非语义差异）
+  const degenerate = await ouSampleMixture(
+    { references: [{ reference, weight: 1 }] }, { n: 3, seed: 5, ...params })
+  const direct = await ouSampler.sample({ reference }, { n: 3, seed: 5, ...params })
+  degenerate.forEach((c, i) => {
+    assert.ok(Math.abs(c.logProb - direct[i].logProb) < 1e-9, `退化似然一致（候选 ${i}）`)
+  })
+  assert.deepEqual(
+    degenerate.map(c => c.graph.nodes.map(n2 => n2.position)),
+    direct.map(c => c.graph.nodes.map(n2 => n2.position)),
+    '同种子同 PRNG 消费序：退化混合与单核采样逐坐标一致')
+  // 门禁：缺锚点 / 拓扑不一致 / 零权重 / 非法 n 均显式拒绝（不静默近似）
+  await assert.rejects(() => ouSampleMixture({}, { n: 2 }),
+    err => err.code === 'SAMPLER_UNAVAILABLE')
+  const broken = { graph: structuredClone(reference.graph) }
+  broken.graph.nodes.pop()
+  await assert.rejects(() => ouSampleMixture(
+    { references: [{ reference, weight: 1 }, { reference: broken, weight: 1 }] }, { n: 2 }),
+    err => err.code === 'SAMPLER_UNAVAILABLE' && /同拓扑/.test(err.message),
+    '跨锚点位移无定义时不得静默近似')
+  await assert.rejects(() => ouSampleMixture(
+    { references: [{ reference, weight: 1 }, { reference: shifted, weight: 0 }] }, { n: 2 }),
+    err => err.code === 'SAMPLER_UNAVAILABLE')
+  await assert.rejects(() => ouSampleMixture(
+    { references: [{ reference, weight: 1 }] }, { n: 0 }),
+    err => err.code === 'SAMPLE_NOT_FOUND')
+})
 
 test('10. 插件挂载：工具与服务注册，卸载回收', async () => {
   const ctx = new Context()

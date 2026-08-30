@@ -522,7 +522,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 24 项 + bridge 30 项 + core 14 项 + 十个插件各自套件 + 其余插件各自契约测试，
-全仓 workspace 235/235；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。映射见附录 A。
+全仓 workspace 240/240；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。映射见附录 A。
 
 ---
 
@@ -574,6 +574,9 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 42 | 采样器 → 筛选真实接线（⑰，候选来自系综而非枚举）：`workflow.screen` 接受 `{materialId, logProb}` 或 `{graph, source, logProb}`（§4.5 SampledStructure 透传，纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错不静默丢弃）；OU 候选真实 EMT 单点回算 → 联合权重归一 + 逐候选双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码（覆盖子集组合，权重仍归一）；logProb 可由位移闭式独立重算（1e-9，exact 似然声明的实证）；Agent 编排链：sampler.ou → workflow.screen，谱系在编排层不断 | bridge sampled-screen 测试 1-3（真 OU + 真 EMT 完整工具链 + 混合覆盖 + 双门禁） |
 | 43 | 组合律可扩展性实证（⑲⑳，第三证据源）：枚举候选联合排序显式启用 `evidenceSources: ['hull']`——凸包距离作为逐候选稳定性证据（−β·max(0,energyAboveHull)，包内点掩码 0：不伪造“越稳越好”的梯度），焓证据 + 凸包证据双源叠加把包外候选罚分翻倍（闭式 e⁻² 对账）；独立性声明如实含退化关联（包上点凸包证据恒 0，不冒充独立）；无参考态即无凸包即无稳定性证据（显式拒绝不静默近似）；缺省不启用行为与既有完全一致（既有消费方零影响）；温差诚实声明（⑳）：采样器声明自身温度与目标不一致时 `temperatureMismatch` 随交付呈现（声明而非拒绝，不静默纠正） | plugin-screening 测试 15-17（闭式对账 + 三门禁 + 温差三态） |
 | 44 | Agent 编排链扩展到采样→联合排序（㉑）：`demo:agent` 阶段 C——自然语言 → tool_call(workflow.screen，args 携带 OU 采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具三连坑实证入纪律：工作流插件需自行动态 import `defineTool`（否则工具落本地注册表对 dsh 不可见）、`output.render` 必填（工具出口投影）、object 型 `items` 必须显式 `additionalProperties`（UNSUPPORTED_SCHEMA）；根依赖补 `@deepseek-ai/dsh-timeout`（dsh-llm 导入但未声明的隐性依赖） | demo:agent 阶段 C 端到端（真实 EMT，三阶段全绿） |
+| 45 | 证据源注册表化（②）：`evidenceSources` 白名单分支重构为描述符注册表（{ name, requires, logWeights, independenceNote } 四要素，缺一即接入即坏）；筛选层只做通用循环（解析 → 校验输入要求 → 取逐候选 log 权重 → 追加独立性声明），新证据源在 evidence-sources.mjs 注册描述符即可接入不改筛选代码；`evidenceSourceRegistry` 可注入（第三方自定义源端到端参与组合律，闭式对账），未知源仍显式拒绝（注入注册表不绕过门禁）；组合律三条诚实纪律由 combineEvidence 强制，与源的数量和种类无关——这就是可扩展性本身 | plugin-screening 测试 18（解析三态 + 描述符闭式 + 自定义源端到端注入） |
+| 46 | 采样温度标定与声明（③）：`uEqFromHarmonicTemperature` 闭式 u_eq = √(k_B·T/k_eff)（能量均分语义：温度翻倍幅度 ×√2；力常数必须显式注入——无势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度）；`sampler.ou` 接受显式 `temperatureK` 声明：声明 ≠ 替换（不改变采样行为，uEq 仍是直接参数）——随逐候选交付 `samplerTemperatureK`（⑳ 温差诚实声明的消费源落地）并进谱系（&T=300K，同参数不同声明 = 不同批）；声明前后采样序列与似然逐位一致（闭式回归） | plugin-sampler-ou 测试 14-15（标定闭式 + 五门禁 + 声明不改行为） |
+| 47 | 多锚点混合采样（④）：OU 单峰 = 局部采样器，跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度仍闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然声明保持 'exact' 不降档；交付的 logProb 是相对**全部锚点**的混合似然（非单锚点似然冒充，可独立重算 1e-9）；候选按锚点配比最大余数法确定性分配（平手取靠前）；归一混合权重随交付呈现（诚实声明的输入）；谱系记所属锚点（#mixture#anchor=k，可追到具体盆地）；同拓扑门禁（跨锚点位移仅在节点数一致时有定义，不静默近似）；单锚点退化与单核采样逐坐标一致（严格推广无隐式行为变化） | plugin-sampler-ou 测试 16-17（一维双锚点手算闭式 + 配额/似然自洽/谱系/四门禁） |
 
 ## 附录 B：插件骨架模板
 

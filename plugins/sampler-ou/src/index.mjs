@@ -7,7 +7,7 @@
 import { createCordisAdapter } from '@saturday/kernel'
 import { ouSampler, samplerError } from './sampler.mjs'
 
-export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME } from './sampler.mjs'
+export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME, uEqFromHarmonicTemperature, KB_EV_PER_K, ouMixtureLogProb, ouSampleMixture } from './sampler.mjs'
 
 export default {
   name: 'saturday-sampler-ou',
@@ -28,6 +28,8 @@ export default {
         seed: { type: 'integer', default: 1, description: '随机种子（确定性复现）' },
         uEq: { type: 'number', default: 0.05, description: '平衡态每坐标涨落幅度（Å）' },
         gammaDt: { type: 'number', default: 1.0, description: 'γΔ 无量纲摩擦时间尺度积（小→贴近参考，大→近平稳）' },
+        temperatureK: { type: 'number', description: '采样器自身温度声明（可选；声明 ≠ 替换：不改变采样行为，' +
+          '只随交付呈现供消费方做温差诚实核对；标定建议值可用 uEqFromHarmonicTemperature 换算）' },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -40,7 +42,7 @@ export default {
         const reference = await materialService.get(args.referenceId)
         const candidates = await ouSampler.sample(
           { reference },
-          { n: args.n, seed: args.seed, uEq: args.uEq, gammaDt: args.gammaDt },
+          { n: args.n, seed: args.seed, uEq: args.uEq, gammaDt: args.gammaDt, temperatureK: args.temperatureK },
         )
         return {
           sampler: ouSampler.name,
