@@ -51,3 +51,29 @@ test('3. 非法/错位声明即拒：白名单外单位与维度错位都显式�
     ...baseManifest(), fingerprint: { method: 'stub' },
   } }), err => err.code === 'FINGERPRINT_MISSING', 'software 缺失即拒（能量来源不可追溯）')
 })
+
+test('4. M2 激活门禁：热切换事件携带指纹差异声明（声明而非拒绝，与 §8.2 失效传播闭环）', async () => {
+  const events = []
+  const reg = new PotentialRegistry({ on() {}, emit: async (type, ev) => events.push(ev) })
+  const engineOf = (name, fingerprint) => ({ name, manifest: { ...baseManifest(), fingerprint } })
+  reg.register(engineOf('engine-a', { software: 'stub', method: 'stub' }))
+  reg.register(engineOf('engine-b', { software: 'stub', method: 'DFT-PBE' }))
+  reg.register(engineOf('engine-c', { software: 'stub', method: 'stub', version: 'unknown' }))
+  reg.register(engineOf('engine-d', { software: 'stub', method: 'stub' }))
+  await reg.activate('engine-a')
+  assert.equal(events.length, 0, '首次激活不发事件（既有纪律不变）')
+  await reg.activate('engine-b')
+  assert.equal(events.length, 1)
+  assert.equal(events[0].payload.previous, 'engine-a')
+  assert.equal(events[0].payload.fingerprintChange.same, false, '异源切换：差异声明随事件呈现')
+  assert.ok(/method/.test(events[0].payload.fingerprintChange.reason), '不可比原因可读（消费方据此知晓为何旧能量不再可比）')
+  // 序列：a(stub/stub) → b(stub/DFT-PBE) → c(stub/stub) → d(stub/stub)；
+  // 差异声明比较的是新引擎与前一激活引擎（热替换语义：旧能量是否仍可比）
+  await reg.activate('engine-c')
+  assert.equal(events[1].payload.fingerprintChange.same, false, '与前一引擎（engine-b）比较：method 不同仍声明差异')
+  await reg.activate('engine-d')
+  assert.equal(events[2].payload.fingerprintChange.same, true,
+    '同源切换（version 两边缺视同 unknown，与 c 指纹全同）：失效传播照常但可比性声明诚实')
+  await reg.activate('engine-d')
+  assert.equal(events.length, 3, '重复激活同名引擎不发事件')
+})

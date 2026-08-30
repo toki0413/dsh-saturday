@@ -98,7 +98,13 @@ export default {
           try {
             references = {}
             for (const el of elementSet) {
-              references[el] = (await provider.referenceEnergy(el)).energy_per_atom
+              // 参考态由本引擎显式产出 → 按定义同源：直接升级为声明形态（携带本引擎的
+              // 归一指纹与能量单位），凸包能量全链同源可比（M3 消费：provenance 声明态）
+              references[el] = {
+                energyPerAtom: (await provider.referenceEnergy(el)).energy_per_atom,
+                ...(provider._fingerprint ? { fingerprint: provider._fingerprint } : {}),
+                ...(provider._units ? { energyUnit: provider._units.energy } : {}),
+              }
             }
           } catch (err) {
             references = undefined

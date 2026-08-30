@@ -14,7 +14,8 @@
     "demo:screening-ternary": "node demo-screening-ternary.mjs",
     "demo:concentrations": "node demo-concentrations.mjs",
     "demo:freeenergy": "node demo-free-energy.mjs",
-    "demo:agent": "node demo-agent.mjs"
+    "demo:agent": "node demo-agent.mjs",
+        "demo:cross-engine": "node demo-cross-engine.mjs"
   },
   "dependencies": {
     "@saturday/core": "^0.3.0",

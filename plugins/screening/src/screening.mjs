@@ -17,7 +17,7 @@ import {
   multiConvexHull, energyAboveHullMulti,
   compositionFromNumbers,
   Material,
-  fingerprintEqual, assertSameUnits,
+  fingerprintEqual, assertSameUnits, unitConvert,
 } from '@saturday/core'
 import { combineEvidence, essFraction, evidenceError } from './evidence.mjs'
 import { builtinEvidenceSources, resolveEvidenceSources } from './evidence-sources.mjs'
@@ -35,8 +35,10 @@ const KB_EV_PER_K = 8.617333262145e-5
  * @param {DerivationRegistry} [opts.derivation] 推导登记簿（注入则登记活性推导）
  * @param {string}  [opts.batchId]   筛选批次号（缺省自动生成）
  * @param {Object}  [opts.references] 元素参考态每原子能量（如 {Cu: -0.001}），注入则算严格形成焓+凸包；
- *        可选升级形态 {Cu: { energyPerAtom, fingerprint?, energyUnit? }}——声明了来源指纹/单位时，
- *        必须与候选引擎的归一声明一致（M3 门禁），不一致显式拒绝（不自动换算、不静默混源）
+ *        可选升级形态 {Cu: { energyPerAtom, fingerprint?, energyUnit?, convertedFrom? }}——声明了来源指纹/单位时，
+ *        必须与候选引擎的归一声明一致（M3 门禁），不一致显式拒绝（不自动换算、不静默混源）；
+ *        convertedFrom: { unit } 声明"原值为该单位、调用方已显式换算到引擎单位"——审计记录随交付呈现，
+ *        因子可机械重算（白名单系数）；声明 ≠ 替换：不绕过 energyUnit 不一致门禁
  * @param {string}  [opts.thermoUnavailable] 参考态不可得的原因（诚实记录，不静默降级）
  * @param {number}  [opts.maxDopedSites] 每掺杂的最大取代位数（浓度扫描：k=1..max 各一个变体，默认 1）
  * @param {Array<{elements: string[], sites?: number[]}>} [opts.codopants]
@@ -161,6 +163,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     // 未声明者诚实降级（声明 ≠ 强制：无声明的旧路径不被新门禁追溯拦截）。
     const refValues = {}
     let fingerprintDeclared = true
+    const refConversions = []
+    const engineEnergyUnit = provider._units?.energy ?? 'eV'
     for (const [el, v] of Object.entries(references)) {
       if (typeof v === 'number') {
         refValues[el] = v
@@ -182,7 +186,14 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       } else {
         fingerprintDeclared = false
       }
-      if (v.energyUnit) assertSameUnits(provider._units?.energy ?? 'eV', v.energyUnit, `references.${el} 参考态能量单位`)
+      if (v.energyUnit) assertSameUnits(engineEnergyUnit, v.energyUnit, `references.${el} 参考态能量单位`)
+      // 换算审计通道（⑧）：声明"原值为 convertedFrom.unit、调用方已显式换算到引擎单位"。
+      // 声明 ≠ 替换：不改变 energyPerAtom 的消费（已是引擎单位），也不绕过上面的单位门禁；
+      // 换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）。
+      if (v.convertedFrom) {
+        const factor = unitConvert(1, v.convertedFrom.unit, engineEnergyUnit)   // 未知/跨维度单位即拒（带码）
+        refConversions.push({ element: el, from: v.convertedFrom.unit, to: engineEnergyUnit, factor })
+      }
     }
     for (const r of ranked) {
       r.formationEnthalpy = formationEnthalpy({
@@ -214,6 +225,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         hullDimension: hull.d,
         references: refValues,
         referenceProvenance: fingerprintDeclared ? 'declared' : 'undeclared',
+        ...(refConversions.length > 0 ? { referenceConversions: refConversions } : {}),
         note: `多组分凸包判据（${elements.length} 元素，d=${hull.d} 单形下包络 + 重心插值）；` +
               '端点 = 各元素参考态（形成焓零点经本引擎显式弛豫计算）',
       }
@@ -243,6 +255,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         mode: 'binary',
         references: refValues,
         referenceProvenance: fingerprintDeclared ? 'declared' : 'undeclared',
+        ...(refConversions.length > 0 ? { referenceConversions: refConversions } : {}),
         note: '形成焓能量零点 = 各元素参考态经本引擎显式弛豫计算；' +
               'energyAboveHull 为形成焓空间凸包判据（单内点时退化为 0-0 弦）',
       }

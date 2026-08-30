@@ -667,6 +667,88 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
   }
 })
 
+// ── ⑧ 换算审计通道：convertedFrom 声明"原值单位 + 已显式换算"，因子机械重算随交付呈现 ──
+test('20. 换算审计：convertedFrom 因子闭式对账（声明 ≠ 替换，不绕过单位门禁）', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.04 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'stub-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const sameSource = { software: 'stub-engine', method: 'stub' }
+    // energyPerAtom 已是引擎单位（eV）；convertedFrom 声明原值来自 Ry 产出并已显式换算。
+    // 审计因子 = 1 Ry → eV = 13.6056981335（白名单机械重算，独立手算对账）；结果与无声明路径闭式一致。
+    const withAudit = await screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: {
+        Cu: { energyPerAtom: -3.0, fingerprint: sameSource, convertedFrom: { unit: 'Ry' } },
+        Ag: { energyPerAtom: -3.0, fingerprint: sameSource },
+      },
+    })
+    assert.deepEqual(withAudit.thermo.referenceConversions,
+      [{ element: 'Cu', from: 'Ry', to: 'eV', factor: 13.6056981335 }], '审计因子 = 白名单系数（机械可复现）')
+    const ag = withAudit.ranked.find(r => r.formula === 'Cu3Ag')
+    assert.ok(Math.abs(ag.formationEnthalpy - (-0.01)) < 1e-12, '声明不改消费：形成焓闭式与无声明路径一致')
+    // 跨维度 convertedFrom（长度单位）→ 显式拒绝（白名单系数不存在）
+    await assert.rejects(() => screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: { Cu: { energyPerAtom: -3.0, convertedFrom: { unit: 'Bohr' } }, Ag: -3.0 },
+    }), err => err.code === 'UNIT_DIMENSION_MISMATCH')
+    // 声明 ≠ 替换：energyUnit 与引擎不一致时，convertedFrom 不绕过门禁（换算必须发生在交付前）
+    await assert.rejects(() => screenDopants({
+      material: cu, dopants: ['Ag'],
+      potential: coreFiber.store.stub.potential,
+      references: {
+        Cu: { energyPerAtom: -0.22, energyUnit: 'Ry', convertedFrom: { unit: 'Ry' } },
+        Ag: -3.0,
+      },
+    }), err => err.code === 'UNIT_MISMATCH', '声明换算历史 ≠ 交付异单位能量')
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+// ── ⑦ 工具层消费指纹：自产参考态升级声明形态，指纹/单位随交付投影给 Agent ──
+test('21. 工具层：自产参考态同源声明（provenance 声明态）+ 指纹随交付投影', async () => {
+  const energies = { Cu: -12.0, Cu3Ag: -12.04 }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
+    jobId: `job-${material.formula}`, engine: 'ref-engine',
+    converged: true, energy: energies[material.formula], n_steps: 5,
+  })))
+  try {
+    // 带 referenceEnergy 原语的引擎：自产参考态按定义同源，工具层应升级为声明形态
+    coreFiber.store.stub.potential.register({
+      name: 'ref-engine',
+      manifest: {
+        capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.99, cost: 0.01, maxAtoms: 200 }],
+        constraints: {},
+        eventGranularity: 'job',
+        units: { energy: 'eV', length: 'Å', time: 'fs' },
+        fingerprint: { software: 'ref-engine', method: 'stub-ref' },
+      },
+      relax: async (material) => ({
+        jobId: `job-${material.formula}`, engine: 'ref-engine',
+        converged: true, energy: energies[material.formula], n_steps: 5,
+      }),
+      referenceEnergy: async () => ({ energy_per_atom: -3.0 }),
+    })
+    const cu = await coreFiber.store.stub.materialService.load('Cu')
+    const result = await screenRt.tools.call('workflow.screen', {
+      materialId: cu.id, dopants: ['Ag'], engine: 'ref-engine',
+    })
+    assert.equal(result.thermo.referenceProvenance, 'declared', '工具层自产参考态 → 来源声明态（同源按定义成立）')
+    assert.equal(result.thermo.references.Cu, -3.0, '归一后仍是纯能量数值（消费方无感）')
+    // 指纹/单位随交付投影（render 全量序列化，宿主侧可核对能量来源可比性）
+    assert.deepEqual(result.providerFingerprint, { software: 'ref-engine', method: 'stub-ref', version: 'unknown' })
+    assert.deepEqual(result.providerUnits, { energy: 'eV', length: 'Å', time: 'fs' })
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
 //    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
 workflowContract({

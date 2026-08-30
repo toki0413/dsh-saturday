@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-30T04:53:04.821Z
+生成时间：2026-08-30T05:05:44.080Z
 
-**回归基线：252/252**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：255/255**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
 | `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 30/30 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
-| `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 25/25 |
+| `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 26/26 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@saturday/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 5/5 |
 | `@saturday/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 11/11 |
@@ -24,9 +24,9 @@
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 17/17 |
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
-| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 31/31 |
+| `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 33/33 |
 
-## 实证条款（契约文档附录 A，48 条）
+## 实证条款（契约文档附录 A，52 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -76,6 +76,10 @@
 - **#46** 采样温度标定与声明（③）：`uEqFromHarmonicTemperature` 闭式 u_eq = √(k_B·T/k_eff)（能量均分语义：温度翻倍幅度 ×√2；力常数必须显式注入——无势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度）；`sampler.ou` 接受显式 `temperatureK` 声明：声明 ≠ 替换（不改变采样行为，uEq 仍是直接参数）——随逐候选交付 `samplerTemperatureK`（⑳ 温差诚实声明的消费源落地）并进谱系（&T=300K，同参数不同声明 = 不同批）；声明前后采样序列与似然逐位一致（闭式回归）（证据：plugin-sampler-ou 测试 14-15（标定闭式 + 五门禁 + 声明不改行为））
 - **#47** 多锚点混合采样（④）：OU 单峰 = 局部采样器，跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度仍闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然声明保持 'exact' 不降档；交付的 logProb 是相对**全部锚点**的混合似然（非单锚点似然冒充，可独立重算 1e-9）；候选按锚点配比最大余数法确定性分配（平手取靠前）；归一混合权重随交付呈现（诚实声明的输入）；谱系记所属锚点（#mixture#anchor=k，可追到具体盆地）；同拓扑门禁（跨锚点位移仅在节点数一致时有定义，不静默近似）；单锚点退化与单核采样逐坐标一致（严格推广无隐式行为变化）（证据：plugin-sampler-ou 测试 16-17（一维双锚点手算闭式 + 配额/似然自洽/谱系/四门禁））
 - **#48** 单位与能力指纹入契约（异构引擎生态的泛化地基，量纲分析最小落点）：M1 注册门禁——`PotentialRegistry.register` 即校验 `manifest.units`（energy/length/time 三元组，白名单外/维度错位显式拒绝）与 `manifest.fingerprint`（software/method 必填，version 不可得诚实降级 'unknown'），归一声明挂 `_units/_fingerprint`（不改写原 manifest）；换算只能由调用方**显式发起**（`unitConvert`，跨维度/未知单位/非有限值均拒），绝不自动进入能量比较路径（自动换算会掩盖"两个引擎的能量本不该直接比"的物理问题）；契约套件 §4.2 manifest 断言同步加严（新插件接入即验）；M3 能量组合门禁——筛选层参考态升级形态 `{ energyPerAtom, fingerprint?, energyUnit? }` 声明了就对账：异源/异单位进凸包前显式拒绝（不静默混源、不静默换算），纯数值形态诚实降级（声明 ≠ 强制，旧路径不追溯拦截），`referenceProvenance` 与 `providerFingerprint/providerUnits` 随交付呈现（能量来源可追溯性即消费方可核对的交付物）（证据：core units.test 8 项 + potential.test 3 项（M1 自检）、契约套件 §4.2 断言（四引擎 + 自检全绿）、plugin-screening 测试 19（同源/异源/异单位/降级/空壳五态））
+- **#49** M2 激活门禁（⑤）：`PotentialRegistry.activate` 热切换事件载荷携带 `fingerprintChange`（{ same, reason }）——声明而非拒绝：§8.2 失效传播照常沿 `engine:<id>` 走，差异声明让消费方知晓"为何旧能量不再可比"；reason 按维度归因（software/method/version 逐维对账，首个不同维即落）；首次激活无前驱 → same=true（不伪造差异，与温度声明同款诚实纪律）（证据：packages/core potential.test 测试 4（同源/异 software/异 method 三态））
+- **#50** 跨引擎对照演示（⑥）：同一条候选链（Cu + Ag 掺杂）分别经两个指纹不同的引擎回算，四段实证异构引擎生态泛化地基——A 交付自带能量来源可追溯性（providerFingerprint/providerUnits + 参考态 provenance 声明态）；B M3 拦截（异源参考态混入凸包前显式拒绝，不静默混源）；C M2 事件（热切换携带指纹差异声明）；D 双引擎交付并排（两份能量不直接可比是诚实声明，不是缺陷——跨引擎比较须调用方显式声明换算与可比性假设）（证据：demo:cross-engine 端到端（四段如实运行，packages/bridge/demo-cross-engine.mjs））
+- **#51** 工具层自产参考态声明形态（⑦）：引擎 `referenceEnergy` 显式产出的参考态按定义同源——直接升级为声明形态（携带本引擎归一指纹与能量单位），凸包能量全链同源可比（M3 消费）；`referenceProvenance='declared'` 与指纹投影随交付呈现（消费方可独立核对"这批能量从哪来、能否互比"）；引擎未声明指纹时诚实降级不投影（不冒充可追溯）（证据：plugin-screening 测试 21（provenance 声明态 + 指纹投影断言））
+- **#52** 单位换算审计通道（⑧）：参考态 `convertedFrom` 声明"原值为该单位、调用方已显式换算到引擎单位"——声明 ≠ 替换（不改变 energyPerAtom 的消费、不绕过单位门禁），换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）；未知单位/跨维度声明即拒（带码），换算痕迹从此不落在暗处（证据：plugin-screening 测试 20（因子闭式对账 + 声明≠替换 + 不绕过门禁三态））
 
 > 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；
 > 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。

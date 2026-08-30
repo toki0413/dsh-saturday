@@ -7,7 +7,7 @@
 //    能量不得进入任何组合路径（凸包/焓比较），指纹不可追溯即不可组合。
 //    校验结果以 _units/_fingerprint 挂在 provider 上（不改写原 manifest）。
 
-import { validateEngineUnits, validateEngineFingerprint } from './units.mjs'
+import { validateEngineUnits, validateEngineFingerprint, fingerprintEqual } from './units.mjs'
 
 export class NoCapableProviderError extends Error {
   constructor(type) { super(`No provider can handle task type "${type}"`); this.code = 'NO_CAPABLE_PROVIDER' }
@@ -77,6 +77,9 @@ export class PotentialRegistry {
    * 热切换：只换“当前引擎”指针，在运行任务不受影响（修订 #10）。
    * 热替换（previous 非空）是失效源（§8.2）：发 saturday/potential/activated
    * 事件，推导登记簿侧据此沿 engine:<id> 传播失效；首次激活不发。
+   * M2（激活门禁）：事件载荷携带指纹差异声明（fingerprintChange）——
+   * 新旧引擎不同源时消费方据此知晓“为何旧能量不再可比”（声明而非拒绝：
+   * 热切换本身合法，可比性判断随事件呈现，与 §8.2 失效传播闭环）。
    */
   async activate(name) {
     if (this.activeProvider === name) return
@@ -85,9 +88,11 @@ export class PotentialRegistry {
     const previous = this.activeProvider
     this.activeProvider = name
     if (previous !== null) {
+      const previousProvider = this.providers.get(previous)
+      const fingerprintChange = fingerprintEqual(provider._fingerprint, previousProvider?._fingerprint)
       await this.rt?.emit?.('saturday/potential/activated', {
         type: 'saturday/potential/activated',
-        payload: { engine: name, previous },
+        payload: { engine: name, previous, fingerprintChange },
       })
     }
   }

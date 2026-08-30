@@ -521,8 +521,8 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 引擎引用合法（热替换即失效源）/
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
-套件自检 24 项 + bridge 30 项 + core 25 项 + 十个插件各自套件 + 其余插件各自契约测试，
-全仓 workspace 252/252；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。映射见附录 A。
+套件自检 24 项 + bridge 30 项 + core 26 项 + 十个插件各自套件 + 其余插件各自契约测试，
+全仓 workspace 255/255；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。映射见附录 A。
 
 ---
 
@@ -578,6 +578,10 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 46 | 采样温度标定与声明（③）：`uEqFromHarmonicTemperature` 闭式 u_eq = √(k_B·T/k_eff)（能量均分语义：温度翻倍幅度 ×√2；力常数必须显式注入——无势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度）；`sampler.ou` 接受显式 `temperatureK` 声明：声明 ≠ 替换（不改变采样行为，uEq 仍是直接参数）——随逐候选交付 `samplerTemperatureK`（⑳ 温差诚实声明的消费源落地）并进谱系（&T=300K，同参数不同声明 = 不同批）；声明前后采样序列与似然逐位一致（闭式回归） | plugin-sampler-ou 测试 14-15（标定闭式 + 五门禁 + 声明不改行为） |
 | 47 | 多锚点混合采样（④）：OU 单峰 = 局部采样器，跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度仍闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然声明保持 'exact' 不降档；交付的 logProb 是相对**全部锚点**的混合似然（非单锚点似然冒充，可独立重算 1e-9）；候选按锚点配比最大余数法确定性分配（平手取靠前）；归一混合权重随交付呈现（诚实声明的输入）；谱系记所属锚点（#mixture#anchor=k，可追到具体盆地）；同拓扑门禁（跨锚点位移仅在节点数一致时有定义，不静默近似）；单锚点退化与单核采样逐坐标一致（严格推广无隐式行为变化） | plugin-sampler-ou 测试 16-17（一维双锚点手算闭式 + 配额/似然自洽/谱系/四门禁） |
 | 48 | 单位与能力指纹入契约（异构引擎生态的泛化地基，量纲分析最小落点）：M1 注册门禁——`PotentialRegistry.register` 即校验 `manifest.units`（energy/length/time 三元组，白名单外/维度错位显式拒绝）与 `manifest.fingerprint`（software/method 必填，version 不可得诚实降级 'unknown'），归一声明挂 `_units/_fingerprint`（不改写原 manifest）；换算只能由调用方**显式发起**（`unitConvert`，跨维度/未知单位/非有限值均拒），绝不自动进入能量比较路径（自动换算会掩盖"两个引擎的能量本不该直接比"的物理问题）；契约套件 §4.2 manifest 断言同步加严（新插件接入即验）；M3 能量组合门禁——筛选层参考态升级形态 `{ energyPerAtom, fingerprint?, energyUnit? }` 声明了就对账：异源/异单位进凸包前显式拒绝（不静默混源、不静默换算），纯数值形态诚实降级（声明 ≠ 强制，旧路径不追溯拦截），`referenceProvenance` 与 `providerFingerprint/providerUnits` 随交付呈现（能量来源可追溯性即消费方可核对的交付物） | core units.test 8 项 + potential.test 3 项（M1 自检）、契约套件 §4.2 断言（四引擎 + 自检全绿）、plugin-screening 测试 19（同源/异源/异单位/降级/空壳五态） |
+| 49 | M2 激活门禁（⑤）：`PotentialRegistry.activate` 热切换事件载荷携带 `fingerprintChange`（{ same, reason }）——声明而非拒绝：§8.2 失效传播照常沿 `engine:<id>` 走，差异声明让消费方知晓"为何旧能量不再可比"；reason 按维度归因（software/method/version 逐维对账，首个不同维即落）；首次激活无前驱 → same=true（不伪造差异，与温度声明同款诚实纪律） | packages/core potential.test 测试 4（同源/异 software/异 method 三态） |
+| 50 | 跨引擎对照演示（⑥）：同一条候选链（Cu + Ag 掺杂）分别经两个指纹不同的引擎回算，四段实证异构引擎生态泛化地基——A 交付自带能量来源可追溯性（providerFingerprint/providerUnits + 参考态 provenance 声明态）；B M3 拦截（异源参考态混入凸包前显式拒绝，不静默混源）；C M2 事件（热切换携带指纹差异声明）；D 双引擎交付并排（两份能量不直接可比是诚实声明，不是缺陷——跨引擎比较须调用方显式声明换算与可比性假设） | demo:cross-engine 端到端（四段如实运行，packages/bridge/demo-cross-engine.mjs） |
+| 51 | 工具层自产参考态声明形态（⑦）：引擎 `referenceEnergy` 显式产出的参考态按定义同源——直接升级为声明形态（携带本引擎归一指纹与能量单位），凸包能量全链同源可比（M3 消费）；`referenceProvenance='declared'` 与指纹投影随交付呈现（消费方可独立核对"这批能量从哪来、能否互比"）；引擎未声明指纹时诚实降级不投影（不冒充可追溯） | plugin-screening 测试 21（provenance 声明态 + 指纹投影断言） |
+| 52 | 单位换算审计通道（⑧）：参考态 `convertedFrom` 声明"原值为该单位、调用方已显式换算到引擎单位"——声明 ≠ 替换（不改变 energyPerAtom 的消费、不绕过单位门禁），换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）；未知单位/跨维度声明即拒（带码），换算痕迹从此不落在暗处 | plugin-screening 测试 20（因子闭式对账 + 声明≠替换 + 不绕过门禁三态） |
 
 ## 附录 B：插件骨架模板
 
