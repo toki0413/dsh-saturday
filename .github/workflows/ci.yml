@@ -40,8 +40,8 @@ jobs:
           for d in packages/* plugins/*; do
             [ -f "$d/package.json" ] || continue
             if ! (cd "$d" && npm test --if-present > /tmp/sat-diag.log 2>&1); then
-              echo "::error title=零依赖档测试失败::$d"
-              tail -n 60 /tmp/sat-diag.log
+              tail_log=$(tail -n 25 /tmp/sat-diag.log | tr '\n' '|' | head -c 5500)
+              echo "::error title=零依赖档测试失败::$d | $tail_log"
             fi
           done
 
