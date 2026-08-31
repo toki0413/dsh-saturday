@@ -48,6 +48,9 @@ export class PythonBridge {
       this.pending.clear()
       this.proc = null
     })
+    // stdin 流错误兜底（如 sidecar 秒崩时握手写入撞进程退出触发 EPIPE）：
+    // exit/error 处理器已拒绝挂起调用，流错误不得成为未处理异常炸掉宿主进程（回退链路完整性的最后一环）
+    this.proc.stdin.on('error', () => {})
     // 握手：确认 sidecar 就绪与版本
     const hello = await this.call('hello', {})
     this.sidecarInfo = hello
@@ -56,6 +59,10 @@ export class PythonBridge {
   /** 长任务友好的异步调用：Promise 在 Python 完成时才 settle */
   call(method, params, { timeoutMs = 300_000 } = {}) {
     if (!this.proc) return Promise.reject(new Error('Bridge not connected'))
+    // 进程已死（如 sidecar 秒崩）：立即拒绝，不写入死管道也不悬挂到超时（诚实降级同款纪律）
+    if (this.proc.exitCode !== null || this.proc.stdin.destroyed) {
+      return Promise.reject(new Error(`Python sidecar exited (code ${this.proc.exitCode ?? 'unknown'})`))
+    }
     const id = randomUUID()
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {

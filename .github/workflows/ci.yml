@@ -34,6 +34,16 @@ jobs:
         run: npm run demo --workspace @saturday/bridge
       - name: 发布形态核验（逐包 pack 干跑）
         run: node scripts/pack-check.mjs
+      - name: 失败诊断（逐包隔离重跑 + 注释输出）
+        if: failure()
+        run: |
+          for d in packages/* plugins/*; do
+            [ -f "$d/package.json" ] || continue
+            if ! (cd "$d" && npm test --if-present > /tmp/sat-diag.log 2>&1); then
+              echo "::error title=零依赖档测试失败::$d"
+              tail -n 60 /tmp/sat-diag.log
+            fi
+          done
 
   full-fidelity:
     name: Python + ASE 精度档（EMT 真物理）
