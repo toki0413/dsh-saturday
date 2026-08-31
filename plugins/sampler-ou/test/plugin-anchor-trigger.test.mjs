@@ -3,7 +3,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { trajectoryTriggerAssessment } from '../src/anchor-trigger.mjs'
+import { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from '../src/anchor-trigger.mjs'
 
 test('1. 达标：读数满足调用方声明的阈值 → met=true，理由为空', () => {
   const result = trajectoryTriggerAssessment(
@@ -83,4 +83,26 @@ test('4. ㊼ 谱系质量维：可选阈值 minTrackableRatio（未声明行为�
   const emptyLineage = trajectoryTriggerAssessment({ size: 0, lineage: {} },
     { minSize: 1, minCompositionCoverage: 0.5, minTrackableRatio: 0.5 })
   assert.equal(emptyLineage.readings.trackableRatio, 0)
+})
+
+test('5. 52 触发条件就绪度报告：声明式盘点如实呈报在场/缺口（呈报不是门禁，缺失不是错误）', () => {
+  // 五面全声明 → 就绪；在场凭据原样回呈（声明可审计）
+  const all = trajectoryTriggerReadiness({
+    observation: 'sampler.anchor.stats', criterion: 'trajectoryTriggerAssessment',
+    snapshot: 'sampler.trigger.snapshot.save/load', repair: 'sampler.anchor.repair',
+    derivation: 'result:trigger-<batchId>',
+  })
+  assert.equal(all.ready, true)
+  assert.deepEqual(all.gaps, [])
+  assert.equal(all.present.observation, 'sampler.anchor.stats', '在场凭据原样回呈')
+  assert.ok(all.note.includes('不是门禁'), '报告如实声明呈报性质（机制进场仍由裁决者决定）')
+  // 部分缺失 → 缺口逐项如实（缺失不是错误，只是未就位；各项独立不糊化）
+  const partial = trajectoryTriggerReadiness({ observation: 'sampler.anchor.stats', criterion: 'trajectoryTriggerAssessment' })
+  assert.equal(partial.ready, false)
+  assert.deepEqual(partial.gaps, ['snapshot', 'repair', 'derivation'], '缺口逐项如实定位到面')
+  // 空字符串/非字符串声明视同未声明（不冒名在场）
+  const hollow = trajectoryTriggerReadiness({ observation: '', criterion: 42, snapshot: ' ', repair: 'r', derivation: 'd' })
+  assert.deepEqual(hollow.gaps, ['observation', 'criterion', 'snapshot'])
+  // 未显式声明即拒（不替调用方猜测在场状态）
+  assert.throws(() => trajectoryTriggerReadiness(null), /TRAJECTORY_TRIGGER_READINESS_EVIDENCE_REQUIRED/)
 })

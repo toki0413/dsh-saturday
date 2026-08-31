@@ -28,6 +28,8 @@
 //           → load（仅达标载荷）：观测先于行动从单工具升为决策链（报告不达标即不回填）。
 //   阶段 I（㊺/㊸）：自然语言“修复不可追溯条目并重新审计验收” → repair（逐条显式授权，
 //           写新载荷不碰原件）→ audit（审计是修复的验收面）：观测→修复→验收三步链接。
+//   阶段 J（50/㊾）：自然语言“回填验收达标的修复后载荷” → load：修复四环在 Agent 层全链接——
+//           修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件，同 ㊾ 测试面）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -675,7 +677,41 @@ async function main() {
     JSON.stringify(iAuditResult.files.map(f => ({ traceable: f.traceable, untracked: f.untracked }))))
   console.log('[ok   ] 阶段 I：自然语言 → 观测→修复→验收三步链（修复逐条授权、原件留证、审计验收）→ 收尾 ✓\n')
 
-  // 12. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
+  // 12. 阶段 J（50/㊾）：修复后载荷活性闭环第四环（回填）：验收达标的修复后载荷按声明回填——
+  //     修复达标数据即刻成为数据燃料（谱系用修复后来源，不冒充原件）。诚实声明：回填声明由
+  //     mock 脚本编码，阶段实证的是“观测→修复→验收→入库”四环在 Agent 层全链接的运行时效果。
+  await server.close()
+  server = await startMockLlmServer({
+    port: 8244,
+    apiKey: 'mock-key',
+    sequence: ['tool_call_success', 'success'],
+    toolName: 'sampler.anchor.load',
+    toolArguments: JSON.stringify({ path: iFixedPath }),
+    successText: '修复后载荷已回填：修复达标数据成为数据燃料（谱系用修复后来源）。',
+  })
+  adapter.baseURL = server.baseURL
+  agent.followup(createUserMessage({
+    content: [{ type: 'text', text: '回填验收达标的修复后载荷，使其成为数据燃料' }],
+    source: { kind: 'user' },
+  }))
+  await waitFor(() => server.requests.length >= 2)
+  await agent.whenIdle()
+
+  const jLoadMsg = server.requests[1]?.body.messages.filter(m => m.role === 'tool').at(-1)
+  assert.ok(jLoadMsg, '阶段 J 应包含 sampler.anchor.load 结果')
+  const jLoadResult = JSON.parse(jLoadMsg.content)
+  assert.equal(jLoadResult.added, 1, '修复后载荷回填 1 条')
+  assert.deepEqual(jLoadResult.lineageRefs, ['material:cu-repaired-i'],
+    '回填谱系用修复后来源（不冒充原件）')
+  assert.ok(demoStore.anchorStore.entries().some(e => e.source === 'material:cu-repaired-i'),
+    '修复达标数据入库（四环闭环：成为数据燃料）')
+  assert.ok(!demoStore.anchorStore.entries().some(e => e.source === 'inline:adhoc-audit-i'),
+    '不可追溯原件不入库（观测→修复→验收→入库全程拦截）')
+  console.log('[tool ] sampler.anchor.load（回填）:',
+    JSON.stringify({ added: jLoadResult.added, lineageRefs: jLoadResult.lineageRefs }))
+  console.log('[ok   ] 阶段 J：自然语言 → 观测→修复→验收→回填四环链（修复达标数据成为数据燃料）→ 收尾 ✓\n')
+
+  // 13. 回收（会话/工具/服务全部随 fiber 撤销；cordis 根 Context 无 dispose，撤插件 fiber 即可）
   await server.close()
   rmSync(persistPath, { force: true })   // 演示临时载荷清理（不遗留落盘文件）
   rmSync(hGoodPath, { force: true })

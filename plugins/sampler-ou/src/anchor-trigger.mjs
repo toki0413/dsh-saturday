@@ -8,6 +8,9 @@
 // ㊼ 判据的谱系质量维：“足够轨迹”不只是够多，还要够可追溯——可选阈值 `minTrackableRatio`
 // （material:/job: 占比）由调用方显式声明；未声明行为不变（不硬编码、不设默认），
 // 声明了但读数缺谱系分布维 → 显式拒绝（不替调用方猜测质量读数）。
+// 52 触发条件就绪度报告（声明式盘点，不是门禁）：把 ㉘ 触发条件的基础设施面（观测/判据/
+// 快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口——缺失只呈报为缺口不是错误，
+// 就绪与否不决定机制进场（裁决在前，同 ⑬/⑱/㉘：先见数据再谈机制）。
 
 import { randomUUID } from 'node:crypto'
 
@@ -67,5 +70,28 @@ export function trajectoryTriggerAssessment(readings, thresholds, context = {}) 
     thresholds,
     ...(derivationRecord ? { derivation: derivationRecord } : {}),
     note: '触发判据原型（㊵）：读数对阈值为声明式对账，不是门禁——达标与否只如实呈报，机制进场仍由裁决者决定（㉘ 先见数据再谈机制）',
+  }
+}
+
+// 52 触发条件就绪度报告：㉘ 触发条件的基础设施盘点（原型清单：观测/判据/快照/修复/推导五面）。
+// 每一面必须由调用方显式声明在场凭据（非空字符串）；缺失呈报为缺口（缺失不是错误，只是未就位）。
+// 报告是呈报不是门禁：ready 只如实反映声明完备度，机制是否进场仍由裁决者决定（㉘）。
+export function trajectoryTriggerReadiness(evidence) {
+  if (!evidence || typeof evidence !== 'object') {
+    throw new Error('TRAJECTORY_TRIGGER_READINESS_EVIDENCE_REQUIRED：就绪度报告需要调用方显式声明（evidence），不替调用方猜测在场状态')
+  }
+  const surfaces = ['observation', 'criterion', 'snapshot', 'repair', 'derivation']
+  const present = {}
+  const gaps = []
+  for (const s of surfaces) {
+    const v = evidence[s]
+    if (typeof v === 'string' && v.trim().length > 0) present[s] = v
+    else gaps.push(s)
+  }
+  return {
+    ready: gaps.length === 0,
+    present, gaps,
+    note: '触发条件就绪度报告（52）：声明式盘点不是门禁——就绪只反映基础设施在场状态，' +
+          '“足够轨迹”与“探索效率瓶颈”仍需数据实证，机制进场仍由裁决者决定（㉘ 先见数据再谈机制）',
   }
 }

@@ -18,7 +18,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
 import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin, { trajectoryTriggerAssessment } from '@saturday/plugin-sampler-ou'
+import samplerOuPlugin, { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from '@saturday/plugin-sampler-ou'
 
 async function mountSession() {
   const ctx = new Context()
@@ -131,6 +131,17 @@ try {
     throw new Error('判据快照跨会话续供不一致：读数/阈值/结论必须与会话二原样一致')
   }
   console.log(`跨会话续供一致（会话三库内仍 ${s3.anchorStore.size()} 个：快照不进数据燃料）——裁决依据可续供、可复算。`)
+  // 52 触发条件就绪度报告：把演示已实证的基础设施面由调用方显式声明，报告如实汇总——
+  // 呈报不是门禁：就绪只反映基础设施在场，“足够轨迹”仍需数据实证（㉘ 裁决在前）。
+  const readiness = trajectoryTriggerReadiness({
+    observation: 'sampler.anchor.stats（会话一/二观测读数）',
+    criterion: 'trajectoryTriggerAssessment（判据对账 + ㊼ 质量维）',
+    snapshot: snapshotPath,
+    repair: 'sampler.anchor.repair（㊳ 修复原语）',
+    derivation: '推导登记簿（㊹ 结论登记/失效传播通道）',
+  })
+  console.log(`就绪度报告（52）: ready=${readiness.ready}，在场 ${Object.keys(readiness.present).length} 面，缺口 ${readiness.gaps.length} 项（呈报不是门禁：机制进场仍由裁决者决定，㉘）`)
+  if (!readiness.ready) throw new Error('演示已实证五面在场，就绪度报告应如实呈报就绪')
 } finally {
   await s3.dispose()
   await rm(dir, { recursive: true, force: true })

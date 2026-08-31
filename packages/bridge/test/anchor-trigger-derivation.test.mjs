@@ -4,7 +4,9 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
@@ -82,5 +84,44 @@ test('2. 无可追溯证据引用不伪登记（同 ㉑ 提案登记纪律）+ �
     assert.equal(bare.derivation, undefined, '未注入推导服务：交付不含 derivation 段')
   } finally {
     await dispose(env)
+  }
+})
+
+test('3. 51 证据链接线：快照携带推导引用 → 结论 ↔ 证据文件双向可追溯（回填后沿引用可查/可撤）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-snapshot-evidence-'))
+  const env = await mount()
+  try {
+    const stats = await env.sampler.rt.tools.call('sampler.anchor.stats', {})
+    const assessment = trajectoryTriggerAssessment(
+      stats,
+      { minSize: 1, minCompositionCoverage: 0 },
+      { derivation: env.registry, evidenceRefs: ['material:ev-c'], batchId: 'trig-3' },
+    )
+    const triggerRef = assessment.derivation.triggerRef
+    assert.equal(triggerRef, 'result:trigger-trig-3')
+    // 快照携带推导引用：声明即原样落盘（结论 ↔ 证据文件双向可追溯）
+    const snapPath = join(dir, 'snap.json')
+    const saved = await env.sampler.rt.tools.call('sampler.trigger.snapshot.save', {
+      path: snapPath, assessment, batchId: 'trig-3', triggerRef,
+    })
+    assert.equal(saved.triggerRef, triggerRef, '落盘交付如实回呈推导引用')
+    // 回填后沿快照携带的引用可查：结论活性在场；证据失效 → 沿引用如实失效（可撤回跨会话在场）
+    const restored = await env.sampler.rt.tools.call('sampler.trigger.snapshot.load', { path: snapPath })
+    assert.equal(restored.triggerRef, triggerRef, '回填原样交付推导引用（证据文件指向结论）')
+    assert.equal(env.registry.status(restored.triggerRef).status, 'valid', '沿快照引用可查：结论活性在场')
+    await env.registry.invalidate('material:ev-c', '证据引用撤回')
+    assert.equal(env.registry.status(restored.triggerRef).status, 'invalid',
+      '证据失效沿快照携带的引用传播（结论可撤回，证据链不断）')
+    // 未声明不伪造：不携带引用的快照回填后无 triggerRef 字段（不猜测推导引用）
+    const barePath = join(dir, 'bare.json')
+    await env.sampler.rt.tools.call('sampler.trigger.snapshot.save', { path: barePath, assessment, batchId: 'trig-3b' })
+    const bare = await env.sampler.rt.tools.call('sampler.trigger.snapshot.load', { path: barePath })
+    assert.equal(bare.triggerRef, undefined, '未声明 triggerRef → 快照不伪造引用')
+    await assert.rejects(
+      () => env.sampler.rt.tools.call('sampler.trigger.snapshot.save', { path: snapPath, assessment, batchId: 'trig-3c', triggerRef: '' }),
+      /非空字符串/, '空字符串引用声明 → 拒绝（不伪造）')
+  } finally {
+    await dispose(env)
+    await rm(dir, { recursive: true, force: true })
   }
 })

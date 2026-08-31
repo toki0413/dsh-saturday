@@ -10,11 +10,11 @@ import { randomUUID } from 'node:crypto'
 import { writeFileSync, readFileSync } from 'node:fs'
 import { ouSampler, samplerError, ouSampleMixture } from './sampler.mjs'
 import { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
-import { trajectoryTriggerAssessment } from './anchor-trigger.mjs'
+import { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from './anchor-trigger.mjs'
 
 export { ouSampler, ouStd, ouLogProb, mulberry32, samplerError, SAMPLER_NAME, uEqFromHarmonicTemperature, KB_EV_PER_K, ouMixtureLogProb, ouSampleMixture } from './sampler.mjs'
 export { createAnchorStore, mixtureTargetFromRetrieved } from './anchor-store.mjs'
-export { trajectoryTriggerAssessment } from './anchor-trigger.mjs'
+export { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from './anchor-trigger.mjs'
 
 export default {
   name: 'saturday-sampler-ou',
@@ -581,6 +581,8 @@ export default {
     // ㊻ 判据快照落盘/回填原语（跨会话续供）：把 ㊷ 的判据快照从“会话内日志”升级为可落盘的
     // 证据载荷——快照整体原样落盘（读数/阈值/结论一并保留，不替调用方改写结论）；
     // 回填只读校验版本戳与形态后原样交付（快照不是锚点条目，不进锚点库、不进数据燃料）。
+    // 51 判据证据链接线：快照可选携带推导引用（`triggerRef`，来自 ㊹ 对账结论登记）——
+    // 声明即原样随快照落盘/回填（结论 ↔ 证据文件双向可追溯）；未声明不伪造（不猜测引用）。
     rt.registerTool({
       name: 'sampler.trigger.snapshot.save',
       description: '判据快照落盘（跨会话续供）：判据对账结论整体原样落盘——读数/阈值/结论一并保留，' +
@@ -589,16 +591,20 @@ export default {
         path: { type: 'string', description: '快照落盘路径' },
         assessment: { type: 'object', additionalProperties: true, description: '判据对账结论（trajectoryTriggerAssessment 交付）' },
         batchId: { type: 'string', description: '判据批次标识' },
+        triggerRef: { type: 'string', description: '可选：对账结论的推导引用（㊹ 登记交付的 result:trigger-<batchId>），声明即随快照原样落盘' },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
       },
       async execute(args = {}) {
-        const { path, assessment, batchId } = args
+        const { path, assessment, batchId, triggerRef } = args
         if (typeof path !== 'string' || path.trim().length === 0) throw new Error('snapshot.save: 落盘路径必须显式声明')
         if (!assessment || typeof assessment !== 'object') throw new Error('snapshot.save: 判据结论 assessment 必须显式提供（先对账再落盘，不代算）')
         if (typeof batchId !== 'string' || batchId.trim().length === 0) throw new Error('snapshot.save: 批次标识 batchId 必须显式声明')
+        if (triggerRef !== undefined && (typeof triggerRef !== 'string' || triggerRef.trim().length === 0)) {
+          throw new Error('snapshot.save: triggerRef 声明必须为非空字符串（不伪造推导引用）')
+        }
         const snapshot = {
           version: 'saturday-trigger-snapshot/1',
           batchId,
@@ -607,9 +613,13 @@ export default {
           reasons: assessment.reasons,
           readings: assessment.readings,
           thresholds: assessment.thresholds,
+          // 51 证据链接线：声明即原样随快照（未声明不伪造，结论 ↔ 证据文件双向可追溯）
+          ...(triggerRef !== undefined ? { triggerRef } : {}),
         }
         writeFileSync(path, JSON.stringify(snapshot))
-        return { path, batchId, met: assessment.met, version: snapshot.version, note: '快照整体原样落盘：落盘不改判（㊻）' }
+        return { path, batchId, met: assessment.met, version: snapshot.version,
+          ...(triggerRef !== undefined ? { triggerRef } : {}),
+          note: '快照整体原样落盘：落盘不改判（㊻）' }
       },
     })
 
