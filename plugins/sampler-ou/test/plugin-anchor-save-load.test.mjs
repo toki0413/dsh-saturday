@@ -1,4 +1,4 @@
-// ㉔ 持久化落盘侧：库间搬运原语的文件端（导出载荷 ↔ 磁盘）——
+// 持久化落盘侧：库间搬运原语的文件端（导出载荷 ↔ 磁盘）——
 // save 落盘（无损 JSON，路径调用方显式声明）→ 新会话 load 回填（门禁与导入工具同款）；
 // 错误路径如实：文件缺失/损坏/非载荷形态显式报错（不静默返回空库冒充成功）。
 // 泄漏防护（纪律）：挂载即拉起 Python sidecar，前置断言入 try，finally 保证 dispose + 临时目录清理。
@@ -112,7 +112,7 @@ test('3. 会话内重载幂等 + 路径显式声明门禁', async () => {
   }
 })
 
-test('4. ㉜ 完整性校验：版本门禁 + size 声明对账（声明 ≠ 实质即拒，不静默接受）', async () => {
+test('4.  完整性校验：版本门禁 + size 声明对账（声明 ≠ 实质即拒，不静默接受）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-integrity-'))
   const env = await mount()
   try {
@@ -147,7 +147,7 @@ test('4. ㉜ 完整性校验：版本门禁 + size 声明对账（声明 ≠ 实
   }
 })
 
-test('5. ㉜ 单条损坏不连坐：坏条目逐条拒绝，合法条目照常入库（完整性门禁不开旁路）', async () => {
+test('5.  单条损坏不连坐：坏条目逐条拒绝，合法条目照常入库（完整性门禁不开旁路）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-partial-'))
   const env = await mount()
   try {
@@ -167,7 +167,7 @@ test('5. ㉜ 单条损坏不连坐：坏条目逐条拒绝，合法条目照常�
   }
 })
 
-test('6. ㉝ 条目级版本戳：损坏定位到条目（含载荷原位索引），不连坐合法条目', async () => {
+test('6.  条目级版本戳：损坏定位到条目（含载荷原位索引），不连坐合法条目', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-stamp-'))
   const env = await mount()
   try {
@@ -188,7 +188,7 @@ test('6. ㉝ 条目级版本戳：损坏定位到条目（含载荷原位索引�
   }
 })
 
-test('7. ㉞ 多载荷合并回填：同谱系幂等兜底跨载荷重复 + 门禁先行（任一文件不过 → 整批拒绝、库零污染）', async () => {
+test('7.  多载荷合并回填：同谱系幂等兜底跨载荷重复 + 门禁先行（任一文件不过 → 整批拒绝、库零污染）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-multi-'))
   const env = await mount()
   try {
@@ -211,7 +211,7 @@ test('7. ㉞ 多载荷合并回填：同谱系幂等兜底跨载荷重复 + 门�
     assert.equal(merged.files[1].skipped, 1, '重复定位在第二份载荷')
     assert.deepEqual(merged.lineageRefs.sort(), ['job:j-m', 'material:ag-m', 'material:cu-m'], 'lineageRefs 跨载荷合并去重')
     assert.equal(env.handles.anchorStore.size(), 3)
-    // 门禁先行：批次内含损坏文件 → 整批拒绝，已入库条目不受影响（库零污染）
+    // 门禁先行：多载荷中含损坏文件 → 整批拒绝，已入库条目不受影响（库零污染）
     await writeFile(bad, 'not-json')
     await assert.rejects(
       () => env.handles.rt.tools.call('sampler.anchor.load', { paths: [p2, bad] }),
@@ -229,7 +229,7 @@ test('7. ㉞ 多载荷合并回填：同谱系幂等兜底跨载荷重复 + 门�
   }
 })
 
-test('8. ㉟ 血缘审计（只读）：三态统计如实 + 审计不回填不污染库 + 异常文件如实入报告', async () => {
+test('8.  血缘审计（只读）：三态统计如实 + 审计不回填不污染库 + 异常文件如实入报告', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-audit-'))
   const env = await mount()
   try {
@@ -249,7 +249,7 @@ test('8. ㉟ 血缘审计（只读）：三态统计如实 + 审计不回填不�
       { t: 2, u: 1, c: 1 },
       '三态统计如实：可追溯/不可追溯/损坏',
     )
-    // ㊶ 修复建议通道：非可追溯条目随报告附可操作的修复声明（指明出路，不代改）
+    // 修复建议通道：非可追溯条目随报告附可操作的修复声明（指明出路，不代改）
     assert.deepEqual(
       report.files[0].repairHints.map(h => [h.index, h.state]),
       [[2, 'untracked'], [3, 'corrupt']],
@@ -267,7 +267,7 @@ test('8. ㉟ 血缘审计（只读）：三态统计如实 + 审计不回填不�
   }
 })
 
-test('9. ㊳ 库容量观测（只读）：谱系形态分布如实 + 观测不变更库（与 ㉟ 载荷审计构成双观测面）', async () => {
+test('9.  库容量观测（只读）：谱系形态分布如实 + 观测不变更库（与载荷审计构成双观测面）', async () => {
   const env = await mount()
   try {
     env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-s', composition: { Cu: 4 } })
@@ -283,7 +283,7 @@ test('9. ㊳ 库容量观测（只读）：谱系形态分布如实 + 观测不�
   }
 })
 
-test('10. ㊵ 触发判据接容量观测：stats 读数直接喂判据（声明式对账，不是门禁）', async () => {
+test('10.  触发判据接容量观测：stats 读数直接喂判据（声明式对账，不是门禁）', async () => {
   const env = await mount()
   try {
     env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-tr', composition: { Cu: 4 } })
@@ -302,7 +302,7 @@ test('10. ㊵ 触发判据接容量观测：stats 读数直接喂判据（声明
   }
 })
 
-test('11. ㊸ 修复原语：只修复不可追溯条目 + 写新载荷不碰原件（审计是修复的验收面）', async () => {
+test('11.  修复原语：只修复不可追溯条目 + 写新载荷不碰原件（审计是修复的验收面）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-repair-'))
   const env = await mount()
   try {
@@ -339,7 +339,7 @@ test('11. ㊸ 修复原语：只修复不可追溯条目 + 写新载荷不碰原
   }
 })
 
-test('12. ㊸ 修复门禁：损坏/已可追溯/越界/非可追溯来源如实拒绝 + 覆盖原件拒绝（修复不是伪造）', async () => {
+test('12.  修复门禁：损坏/已可追溯/越界/非可追溯来源如实拒绝 + 覆盖原件拒绝（修复不是伪造）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-anchor-repair-gate-'))
   const env = await mount()
   try {
@@ -378,7 +378,7 @@ test('12. ㊸ 修复门禁：损坏/已可追溯/越界/非可追溯来源如实
   }
 })
 
-test('13. ㊻ 判据快照落盘/回填：结论整体原样跨会话续供 + 快照不进锚点库（回填只读校验）', async () => {
+test('13.  判据快照落盘/回填：结论整体原样跨会话续供 + 快照不进锚点库（回填只读校验）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-trigger-snapshot-'))
   const src = await mount()
   const dst = await mount()
@@ -394,7 +394,7 @@ test('13. ㊻ 判据快照落盘/回填：结论整体原样跨会话续供 + �
     const saved = await src.handles.rt.tools.call('sampler.trigger.snapshot.save', { path: snapPath, assessment, batchId: 'snap-b1' })
     assert.equal(saved.batchId, 'snap-b1')
     assert.equal(saved.met, assessment.met, '落盘不改判（结论原样）')
-    // 跨会话回填：新会话只读校验后原样交付（裁决依据可续供、可复算）
+    // 跨会话回填：新会话只读校验后原样交付（结论依据可续供、可复算）
     const restored = await dst.handles.rt.tools.call('sampler.trigger.snapshot.load', { path: snapPath })
     assert.equal(restored.met, assessment.met)
     assert.deepEqual(restored.readings, assessment.readings, '读数随快照原样续供')
@@ -422,7 +422,7 @@ test('13. ㊻ 判据快照落盘/回填：结论整体原样跨会话续供 + �
   }
 })
 
-test('14. ㊿ 质量维观测对账：stats 读数 → 判据回呈的可追溯占比与库内逐条谱系一致（观测→判据不断链）', async () => {
+test('14.  质量维观测对账：stats 读数 → 判据回呈的可追溯占比与库内逐条谱系一致（观测→判据不断链）', async () => {
   const env = await mount()
   try {
     env.handles.anchorStore.add({ graph: graph4, source: 'material:cu-q', composition: { Cu: 4 } })

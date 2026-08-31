@@ -1,7 +1,7 @@
 // 构型自由能曲线演示（热力学第二档）：
 // Cu 原胞 + 真实 ASE 引擎（EMT 计算器 / Langevin 恒温 MD）→ 逐温度网格点恒温 MD 得 ⟨U⟩(β)
 // → 沿 β 热力学积分出构型自由能曲线。
-// 锚点物理化（⑭）：anchorMode='harmonic' → 引擎 harmonic 原语（弛豫+有限差分 Hessian
+// 锚点物理化：anchorMode='harmonic' → 引擎 harmonic 原语（弛豫+有限差分 Hessian
 // 简正模）+ 量子谐振子闭式给出 F₀；经典 TI 采样与量子锚点混合为声明的近似。
 // 运行：npm run demo:freeenergy
 

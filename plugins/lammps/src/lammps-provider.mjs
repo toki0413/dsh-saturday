@@ -108,7 +108,7 @@ export class LammpsProvider {
   }
 
   /**
-   * 运行时版本回读（① 实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
+   * 运行时版本回读（实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
    * 探测失败（无二进制/启动异常/无横幅）返回 null——诚实降级保持 'unknown'，
    * 绝不拿非实测值盖章（与 M1 诚实降级同款纪律）。
    */

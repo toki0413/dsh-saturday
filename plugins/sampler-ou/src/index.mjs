@@ -24,17 +24,17 @@ export default {
     const rt = createCordisAdapter(ctx, { ...config, defineTool })
 
     rt.provideService('sampler/ou-perturbation', ouSampler)
-    // ⑩ 锚点会话库：自监督进场的数据管道在工具层的落点——闭环产出的锚点入库，
+    // 锚点会话库：闭环产出的锚点在工具层的落点——入库后
     // 供 sampler.mixture 检索引导混合提案。会话级内存库（不跨会话持久化）：
     // 锚点积累与闭环运行同生命周期，不伪造库外数据。
     const anchorStore = createAnchorStore()
     rt.provideService('sampler/anchor-store', anchorStore)
 
-    // ⑮ 闭环轨迹自动入库（自监督数据管道第二段）：弛豫收敛且引擎交付了终态结构时，
+    // 闭环轨迹自动入库：弛豫收敛且引擎交付了终态结构时，
     // 弛豫后结构自动入库为锚点（谱系自动声明：job:<jobId> + 引擎 + 能量，出处可追溯）。
-    // 三道门禁：① 未收敛不入库（不收敛的结构不是盆地底，入库即伪造数据燃料）；
-    // ② 引擎未交付终态（旧协议）不入库（诚实缺省，不拿输入结构冒充弛豫产物）；
-    // ③ 同来源重复入库不重复累计（幂等）。
+    // 三道门禁：未收敛不入库（不收敛的结构不是盆地底，入库即伪造数据燃料）；
+    // 引擎未交付终态（旧协议）不入库（如实缺省，不拿输入结构冒充弛豫产物）；
+    // 同来源重复入库不重复累计（幂等）。
     rt.on('saturday/simulation/converged', event => {
       const p = event?.payload
       if (!p?.result?.converged) return
@@ -93,7 +93,7 @@ export default {
 
     rt.registerTool({
       name: 'sampler.anchor.add',
-      description: '混合提案锚点入库（⑩，自监督数据管道）：闭环产出的参考结构（已注册材料或直交付 graph）' +
+      description: '混合提案锚点入库：闭环产出的参考结构（已注册材料或直交付 graph）' +
                    '入会话锚点库；谱系必填（无来源声明的数据不入库）；组分自动从结构提取（可覆写）。' +
                    '入库即声明：锚点来自闭环轨迹，出处可追溯。',
       parameters: {
@@ -134,7 +134,7 @@ export default {
         }
         const entry = anchorStore.add({ graph, source, composition, ...(formula ? { formula } : {}), ...(args.energy !== undefined ? { energy: args.energy } : {}) })
         // 锚点本体不外泄：显式剔除 graph（不用 undefined 覆盖——dsh 出口关卡要求无损 JSON，
-        // undefined 值会触发 'value is not lossless JSON' 拒付，实证于 demo:agent 阶段 D）
+        // undefined 值会触发 'value is not lossless JSON' 拒付）
         const { graph: _body, ...entryPublic } = entry
         return { added: true, size: anchorStore.size(), entry: entryPublic, note: '锚点本体已入库（graph 不外泄，检索与混合采样在库内消费）' }
       },
@@ -142,7 +142,7 @@ export default {
 
     rt.registerTool({
       name: 'sampler.mixture',
-      description: '锚点引导的混合采样（⑩）：从会话锚点库检索（拓扑硬门禁 + 组分 L1 距离）→ 最大余数法配额 → ' +
+      description: '锚点引导的混合采样：从会话锚点库检索（拓扑硬门禁 + 组分 L1 距离）→ 最大余数法配额 → ' +
                    'OU 混合提案（似然 exact，逐候选可独立重算）。空库/无匹配显式报错（不伪造锚点）；' +
                    '候选不自证，请送入引擎回算后接 workflow.screen（sampled 透传）。' +
                    '也支持 anchors 内联（单次调用即用，不经过会话库）。',
@@ -190,7 +190,7 @@ export default {
         const candidates = await ouSampleMixture(target, {
           n: args.n, seed: args.seed, uEq: args.uEq, gammaDt: args.gammaDt, temperatureK: args.temperatureK,
         })
-        // ㉑ 提案层谱系登记（活性上下文 §8.2）：derivation 服务可选——未注入行为不变（与
+        // 提案层谱系登记（活性上下文）：derivation 服务可选——未注入行为不变（与
         // workflow.screen 同款：纯编排层零依赖）；注入时登记一层提案推导：
         // 输入 = 可追溯锚点来源（归一化为 material:<id>/job:<id>：自动入库谱系 `job:<id>#engine=<name>`
         // 取 # 前段），不可追溯来源（内联/其他形态）不冒充推导输入，随交付如实声明。
@@ -229,10 +229,10 @@ export default {
       },
     })
 
-    // ㉓ 持久化锚点库原型：库间搬运原语（导出/导入）——跨会话持久化的第一段。
+    // 持久化锚点库：库间搬运原语（导出/导入）——跨会话持久化的基础。
     // 诚实边界：库自身仍是会话级内存库，导出只交付无损 JSON 有效载荷，
     // 落盘与跨会话恢复由调用方负责（原型不引入文件 I/O，不伪造库外数据）。
-    // ㉝ 载荷形态升版：/2 起条目携带版本戳（损坏定位从“整体非载荷”下沉到条目级）。
+    // 载荷形态：/2 起条目携带版本戳（损坏定位从“整体非载荷”下沉到条目级）。
     const STORE_VERSION = 'saturday-anchor-store/2'
     const ENTRY_VERSION = 'saturday-anchor-entry/1'
     const stampedEntries = () => anchorStore.entries().map(e => ({ entryVersion: ENTRY_VERSION, ...e }))
@@ -257,7 +257,7 @@ export default {
       },
     })
 
-    // ㉓ 库间搬运原语的共享导入循环（导入工具与文件回填共用：门禁不另开旁路）。
+    // 库间搬运原语的共享导入循环（导入工具与文件回填共用：门禁不另开旁路）。
     // 谱系门禁复用库层；同谱系幂等跳过（重放安全）；单条拒绝不中断整批（如实记录）。
     function importEntries(entries, indexMap) {
       let added = 0
@@ -265,12 +265,12 @@ export default {
       const rejected = []
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i]
-        const origIndex = indexMap ? indexMap[i] : i   // ㉝ 拒绝索引定位回载荷原位（过滤后不丢定位能力）
+        const origIndex = indexMap ? indexMap[i] : i   // 拒绝索引定位回载荷原位（过滤后不丢定位能力）
         if (typeof e?.source !== 'string' || e.source.trim().length === 0) {
           rejected.push({ index: origIndex, reason: '无来源声明：导入同样受谱系门禁约束（无谱系数据不入库）' })
           continue
         }
-        if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与 ⑮ 同款）
+        if (anchorStore.entries().some(x => x.source === e.source)) { skipped++; continue }   // 幂等：同谱系不重复累计（与自动入库同款）
         try {
           anchorStore.add(e)   // graph 本体门禁由库层复用（缺 graph 即拒）
           added++
@@ -309,7 +309,7 @@ export default {
       },
     })
 
-    // ㉔ 持久化落盘侧：库间搬运原语的文件端（导出载荷 ↔ 磁盘）。
+    // 持久化落盘侧：库间搬运原语的文件端（导出载荷 ↔ 磁盘）。
     // 诚实边界：路径由调用方显式声明（库不自作主张读写文件系统）；
     // 文件缺失/损坏显式报错（不静默返回空库冒充成功）。
     rt.registerTool({
@@ -333,7 +333,7 @@ export default {
       },
     })
 
-    // ㉝ 载荷门禁与条目审计（load 门禁先行段与 audit 只读观测共用：检查形态不分叉）。
+    // 载荷门禁与条目审计（load 门禁先行段与 audit 只读观测共用：检查形态不分叉）。
     // 返回 { ok: false, reason } 或 { ok: true, payload, cleanEntries, indexMap, stampRejected }。
     function checkPayload(path) {
       let raw
@@ -351,14 +351,14 @@ export default {
       if (!Array.isArray(payload?.entries)) {
         return { ok: false, reason: `载荷缺少 entries 数组（非 sampler.anchor.export/save 产物，不猜测冒充）：${path}` }
       }
-      // ㉜ 完整性校验：版本门禁（未知形态不静默接受）+ size 声明对账（声明 ≠ 实质即拒）。
+      // 完整性校验：版本门禁（未知形态不静默接受）+ size 声明对账（声明 ≠ 实质即拒）。
       if (payload.version !== STORE_VERSION) {
         return { ok: false, reason: `载荷版本不受支持（声明 ${payload.version ?? '无'}，当前仅支持 ${STORE_VERSION}）：${path}——不静默接受未知形态` }
       }
       if (payload.size !== payload.entries.length) {
         return { ok: false, reason: `载荷完整性声明与实质不符（声明 size=${payload.size}，实际 entries=${payload.entries.length}）：${path}` }
       }
-      // ㉝ 条目级版本戳：损坏定位到条目（含载荷原位索引），不连坐合法条目。
+      // 条目级版本戳：损坏定位到条目（含载荷原位索引），不连坐合法条目。
       const cleanEntries = []
       const indexMap = []
       const stampRejected = []
@@ -373,7 +373,7 @@ export default {
       return { ok: true, payload, cleanEntries, indexMap, stampRejected }
     }
 
-    // ㉞ path（单载荷）与 paths（多载荷合并）二选一，路径必须调用方显式声明。
+    // path（单载荷）与 paths（多载荷合并）二选一，路径必须调用方显式声明。
     function resolveLoadPaths(args, tool) {
       const hasPath = typeof args.path === 'string' && args.path.trim().length > 0
       const hasPaths = Array.isArray(args.paths) && args.paths.length > 0
@@ -402,7 +402,7 @@ export default {
       },
       async execute(args = {}) {
         const paths = resolveLoadPaths(args, 'load')
-        // ㉞ 门禁先行：先完成全部文件的完整性检查，任何一份不过 → 整批拒绝（此时尚未写入任何条目，库零污染）。
+        // 门禁先行：先完成全部文件的完整性检查，任何一份不过 → 整批拒绝（此时尚未写入任何条目，库零污染）。
         const checked = paths.map(p => ({ path: p, ...checkPayload(p) }))
         const failed = checked.find(c => !c.ok)
         if (failed) {
@@ -420,7 +420,7 @@ export default {
           rejected.push(...fileRejected)
           files.push({ path: c.path, added: r.added, skipped: r.skipped, rejected: fileRejected })
         }
-        // ㉛ lineageRefs：磁盘数据起点的可追溯声明——归一化后失效传播可从此起点发起（与 ㉑ 归一规则同款：取 # 前段）。
+        // lineageRefs：磁盘数据起点的可追溯声明——归一化后失效传播可从此起点发起（归一规则：取 # 前段）。
         const lineageRefs = [...new Set(checked.flatMap(c => c.payload.entries
           .map(e => normRef(e.source))
           .filter(isTrackableRef)))]
@@ -434,9 +434,9 @@ export default {
       },
     })
 
-    // ㉟ 载荷血缘审计（只读观测）：回填前的一手数据质量观测面——三态声明可追溯/不可追溯/损坏；
+    // 载荷血缘审计（只读观测）：回填前的一手数据质量观测面——三态声明可追溯/不可追溯/损坏；
     // 审计不回填、不污染库；单文件异常如实入报告不连坐其余文件。
-    // ㊶ 修复建议通道：观测面从“呈现问题”走向“指明出路”——对非可追溯条目随报告交付
+    // 修复建议通道：观测面从“呈现问题”走向“指明出路”——对非可追溯条目随报告交付
     // 可操作的修复声明（缺什么、回填时会怎样）；仍保持只读，不越权代改。
     function classifyEntry(e) {
       if (e?.entryVersion !== ENTRY_VERSION) {
@@ -488,8 +488,8 @@ export default {
       },
     })
 
-    // ㊳ 锚点库容量观测（只读）：与 ㉟ 载荷审计构成“库内 + 库外”双观测面——
-    // 为 ㉘ 触发条件的“足够轨迹”提供量化读数；观测不变更库。
+    // 锚点库容量观测（只读）：与载荷审计构成“库内 + 库外”双观测面——
+    // 为触发条件的“足够轨迹”提供量化读数；观测不变更库。
     rt.registerTool({
       name: 'sampler.anchor.stats',
       description: '会话锚点库容量观测（只读，不变更）：条目数 + 谱系形态分布（material:/job:/其他）+ 组分声明覆盖——' +
@@ -517,7 +517,7 @@ export default {
       },
     })
 
-    // ㊸ 载荷侧修复原语（观测/修复权责分离）：审计只指明出路（㊶），修复是独立原语且必须
+    // 载荷侧修复原语（观测/修复权责分离）：审计只指明出路，修复是独立原语且必须
     // 调用方逐条显式授权；修复写新载荷（不碰原件：原件留作证据）；只可修复不可追溯条目——
     // 损坏条目修复即伪造数据燃料，已可追溯条目修复即替调用方做决定，两者都拒。
     rt.registerTool({
@@ -578,10 +578,10 @@ export default {
       },
     })
 
-    // ㊻ 判据快照落盘/回填原语（跨会话续供）：把 ㊷ 的判据快照从“会话内日志”升级为可落盘的
+    // 判据快照落盘/回填原语（跨会话续供）：把判据快照从“会话内日志”升级为可落盘的
     // 证据载荷——快照整体原样落盘（读数/阈值/结论一并保留，不替调用方改写结论）；
     // 回填只读校验版本戳与形态后原样交付（快照不是锚点条目，不进锚点库、不进数据燃料）。
-    // 51 判据证据链接线：快照可选携带推导引用（`triggerRef`，来自 ㊹ 对账结论登记）——
+    // 判据证据链接线：快照可选携带推导引用（`triggerRef`，来自对账结论登记）——
     // 声明即原样随快照落盘/回填（结论 ↔ 证据文件双向可追溯）；未声明不伪造（不猜测引用）。
     rt.registerTool({
       name: 'sampler.trigger.snapshot.save',
@@ -591,7 +591,7 @@ export default {
         path: { type: 'string', description: '快照落盘路径' },
         assessment: { type: 'object', additionalProperties: true, description: '判据对账结论（trajectoryTriggerAssessment 交付）' },
         batchId: { type: 'string', description: '判据批次标识' },
-        triggerRef: { type: 'string', description: '可选：对账结论的推导引用（㊹ 登记交付的 result:trigger-<batchId>），声明即随快照原样落盘' },
+        triggerRef: { type: 'string', description: '可选：对账结论的推导引用（对账登记交付的 result:trigger-<batchId>），声明即随快照原样落盘' },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
@@ -613,20 +613,20 @@ export default {
           reasons: assessment.reasons,
           readings: assessment.readings,
           thresholds: assessment.thresholds,
-          // 51 证据链接线：声明即原样随快照（未声明不伪造，结论 ↔ 证据文件双向可追溯）
+          // 证据链接线：声明即原样随快照（未声明不伪造，结论 ↔ 证据文件双向可追溯）
           ...(triggerRef !== undefined ? { triggerRef } : {}),
         }
         writeFileSync(path, JSON.stringify(snapshot))
         return { path, batchId, met: assessment.met, version: snapshot.version,
           ...(triggerRef !== undefined ? { triggerRef } : {}),
-          note: '快照整体原样落盘：落盘不改判（㊻）' }
+          note: '快照整体原样落盘：落盘不改判' }
       },
     })
 
     rt.registerTool({
       name: 'sampler.trigger.snapshot.load',
       description: '判据快照回填（只读校验后原样交付）：校验版本戳与形态，快照不进锚点库、不进数据燃料——' +
-                   '裁决依据跨会话可续供、可复算。',
+                   '结论依据跨会话可续供、可复算。',
       parameters: {
         path: { type: 'string', description: '快照文件路径' },
       },
@@ -648,7 +648,7 @@ export default {
             || !snap.thresholds || typeof snap.thresholds !== 'object') {
           throw new Error('snapshot.load: 快照形态不完整（met/readings/thresholds 必须齐备）')
         }
-        return { ...snap, note: '快照回填只读校验后原样交付：不进锚点库、不进数据燃料（㊻）' }
+        return { ...snap, note: '快照回填只读校验后原样交付：不进锚点库、不进数据燃料' }
       },
     })
 

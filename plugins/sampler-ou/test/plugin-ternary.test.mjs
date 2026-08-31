@@ -1,8 +1,8 @@
-// ㉒ 三元系端到端可扩展性实证：配额闭式与混合提案不为二元系特化——
+// 三元系端到端可扩展性实证：配额闭式与混合提案不为二元系特化——
 // 目标组分 {Cu,Ag,Au} 与三锚点（各自组分各异，含一不可考）：
 // 检索排序按 L1 距离如实呈现（三元组分点同样在概率单纯形上）；
 // 配额最大余数法对三权重闭式成立；提案逐候选闭式似然可独立重算；
-// 不可考锚点照常参与（⑳ 降级链在三元系下不回归）。
+// 不可考锚点照常参与（ 降级链在三元系下不回归）。
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -42,7 +42,7 @@ test('1. 三元系检索排序：三锚点按组分 L1 距离升序，不可考�
     assert.ok(result.anchors[1].distance > 0 && Number.isFinite(result.anchors[1].distance),
       '组分偏移锚点距离为正有限值（三元组分点同在概率单纯形上）')
     assert.equal(result.anchors[2].source, 'inline:unknown')
-    assert.equal(result.anchors[2].distance, null, '不可考锚点三元系下仍排尾（⑳ 降级链不回归）')
+    assert.equal(result.anchors[2].distance, null, '不可考锚点三元系下仍排尾（ 降级链不回归）')
   } finally {
     await fiber.dispose()
   }

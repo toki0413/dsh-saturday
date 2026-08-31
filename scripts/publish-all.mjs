@@ -1,7 +1,7 @@
-// 发布脚本（发布链路）：逐包 `npm publish --access public`——发布是动作不是预演，故门禁先行：
-//   ① 登录态门禁：未登录即拒（不替用户猜测凭据）；
-//   ② 幂等门禁：注册表已存在同版本即跳过（重跑不重复发布、不报错中断）；
-//   ③ 失败如实呈报：任一包发布失败即记录并以非零退出收尾（不吞错、不静默继续假装成功）。
+// 发布脚本：逐包 `npm publish --access public`——发布是真实动作，故门禁先行：
+//   一者 登录态门禁：未登录即拒（不替用户猜测凭据）；
+//   二者 幂等门禁：注册表已存在同版本即跳过（重跑不重复发布、不报错中断）；
+//   三者 失败如实呈报：任一包发布失败即记录并以非零退出收尾（不吞错、不静默继续假装成功）。
 // 用法：先 `npm login`，再 `node scripts/publish-all.mjs`（--dry-run 只核验不发布）。
 
 import { execFileSync } from 'node:child_process'
@@ -27,7 +27,7 @@ for (const g of root.workspaces ?? []) {
   }
 }
 
-// ① 登录态门禁：未登录即拒
+// 登录态门禁：未登录即拒
 let user
 try {
   user = execFileSync('npm', ['whoami'], { encoding: 'utf8', shell: true }).trim()
@@ -49,7 +49,7 @@ for (const d of dirs) {
   const pkg = JSON.parse(readFileSync(join(d, 'package.json'), 'utf8'))
   if (pkg.private === true) { skipped.push(`${pkg.name}（private）`); continue }
   if (pkg.version !== root.version) { failures.push(`${pkg.name}: 版本漂移 ${pkg.version} ≠ ${root.version}`); continue }
-  // ② 幂等门禁：注册表已存在同版本即跳过
+  // 幂等门禁：注册表已存在同版本即跳过
   let existing = null
   try {
     existing = execFileSync('npm', ['view', `${pkg.name}@${pkg.version}`, 'version'], { encoding: 'utf8', shell: true }).trim()

@@ -14,11 +14,11 @@
 //  - 有效性窗口：gammaDt = γΔ 为无量纲摩擦时间尺度积（声明即承诺），
 //    u_eq 为平衡态每坐标涨落幅度（谐波近似的涨落量级，非势能面全局性质）。
 //
-// 温度标定（③）：uEq 始终是采样行为的直接物理参数；温度标定函数只负责把温度换算成
+// 温度标定：uEq 始终是采样行为的直接物理参数；温度标定函数只负责把温度换算成
 // 谐波近似的建议涨落幅度（供调用方标定，不静默替换），且力常数必须显式注入——
 // 没有势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度。
 //
-// 多锚点混合（④）：OU 单峰 = 局部采样器，跨盆地靠多参考加权混合。混合提案是有限高斯混合，
+// 多锚点混合：OU 单峰 = 局部采样器，跨盆地靠多参考加权混合。混合提案是有限高斯混合，
 // 转移密度仍闭式（log Σ π_a N_a）→ 似然声明保持 'exact' 不降档；候选按锚点配比确定性分配，
 // 交付的 logProb 是相对**全部锚点**的混合似然（不是单锚点似然，语义如实写进交付）。
 
@@ -103,7 +103,7 @@ function logSumExp(terms) {
 }
 
 /**
- * 高斯混合转移对数密度（④）：候选相对各锚点的位移 → log Σ_a π_a · N(disp_a; 0, s²I)。
+ * 高斯混合转移对数密度：候选相对各锚点的位移 → log Σ_a π_a · N(disp_a; 0, s²I)。
  * @param {number[][]} displacementsByAnchor 逐锚点的候选−锚点位移（扁平 3N，同拓扑）
  * @param {number[]} weights 锚点原始权重（正有限，内部归一；不必预先归一）
  */
@@ -144,7 +144,7 @@ function allocateCounts(n, normalizedWeights) {
 }
 
 /**
- * 多锚点混合采样（④，纯层）：target.references = [{ reference, weight }]（同拓扑参考结构）。
+ * 多锚点混合采样（纯层）：target.references = [{ reference, weight }]（同拓扑参考结构）。
  * OU 单峰是局部采样器；跨盆地探索 = 编排层选多锚点，混合权重经组合律诚实声明。
  * 交付的 logProb 是混合似然（相对全部锚点），source 记录所属锚点（谱系不断）。
  */
@@ -239,7 +239,7 @@ export const ouSampler = {
    * §4.5 StructureSampler 形态。target.reference 为已解析的参考结构（Material）。
    * 参数：uEq（Å，平衡态每坐标涨落幅度）、gammaDt（γΔ 无量纲；→0 贴近参考，→∞ 达平稳）。
    * temperatureK（可选）：声明采样器自身温度。声明 ≠ 替换：不改变采样行为（uEq 仍是
-   * 直接参数）——只随交付呈现，供消费方做温差诚实核对（筛选层 ⑳ 的 samplerTemperatureK）；
+   * 直接参数）——只随交付呈现，供消费方做温差核对（筛选层的 samplerTemperatureK）；
    * 标定建议值可用 uEqFromHarmonicTemperature 换算（力常数显式注入）。
    */
   async sample(target = {}, { n = 8, seed = 1, uEq = 0.05, gammaDt = 1.0, temperatureK } = {}) {
@@ -275,7 +275,7 @@ export const ouSampler = {
       }
       return {
         graph, source, logProb: ouLogProb(displacement, { uEq, gammaDt }),
-        // 温度声明随逐候选交付（筛选层采样入口读入 → 温差诚实声明 ⑳）
+        // 温度声明随逐候选交付（筛选层采样入口读入 → 温差声明）
         ...(Number.isFinite(temperatureK) ? { samplerTemperatureK: temperatureK } : {}),
       }
     })

@@ -144,7 +144,7 @@ export function validateEngineFingerprint(fingerprint) {
 
 /**
  * 指纹一致性判定：两指纹的 software + method 全同，且 version 维不矛盾才视为同源。
- * version 维 unknown 通配（① 实测态纪律）：'unknown' = 未探测/不可得，不构成差异证据——
+ * version 维 unknown 通配（实测态纪律）：'unknown' = 未探测/不可得，不构成差异证据——
  * 一侧 unknown 时不按 version 判异源，但 reason 如实声明"含未验证维"（声明 ≠ 放行冒充）；
  * 两侧皆已知且不同才判异源。返回 { same, reason }——不抛异常，
  * 由消费方决定拒绝还是声明（凸包拒绝，演示对照可声明后继续）。

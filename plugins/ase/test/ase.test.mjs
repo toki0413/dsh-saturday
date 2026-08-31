@@ -171,7 +171,7 @@ potentialProviderContract({
   },
 })
 
-test('7. 实测态回读（①）：probeVersion 取 sidecar 握手 ASE 版本；探测失败诚实返回 null', async () => {
+test('7. 实测态回读：probeVersion 取 sidecar 握手 ASE 版本；探测失败诚实返回 null', async () => {
   // 握手携带实测版本 → 回读成功（调用方据此经 stampFingerprint 升级指纹）
   const helloBridge = {
     async call(method) { return method === 'hello' ? { aseVersion: '3.23.0' } : {} },

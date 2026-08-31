@@ -187,7 +187,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         fingerprintDeclared = false
       }
       if (v.energyUnit) assertSameUnits(engineEnergyUnit, v.energyUnit, `references.${el} 参考态能量单位`)
-      // 换算审计通道（⑧）：声明"原值为 convertedFrom.unit、调用方已显式换算到引擎单位"。
+      // 换算审计通道：声明"原值为 convertedFrom.unit、调用方已显式换算到引擎单位"。
       // 声明 ≠ 替换：不改变 energyPerAtom 的消费（已是引擎单位），也不绕过上面的单位门禁；
       // 换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）。
       if (v.convertedFrom) {
@@ -313,7 +313,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       essFraction: essFraction(combinedE.weights),
       sourceNames: combinedE.sourceNames,
       independence: combinedE.independence,
-      correlationAudit: combinedE.correlationAudit,   // ⑤ 变量依赖机器审计随交付呈现
+      correlationAudit: combinedE.correlationAudit,   // 变量依赖机器审计随交付呈现
       note: '枚举候选联合排序：凸包证据对包内点（energyAboveHull<0）按 max(0,·) 掩码——' +
             '“已稳定”不再提供额外区分证据（禁止零填充伪造稳定性梯度）；' +
             'energyAboveHull=0 为当前候选集内的稳定相候选',
@@ -389,7 +389,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     } else {
       const combined = combineEvidence({
         sources: [
-          // ⑤ 变量声明：两源都依赖坐标（U 是坐标的函数，q 是相对参考坐标的密度），
+          // 变量声明：两源都依赖坐标（U 是坐标的函数，q 是相对参考坐标的密度），
           // 机械检出共享变量"坐标"，独立性声明文本解释为"给定坐标下条件独立"——机器可验。
           { name: `boltzmann:${provider.name}`, logWeights: okEntries.map(e => -beta * e.energy), variables: ['能量', '坐标'] },
           { name: `proposal:${sampled.samplerName ?? 'undeclared'}`, logWeights: okEntries.map(e => e.logProb), variables: ['坐标'] },
@@ -413,8 +413,8 @@ export async function screenDopants({ material, dopants, potential, topK, engine
         essFraction: essFraction(combined.weights),
         sourceNames: combined.sourceNames,
         independence: combined.independence,
-        correlationAudit: combined.correlationAudit,   // ⑤ 变量依赖机器审计随交付呈现
-        // 温度联动诚实声明（⑳）：采样器若声明了自身温度且与目标温度不一致，
+        correlationAudit: combined.correlationAudit,   // 变量依赖机器审计随交付呈现
+        // 温度联动声明：采样器若声明了自身温度且与目标温度不一致，
         // 如实呈现（提议核的涨落幅度与玻尔兹曼目标的标度不匹配是消费方该知道的事），
         // 不静默纠正（纠正 = 改变交付的证据语义，超出工作流权限）
         ...(Number.isFinite(sampled.samplerTemperatureK) && sampled.samplerTemperatureK !== temperatureK
@@ -448,7 +448,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     })
     const rankRef = `result:screen-${bid}`
     derivation.record({
-      // ㉖ 提案推导引用（可选）：声明后登记为排序层输入——锚点→提案→排序全链活性（§8.2）；
+      // 提案推导引用（可选）：声明后登记为排序层输入——锚点→提案→排序全链活性；
       // 未声明时行为不变（不伪造推导输入）；非法引用由登记簿 parseRef 显式拒绝。
       inputs: [`material:${material.id}`, ...(proposalRef ? [proposalRef] : []), ...energyRefs],
       output: rankRef,

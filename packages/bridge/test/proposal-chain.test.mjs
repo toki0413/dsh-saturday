@@ -1,4 +1,4 @@
-// ㉖ 提案→筛选推导链接通（活性上下文 §8.2 全链）：
+// 提案→筛选推导链接通（活性上下文 §8.2 全链）：
 // 锚点→提案→排序的谱系不只是字符串——`workflow.screen` 接受 `proposalRef`
 // （来自 `sampler.mixture` 交付）登记为排序层推导输入后，锚点失效沿推导图
 // 传播到提案、再传播到排序（三级链全活性）；未声明时行为不变（不伪造推导输入）；
@@ -61,7 +61,7 @@ test('1. 全链活性：锚点失效 → 提案失效 → 排序失效（三级�
       nAtoms: 4, composition: { Cu: 4 }, n: 2, seed: 1, batchId: 'chain-1',
     })
     const proposalRef = mixture.derivation.proposalRef
-    assert.equal(proposalRef, 'result:mixture-chain-1', '提案推导引用随交付呈现（㉑）')
+    assert.equal(proposalRef, 'result:mixture-chain-1', '提案推导引用随交付呈现')
 
     const screen = await env.screenRt.tools.call('workflow.screen', {
       materialId: cu.id, dopants: ['Ag'],

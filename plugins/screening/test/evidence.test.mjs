@@ -126,7 +126,7 @@ test('8. evidenceError 携带错误码（调用方可按码分流，不靠字符
   assert.match(e.message, /\(EVIDENCE_INVALID_INPUT\)$/)
 })
 
-// ── ⑤ 变量依赖机器审计 + 掩码机械统计：声明是人写的，交集是机器算的，对不上即拒绝 ──
+// ──  变量依赖机器审计 + 掩码机械统计：声明是人写的，交集是机器算的，对不上即拒绝 ──
 test('9. 机器审计三态：independent（全声明且两两不交）/ degenerate（检出共享）/ unverifiable（存在未声明者）', () => {
   const ind = auditEvidenceIndependence([
     { name: 'A', variables: ['能量'] }, { name: 'B', variables: ['组分'] },

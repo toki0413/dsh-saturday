@@ -1,4 +1,4 @@
-// ⑥ 可用性预检暴露给 Agent 层：engine.availability 工具（①② 的 Agent 面）。
+// 可用性预检暴露给 Agent 层：engine.availability 工具。
 // 纪律实证：默认只报告不副作用（预检是查询不是变更）；stamp=true 才盖章；
 // 探测失败保持声明态（不拿未知冒充已知）；注册表不因探测失败缩减。
 

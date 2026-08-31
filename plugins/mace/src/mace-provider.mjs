@@ -83,7 +83,7 @@ export class MaceProvider {
   }
 
   /**
-   * 运行时版本回读（① 实测态）：`python -c "import mace; print(mace.__version__)"`。
+   * 运行时版本回读（实测态）：`python -c "import mace; print(mace.__version__)"`。
    * 探测失败（模块缺失/退出异常/无输出）返回 null——诚实降级保持 'unknown'，不冒充。
    */
   probeVersion() {

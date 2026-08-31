@@ -1,6 +1,6 @@
-// 53 故障演练（发布前演练批次）：验收的是失败形态而不是成功路径——
+// 故障注入：验收的是失败形态而不是成功路径——
 // 截断载荷（中断写/断电模拟）→ 回填诚实拒绝且库零污染；截断快照 → 回填拒绝；
-// 多载荷合并时一好一坏 → 整批拒绝（门禁先行：出错时库零污染，同 ㉞ 纪律）。
+// 多载荷合并时一好一坏 → 整批拒绝（门禁先行：出错时库零污染，同合并门禁纪律）。
 // 泄漏防护（纪律）：前置断言入 try，finally 保证 dispose + 临时目录清理。
 
 import { test } from 'node:test'
@@ -51,7 +51,7 @@ test('1. 截断载荷（中断写模拟）→ 回填诚实拒绝 + 库零污染�
       err => err instanceof Error, '尾部垃圾 → 回填显式拒绝')
     assert.equal(dst.handles.anchorStore.size(), 0, '撕裂写回填失败后库零污染')
 
-    // 对照：原载荷完好可回填（演练不伤好数据）
+    // 对照：原载荷完好可回填（故障注入不伤好数据）
     const loaded = await dst.handles.rt.tools.call('sampler.anchor.load', { path: goodPath })
     assert.equal(loaded.added, 1, '对照面：完好载荷照常回填')
   } finally {
@@ -61,11 +61,11 @@ test('1. 截断载荷（中断写模拟）→ 回填诚实拒绝 + 库零污染�
   }
 })
 
-test('2. 截断判据快照 → 回填拒绝（裁决依据损坏不冒充可续供）', async () => {
+test('2. 截断判据快照 → 回填拒绝（结论依据损坏不冒充可续供）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-snapshot-drill-'))
   const env = await mount()
   try {
-    const assessment = { met: false, reasons: ['演练'], readings: { size: 0 }, thresholds: { minSize: 1 } }
+    const assessment = { met: false, reasons: ['容量缺口'], readings: { size: 0 }, thresholds: { minSize: 1 } }
     const goodPath = join(dir, 'snap.json')
     await env.handles.rt.tools.call('sampler.trigger.snapshot.save', { path: goodPath, assessment, batchId: 'drill-b1' })
     const full = await readFile(goodPath, 'utf8')
@@ -73,14 +73,14 @@ test('2. 截断判据快照 → 回填拒绝（裁决依据损坏不冒充可续
     await writeFile(tornPath, full.slice(0, Math.floor(full.length / 3)))
     await assert.rejects(
       () => env.handles.rt.tools.call('sampler.trigger.snapshot.load', { path: tornPath }),
-      err => err instanceof Error, '截断快照 → 回填显式拒绝（损坏的裁决依据不冒充可续供）')
+      err => err instanceof Error, '截断快照 → 回填显式拒绝（损坏的结论依据不冒充可续供）')
   } finally {
     await env.fiber.dispose()
     await rm(dir, { recursive: true, force: true })
   }
 })
 
-test('3. 多载荷合并门禁先行演练：一好一坏 → 整批拒绝 + 库零污染（同 ㉞ 纪律）', async () => {
+test('3. 多载荷合并门禁先行：一好一坏 → 整批拒绝 + 库零污染（同合并门禁纪律）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-merge-drill-'))
   const src = await mount()
   const dst = await mount()

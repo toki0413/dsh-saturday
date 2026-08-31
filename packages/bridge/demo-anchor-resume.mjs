@@ -1,15 +1,13 @@
-// 跨会话恢复演示（㉗，数据燃料续供的编排层形态）：
-//   会话一：真实弛豫（收敛 + 终态交付）→ ⑮ 自动入库 → `sampler.anchor.save`
+// 跨会话恢复演示（数据燃料续供的编排层形态）：
+//   会话一：真实弛豫（收敛 + 终态交付）→ 自动入库 → `sampler.anchor.save`
 //          落盘（路径调用方显式声明）→ 会话终结（全部回收，库随会话消失）
 //   会话二：全新挂载（空库，不伪造库外数据）→ `sampler.anchor.load` 回填
 //          （门禁与导入工具同款）→ 检索 → 混合提案 → 回算 + 联合排序
-// 价值闭环：搬运原语（㉓）+ 文件端（㉔）就位后，"落盘由调用方负责"的诚实
-// 边界在此由编排层兑现——锚点库跨会话续供，谱系不断。
-// 诚实声明：两"会话"是同一进程内两次独立挂载（各自 Context、各自锚点库、
-// 各自全部回收），跨会话的唯一通道是磁盘载荷——这正是被实证的边界。
-// ㊽ 会话三：判据快照落盘（㊻）后全新挂载 → 快照回填续供——裁决依据跨会话可续供、
-// 可复算（快照不进锚点库：证据载荷与结构数据燃料正交，诚实声明同 ㊷）。
-// 诚实纪律：无 ASE 环境下数据面诚实报错，本演示如实终止不伪造证据。
+//   会话三：判据快照落盘后全新挂载 → 快照回填续供——判据跨会话可续供、可复算。
+// 演示边界：搬运原语 + 文件端就位后，“落盘由调用方负责”在编排层兑现——
+// 锚点库跨会话续供，谱系不断。两“会话”是同一进程内两次独立挂载（各自 Context、
+// 各自锚点库、各自全部回收），跨会话的唯一通道是磁盘载荷。
+// 无 ASE 环境下数据面显式报错，本演示如实终止。
 // 运行：node demo-anchor-resume.mjs（依赖 Python sidecar 做真实弛豫/单点）
 
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -51,7 +49,7 @@ try {
     const r = await s1.handles.rt.tools.call('potential.relax', { materialId: m.id, simulatedSeconds: 0 })
     console.log(`弛豫 ${m.formula}: converged=${r.converged}，energy=${r.energy.toFixed(6)} eV`)
   }
-  console.log(`锚点库（⑮ 自动积累）: ${s1.anchorStore.size()} 个`)
+  console.log(`锚点库（自动积累）: ${s1.anchorStore.size()} 个`)
   const saved = await s1.samplerRt.tools.call('sampler.anchor.save', { path: anchorPath })
   savedSize = saved.size
   console.log(`落盘: ${saved.size} 个锚点 → ${anchorPath}（路径调用方显式声明）`)
@@ -63,7 +61,7 @@ console.log('会话一终结：运行时全部回收，锚点库不复存在。\
 // ── 会话二：全新挂载 → 回填 → 即刻参与闭环 ──
 console.log('══ 会话二：全新挂载 → 回填 → 检索 → 提案 → 回算 → 联合排序 ══')
 const s2 = await mountSession()
-let assessmentRef   // ㊽：判据结论提出到会话作用域，供会话三续供对账（只读引用，不改判）
+let assessmentRef   // 判据结论提出到会话作用域，供会话三续供对账（只读引用，不改判）
 try {
   console.log(`新会话锚点库初始: ${s2.anchorStore.size()} 个（不伪造库外数据）`)
   const loaded = await s2.samplerRt.tools.call('sampler.anchor.load', { path: anchorPath })
@@ -96,51 +94,50 @@ try {
     console.log(`跨会话恢复完成：落盘 ${savedSize} 个 → 回填 ${loaded.added} 个 → 提案 → 回算 → 排序，谱系不断。`)
   }
 
-  // ㊷ 收尾判据快照：“足够轨迹”读数 → 判据对账（机器可读的裁决依据，可追溯可复算）：
-  // 裁决从“人工对照触发条件”升级为机器可读的判据快照——阈值由调用方显式声明（此处为演示声明的
-  // 原型阈值，非内置常量），结论如实呈报不是门禁（㊵/㉘：先见数据再谈机制）。
+  // 收尾判据快照：“足够轨迹”读数 → 判据对账（机器可读的判据，可追溯可复算）：
+  // 阈值由调用方显式声明（此处为演示声明的示例阈值，非内置常量），结论如实呈报不是门禁。
   const stats = await s2.samplerRt.tools.call('sampler.anchor.stats', {})
   const thresholds = { minSize: 100, minCompositionCoverage: 0.8 }
   const assessment = trajectoryTriggerAssessment(stats, thresholds)
   assessmentRef = assessment
-  console.log(`判据快照（㊷）: met=${assessment.met}，读数=${JSON.stringify(assessment.readings)}，缺口=${JSON.stringify(assessment.reasons)}`)
-  console.log('裁决依据机器可读：读数 → 阈值 → 结论可复算（“足够轨迹”未达标 → 维持不引入自监督，同 ㉘ 裁决）。')
+  console.log(`判据快照: met=${assessment.met}，读数=${JSON.stringify(assessment.readings)}，缺口=${JSON.stringify(assessment.reasons)}`)
+  console.log('判据机器可读：读数 → 阈值 → 结论可复算（“足够轨迹”未达标 → 维持现状不引入新机制）。')
 
-  // ㊽ 判据快照落盘：会话内日志升级为磁盘证据（结论整体原样，落盘不改判）——
-  // 裁决依据自此跨会话可续供（会话三回填验证实证）。
+  // 判据快照落盘：会话内日志升级为磁盘证据（结论整体原样，落盘不改判）——
+  // 判据自此跨会话可续供（会话三回填验证）。
   const snapshotSaved = await s2.samplerRt.tools.call('sampler.trigger.snapshot.save', {
     path: snapshotPath, assessment, batchId: 'resume-b1',
   })
-  console.log(`判据快照落盘（㊽）: ${snapshotSaved.path}（版本戳 ${snapshotSaved.version}，落盘不改判：met=${snapshotSaved.met}）`)
+  console.log(`判据快照落盘: ${snapshotSaved.path}（版本戳 ${snapshotSaved.version}，落盘不改判：met=${snapshotSaved.met}）`)
 } finally {
   await s2.dispose()
 }
 console.log('会话二终结：锚点库回收，判据快照留在磁盘。\n')
 
-// ── 会话三：全新挂载 → 判据快照回填续供（裁决依据跨会话可复算） ──
+// ── 会话三：全新挂载 → 判据快照回填续供（判据跨会话可复算） ──
 console.log('══ 会话三：判据快照回填续供（证据载荷与结构数据燃料正交） ══')
 const s3 = await mountSession()
 try {
   console.log(`新会话锚点库初始: ${s3.anchorStore.size()} 个（快照不是锚点条目，回填不进库）`)
   const restored = await s3.samplerRt.tools.call('sampler.trigger.snapshot.load', { path: snapshotPath })
-  console.log(`判据快照回填（㊽）: met=${restored.met}，读数=${JSON.stringify(restored.readings)}，阈值=${JSON.stringify(restored.thresholds)}`)
-  // 续供对账：回填的结论与会话二落盘前逐字段一致（裁决依据可复算，不重新估算）
+  console.log(`判据快照回填: met=${restored.met}，读数=${JSON.stringify(restored.readings)}，阈值=${JSON.stringify(restored.thresholds)}`)
+  // 续供对账：回填的结论与会话二落盘前逐字段一致（判据可复算，不重新估算）
   if (restored.met !== assessmentRef.met
       || JSON.stringify(restored.readings) !== JSON.stringify(assessmentRef.readings)
       || JSON.stringify(restored.thresholds) !== JSON.stringify(assessmentRef.thresholds)) {
     throw new Error('判据快照跨会话续供不一致：读数/阈值/结论必须与会话二原样一致')
   }
-  console.log(`跨会话续供一致（会话三库内仍 ${s3.anchorStore.size()} 个：快照不进数据燃料）——裁决依据可续供、可复算。`)
-  // 52 触发条件就绪度报告：把演示已实证的基础设施面由调用方显式声明，报告如实汇总——
-  // 呈报不是门禁：就绪只反映基础设施在场，“足够轨迹”仍需数据实证（㉘ 裁决在前）。
+  console.log(`跨会话续供一致（会话三库内仍 ${s3.anchorStore.size()} 个：快照不进数据燃料）——判据可续供、可复算。`)
+  // 触发条件就绪度报告：把演示已实证的基础设施面由调用方显式声明，报告如实汇总——
+  // 呈报不是门禁：就绪只反映基础设施在场，“足够轨迹”仍需数据实证。
   const readiness = trajectoryTriggerReadiness({
     observation: 'sampler.anchor.stats（会话一/二观测读数）',
-    criterion: 'trajectoryTriggerAssessment（判据对账 + ㊼ 质量维）',
+    criterion: 'trajectoryTriggerAssessment（判据对账 + 质量维）',
     snapshot: snapshotPath,
-    repair: 'sampler.anchor.repair（㊳ 修复原语）',
-    derivation: '推导登记簿（㊹ 结论登记/失效传播通道）',
+    repair: 'sampler.anchor.repair（修复原语）',
+    derivation: '推导登记簿（结论登记/失效传播通道）',
   })
-  console.log(`就绪度报告（52）: ready=${readiness.ready}，在场 ${Object.keys(readiness.present).length} 面，缺口 ${readiness.gaps.length} 项（呈报不是门禁：机制进场仍由裁决者决定，㉘）`)
+  console.log(`就绪度报告: ready=${readiness.ready}，在场 ${Object.keys(readiness.present).length} 面，缺口 ${readiness.gaps.length} 项（呈报不是门禁：机制是否启用由使用者决定）`)
   if (!readiness.ready) throw new Error('演示已实证五面在场，就绪度报告应如实呈报就绪')
 } finally {
   await s3.dispose()

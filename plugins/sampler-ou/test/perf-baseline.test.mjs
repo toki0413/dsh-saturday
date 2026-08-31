@@ -1,5 +1,5 @@
-// 54 性能基线（发布前演练批次）：纯层量级读数——入库/检索/提案/落盘往返在千级
-// 规模下的耗时如实呈报。读数即事实，不设阈值不做门禁（同 ㊵/52 纪律：呈报不是门禁）；
+// 性能基线：纯层量级读数——入库/检索/提案/落盘往返在千级
+// 规模下的耗时如实呈报。读数即事实，不设阈值不做门禁（呈报不是门禁）；
 // 量级读数不可行即诚实呈现（断言只保证读数存在且有限，不断言快慢）。
 
 import { test } from 'node:test'
@@ -57,7 +57,7 @@ test('2. 落盘→回填往返量级读数（工具层，千级条目无损往�
     const path = join(dir, 'perf.json')
     const saveMs = await msAsync(() => handles.rt.tools.call('sampler.anchor.save', { path }))
 
-    // 新挂载回填：库随会话回收后从磁盘续供（同 ㉗ 形态）
+    // 新挂载回填：库随会话回收后从磁盘续供
     const ctx2 = new Context()
     ctx2.provide('material', { get: async () => { throw new Error('stub: material not needed') } })
     const fiber2 = await ctx2.registry.plugin({ name: 'saturday-sampler-ou', apply: (ctx) => plugin.apply(ctx, {}) })

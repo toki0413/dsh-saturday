@@ -48,7 +48,7 @@ export class AseProvider {
   }
 
   /**
-   * 运行时版本回读（① 实测态）：sidecar 握手携带 ASE 实际版本。
+   * 运行时版本回读（实测态）：sidecar 握手携带 ASE 实际版本。
    * 探测成功返回实测版本（调用方经 stampFingerprint 升级指纹）；
    * 探测失败/无 ASE 返回 null——诚实降级保持 'unknown'，绝不冒充。
    */
@@ -87,7 +87,7 @@ export class AseProvider {
       n_steps: result.n_steps ?? 0,
       calculator: `ase:${this.calculator}`,
       wall_seconds: (Date.now() - t0) / 1000,
-      // ⑮ 弛豫后终态随交付呈现（自动入库的数据燃料）：sidecar 返回则透传，
+      // 弛豫后终态随交付呈现（自动入库的数据燃料）：sidecar 返回则透传，
       // 旧版 sidecar 无此字段时为 undefined（消费方按 converged + 字段存在性双门禁）
       ...(result.positions !== undefined ? { positions: result.positions } : {}),
       ...(result.cell !== undefined ? { cell: result.cell } : {}),

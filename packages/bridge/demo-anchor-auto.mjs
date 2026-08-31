@@ -1,6 +1,6 @@
-// 全自动锚点引导闭环演示（⑲）：无人工入库形态——
+// 全自动锚点引导闭环演示：无人工入库形态——
 //   A. 闭环产出参考结构：Cu 与其掺杂变体 Cu3Ag 各自弛豫（收敛 + 终态交付）
-//   B. ⑮ 自动入库：弛豫后结构随收敛事件自动进会话锚点库（谱系自动声明
+//   B. 自动入库：弛豫后结构随收敛事件自动进会话锚点库（谱系自动声明
 //      `job:<id>#engine=<name>`，全程无一次手动 `sampler.anchor.add`）
 //   C. sampler.mixture 会话库检索 → 配额 → 混合提案（检索距离随交付呈现，
 //      组分不可考锚点排尾如实呈现）
@@ -23,12 +23,12 @@ const samplerRt = samplerFiber.store.saturdaySamplerOu.rt   // 锚点工具注�
 const anchorStore = samplerFiber.store.saturdaySamplerOu.anchorStore
 
 try {
-  // ── A/B. 闭环产出 → 弛豫 → ⑮ 自动入库（全程无手动锚点入库）──
+  // ── A/B. 闭环产出 → 弛豫 → 自动入库（全程无手动锚点入库）──
   console.log('── A/B. 弛豫收敛 → 自动入库（谱系自动声明，无手动入库）──')
   const cu = await materialService.load('Cu')
   const cu3ag = cu.substitute(0, 'Ag')
   materialService.store.set(cu3ag.id, cu3ag)   // 闭环产出的变体注册入会话
-  async function materialRelax(m) {   // potential.relax 工具路径：收敛事件 → ⑮ 监听 → 自动入库
+  async function materialRelax(m) {   // potential.relax 工具路径：收敛事件 → 监听 → 自动入库
     const rt = fiber.store.saturday.rt
     return rt.tools.call('potential.relax', { materialId: m.id, simulatedSeconds: 0 })
   }
@@ -49,7 +49,7 @@ try {
     weights: [0.6, 0.4],
     n: 8, seed: 7, uEq: 0.05, gammaDt: 1.0, temperatureK: 300,
   })
-  console.log(`锚点来源层: ${mixture.anchorOrigin}（⑮ 自动积累，无手动入库）`)
+  console.log(`锚点来源层: ${mixture.anchorOrigin}（自动积累，无手动入库）`)
   for (const [i, a] of mixture.anchors.entries()) {
     console.log(`  检索[${i}]: ${a.source.split('#')[0]}…，组分 L1 距离 = ${a.distance}${a.distance === null ? '（不可考，排尾如实呈现）' : ''}`)
   }

@@ -1,4 +1,4 @@
-// ㊵ “足够轨迹”触发判据原型（纯层测试，无挂载）：
+// “足够轨迹”触发判据原型（纯层测试，无挂载）：
 // 判据是声明式对账不是门禁——达标与否如实呈报，阈值必须由调用方显式声明（不设默认、不硬编码）。
 
 import { test } from 'node:test'
@@ -51,7 +51,7 @@ test('3. 阈值未显式声明即拒绝（不替调用方猜测进场门槛）+ 
   assert.equal(empty.readings.coverage, 0)
 })
 
-test('4. ㊼ 谱系质量维：可选阈值 minTrackableRatio（未声明行为不变；声明后缺谱系读数即拒）', () => {
+test('4.  谱系质量维：可选阈值 minTrackableRatio（未声明行为不变；声明后缺谱系读数即拒）', () => {
   // 声明且达标：可追溯占比如实计算并随交付回呈（“足够轨迹”不只够多，还要够可追溯）
   const met = trajectoryTriggerAssessment(
     { size: 8, withComposition: 7, lineage: { material: 6, job: 1, other: 1 } },
@@ -95,7 +95,7 @@ test('5. 52 触发条件就绪度报告：声明式盘点如实呈报在场/缺�
   assert.equal(all.ready, true)
   assert.deepEqual(all.gaps, [])
   assert.equal(all.present.observation, 'sampler.anchor.stats', '在场凭据原样回呈')
-  assert.ok(all.note.includes('不是门禁'), '报告如实声明呈报性质（机制进场仍由裁决者决定）')
+  assert.ok(all.note.includes('不是门禁'), '报告如实声明呈报性质（机制是否启用由使用者决定）')
   // 部分缺失 → 缺口逐项如实（缺失不是错误，只是未就位；各项独立不糊化）
   const partial = trajectoryTriggerReadiness({ observation: 'sampler.anchor.stats', criterion: 'trajectoryTriggerAssessment' })
   assert.equal(partial.ready, false)

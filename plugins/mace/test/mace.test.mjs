@@ -100,7 +100,7 @@ potentialProviderContract({
   },
 })
 
-test('6. 实测态回读（①）：probeVersion 读 mace.__version__；探测失败诚实返回 null', async () => {
+test('6. 实测态回读：probeVersion 读 mace.__version__；探测失败诚实返回 null', async () => {
   // 模块在且可输出版本 → 实测值（调用方据此经 stampFingerprint 升级指纹）
   const ok = new MaceProvider({ spawnImpl: () => fakeChild({ stdout: '0.3.6\n' }) })
   assert.equal(await ok.probeVersion(), '0.3.6')

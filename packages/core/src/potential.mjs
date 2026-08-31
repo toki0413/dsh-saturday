@@ -62,7 +62,7 @@ export class PotentialRegistry {
   }
 
   /**
-   * 实测态回读升级（①）：引擎运行时探测到自己的实际版本后，把归一指纹的
+   * 实测态回读升级：引擎运行时探测到自己的实际版本后，把归一指纹的
    * version 从声明态 'unknown' 升级为实测值。只允许丰富 version：software/method
    * 是注册时的静态声明，实测不符属引擎冒充身份，不在回读范畴；原 manifest 仍不
    * 被改写（与 M1 同款）。探测失败方应保持 'unknown'，不得拿 'unknown'/空值盖章。

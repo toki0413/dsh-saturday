@@ -1,4 +1,4 @@
-// ⑦ 混合提案锚点库：自监督进场的管道铺路（数据地基，不是学习本身）。
+// 混合提案锚点库：数据地基。
 // 闭式对账：组分距离是概率单纯形上的 L1，手算可验；拓扑门禁与混合采样同款（双重诚实）。
 // 端到端：检索 → toMixtureTarget → ouSampleMixture，锚点归属随谱系 #anchor=k 可追溯。
 
@@ -35,7 +35,7 @@ test('2. retrieve：拓扑硬门禁 + 组分 L1 距离闭式排序（不可考�
   store.add({ graph: mkGraph(['Cu', 'Cu']), source: 'd', composition: { Cu: 2 } })
 
   // 查询 Cu3Ag（分数 {Cu:0.75, Ag:0.25}）：
-  //   b 距离 = 0（同成分）；a 距离 = |1−0.75| + |0−0.25| = 0.5（闭式）；c 不可考排尾
+  // b 距离 = 0（同成分）；a 距离 = |1−0.75| + |0−0.25| = 0.5（闭式）；c 不可考排尾
   const hits = store.retrieve({ nAtoms: 4, composition: { Cu: 3, Ag: 1 } })
   assert.equal(hits.length, 3, '2 原子锚点被拓扑门禁过滤（不近似，直接不匹配）')
   assert.deepEqual(hits.map(h => h.anchor.source), ['b', 'a', 'c'])

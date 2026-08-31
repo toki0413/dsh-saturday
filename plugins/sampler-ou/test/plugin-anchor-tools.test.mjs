@@ -1,6 +1,6 @@
-// ⑩ 锚点引导混合提案的工具层（Agent 面）：
-//   sampler.anchor.add —— 闭环产出的参考结构入会话锚点库（谱系必填门禁在工具层生效）
-//   sampler.mixture    —— 会话库检索 / 内联锚点 → OU 混合提案（似然 exact，候选不自证声明随交付）
+// 锚点引导混合提案的工具层（Agent 面）：
+// sampler.anchor.add —— 闭环产出的参考结构入会话锚点库（谱系必填门禁在工具层生效）
+// sampler.mixture    —— 会话库检索 / 内联锚点 → OU 混合提案（似然 exact，候选不自证声明随交付）
 // 纪律实证：无谱系不入库、空库不伪造锚点（ANCHOR_EMPTY）、权重不静默补全、
 // 拓扑门禁先于采样、两条路径共用同一条纯层目标构造（门禁不另开旁路）。
 // 泄漏防护：断言入 try，finally 保证 dispose（测试进程不得挂起掩盖失败）。
@@ -146,7 +146,7 @@ test('3. sampler.mixture（会话库）：拓扑门禁前置 + 空库拒伪造 +
   }
 })
 
-test('4. §4.5 形态延续（⑭ 契约化审查）：混合提案候选可回算构造 Material + 谱系前缀纪律', async () => {
+test('4. §4.5 形态延续（契约化审查）：混合提案候选可回算构造 Material + 谱系前缀纪律', async () => {
   const { fiber, handles } = await mountSampler()
   try {
     const result = await handles.rt.tools.call('sampler.mixture', {

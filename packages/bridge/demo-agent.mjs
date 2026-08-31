@@ -13,23 +13,23 @@
 //   阶段 C：自然语言“采样并联合排序” → tool_call(workflow.screen，args 携带
 //           OU 采样候选）→ 逐候选真实单点回算 + 能量证据×似然证据联合权重 →
 //           编排链谱系不断（§4.5：采样器交付的 {graph, source, logProb} 原样透传）。
-//   阶段 D（⑯/⑮）：自然语言“把铜入库为锚点并做混合提案” → tool_call(sampler.anchor.add
+//   阶段 D：自然语言“把铜入库为锚点并做混合提案” → tool_call(sampler.anchor.add
 //           + sampler.mixture)→ 锚点工具在 Agent 层暴露验证 + 阶段 B 弛豫收敛结构已自动入库，
 //           混合提案走会话库路径（锚点来源层随交付呈现）。
-//   阶段 E（㉕/㉔）：自然语言“把锚点库落盘再回填” → tool_call(sampler.anchor.save
+//   阶段 E：自然语言“把锚点库落盘再回填” → tool_call(sampler.anchor.save
 //           + sampler.anchor.load)→ 持久化原语在 Agent 层暴露验证（含全量 graph 的无损
 //           JSON 出口关卡压测）+ 同谱系重放幂等（落盘→回填→跳过，重放安全）。
-//   阶段 F（㉚/㉛）：自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)
+//   阶段 F：自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)
 //           → 恢复闭环在 Agent 层收口：回填锚点即刻参与提案（来源层/谱系跨恢复保留）；
 //           回填交付的 lineageRefs（磁盘数据起点的可追溯声明）随阶段日志呈现。
-//   阶段 G（㊱/㉟）：自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)
+//   阶段 G：自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)
 //           → 观测先于行动的数据纪律在 Agent 层实证：审计为只读（三态报告回流，库零污染）。
-//   阶段 H（㊴/㊶）：自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）
+//   阶段 H：自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）
 //           → load（仅达标载荷）：观测先于行动从单工具升为决策链（报告不达标即不回填）。
-//   阶段 I（㊺/㊸）：自然语言“修复不可追溯条目并重新审计验收” → repair（逐条显式授权，
+//   阶段 I：自然语言“修复不可追溯条目并重新审计验收” → repair（逐条显式授权，
 //           写新载荷不碰原件）→ audit（审计是修复的验收面）：观测→修复→验收三步链接。
-//   阶段 J（50/㊾）：自然语言“回填验收达标的修复后载荷” → load：修复四环在 Agent 层全链接——
-//           修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件，同 ㊾ 测试面）。
+//   阶段 J：自然语言“回填验收达标的修复后载荷” → load：修复四环在 Agent 层全链接——
+//           修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件）。
 //
 // 运行：npm run demo:agent --workspace @saturday/bridge
 
@@ -225,7 +225,7 @@ async function main() {
     apply: (ctx) => screeningPlugin.apply(ctx, {}),
   })
   // OU 采样器插件（阶段 D：sampler.anchor.add / sampler.mixture 工具在 Agent 层暴露；
-  // 同时挂 ⑮ 自动入库监听：阶段 B 弛豫收敛结构自动进会话锚点库）
+  // 同时挂自动入库监听：阶段 B 弛豫收敛结构自动进会话锚点库）
   const samplerFiber = await ctx.registry.plugin({
     name: 'saturday-sampler-ou',
     apply: (ctx) => samplerOuPlugin.apply(ctx, {}),
@@ -304,7 +304,7 @@ async function main() {
   assert.ok(typeof relaxResult.energy === 'number', 'relax 应返回数值能量')
   console.log('[ok   ] 阶段 B：自然语言 → potential.relax → 真实计算 → 收尾 ✓\n')
 
-  // 5. 阶段 C：采样 → 联合排序（⑰ 编排链实证）。
+  // 5. 阶段 C：采样 → 联合排序（编排链实证）。
   //    mock 模型只能发单工具调用：编排层把 OU 采样交付（{graph, source, logProb}）
   //    直接打包进 workflow.screen 的 sampled 参数——谱系在编排层不断（§4.5）；
   //    工具内部逐候选真实单点回算（候选不自证）+ 能量证据 × 似然证据联合权重。
@@ -355,8 +355,8 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 C：自然语言 → 采样交付透传 → 真实单点回算 → 联合权重 → 收尾 ✓\n')
 
-  // 6. 阶段 D（⑯/⑮）：锚点工具在 Agent 层暴露——入库 + 混合提案（会话库路径）。
-  //    阶段 B 的弛豫收敛结构已由 ⑮ 自动入库（谱系自动声明），此处再经 Agent 手动入库
+  // 6. 阶段 D：锚点工具在 Agent 层暴露——入库 + 混合提案（会话库路径）。
+  //    阶段 B 的弛豫收敛结构已自动入库（谱系自动声明），此处再经 Agent 手动入库
   //    一个材料锚点；混合提案从会话库检索（两锚点同拓扑）→ 配额 → 提案。
   //    两次调用分两个 server（mock 的 toolName 为实例级单值，与 B/C 同款模式无竞态）。
   await server.close()
@@ -419,9 +419,8 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 D：自然语言 → 锚点入库 + 混合提案（会话库）→ 收尾 ✓\n')
 
-  // 7. 阶段 E（㉕/㉔）：持久化原语在 Agent 层暴露——落盘 + 回填（同谱系幂等）。
-  //    出口关卡压测：save 交付含全量 graph 的载荷，无损 JSON 校验直接覆盖（⑯ 教训：
-  //    新工具的宿主出口实证是必要验收环节）。两次调用分两个 server（与 B/C/D 同款无竞态）。
+  // 7. 阶段 E：持久化原语在 Agent 层暴露——落盘 + 回填（同谱系幂等）。
+  //    出口关卡压测：save 交付含全量 graph 的载荷，无损 JSON 校验直接覆盖（宿主出口实证是必要验收环节）。两次调用分两个 server（与 B/C/D 同款无竞态）。
   const persistPath = join(tmpdir(), 'saturday-demo-agent-anchors.json')
   await server.close()
   server = await startMockLlmServer({
@@ -476,7 +475,7 @@ async function main() {
     JSON.stringify({ added: persistLoadResult.added, skipped: persistLoadResult.skipped, size: persistLoadResult.size }))
   console.log('[ok   ] 阶段 E：自然语言 → 落盘 + 回填（无损 JSON 出口 + 重放幂等）→ 收尾 ✓\n')
 
-  // 8. 阶段 F（㉚/㉛）：恢复闭环在 Agent 层收口——回填后的锚点即刻参与混合提案；
+  // 8. 阶段 F：恢复闭环在 Agent 层收口——回填后的锚点即刻参与混合提案；
   //    回填交付的 lineageRefs（磁盘数据起点的可追溯声明，消费方可从此起点 invalidate）随日志呈现。
   console.log('[tool ] sampler.anchor.load lineageRefs:', JSON.stringify(persistLoadResult.lineageRefs ?? []),
     '（磁盘数据起点的可追溯声明）')
@@ -515,7 +514,7 @@ async function main() {
     }))
   console.log('[ok   ] 阶段 F：自然语言 → 恢复后混合提案（回填锚点即刻是数据燃料，谱系跨恢复不断）→ 收尾 ✓\n')
 
-  // 9. 阶段 G（㊱/㉟）：观测先于行动——自然语言驱动载荷血缘审计（只读：三态报告回流，库零污染）。
+  // 9. 阶段 G：观测先于行动——自然语言驱动载荷血缘审计（只读：三态报告回流，库零污染）。
   await server.close()
   server = await startMockLlmServer({
     port: 8239,
@@ -544,8 +543,8 @@ async function main() {
     JSON.stringify({ ok: auditResult.files[0].ok, traceable: auditResult.files[0].traceable, corrupt: auditResult.files[0].corrupt }))
   console.log('[ok   ] 阶段 G：自然语言 → 载荷血缘审计（观测先于行动：只读三态报告，库零污染）→ 收尾 ✓\n')
 
-  // 10. 阶段 H（㊴/㊶）：审计驱动的合流回填决策链——审计两份候选载荷（一份全可追溯 /
-  //     一份含不可追溯条目 + 修复建议）→ 按报告只回填达标载荷。诚实声明：决策本身由
+  // 10. 阶段 H：审计驱动的合流回填决策链——审计两份候选载荷（一份全可追溯 /
+  //     一份含不可追溯条目 + 修复建议）→ 按报告只回填达标载荷。演示内的决策由
   //     mock 脚本编码，阶段实证的是“报告 → 行动”链路的运行时效果（不达标载荷不进库）。
   const demoStore = samplerFiber.store.saturdaySamplerOu
   const hGraph = demoStore.anchorStore.entries()[0].graph
@@ -613,9 +612,9 @@ async function main() {
     JSON.stringify({ added: hLoadResult.added, lineageRefs: hLoadResult.lineageRefs }))
   console.log('[ok   ] 阶段 H：自然语言 → 审计驱动的合流回填决策链（报告不达标即不回填）→ 收尾 ✓\n')
 
-  // 11. 阶段 I（㊺/㊸）：修复链接 Agent 层——观测→修复→验收三步：阶段 H 已观测到
+  // 11. 阶段 I：修复链接 Agent 层——观测→修复→验收三步：阶段 H 已观测到
   //     不达标载荷含不可追溯条目 + 修复建议，此处按建议逐条显式授权修复（写新载荷不碰原件）
-  //     → 重新审计验收（审计是修复的验收面）。诚实声明：修复声明由 mock 脚本编码，
+  //     → 重新审计验收（审计是修复的验收面）。演示内的修复声明由 mock 脚本编码，
   //     阶段实证的是“观测→修复→验收”链路的运行时效果。
   const iBadPath = join(tmpdir(), 'saturday-demo-agent-i-bad.json')
   const iFixedPath = join(tmpdir(), 'saturday-demo-agent-i-fixed.json')
@@ -677,8 +676,8 @@ async function main() {
     JSON.stringify(iAuditResult.files.map(f => ({ traceable: f.traceable, untracked: f.untracked }))))
   console.log('[ok   ] 阶段 I：自然语言 → 观测→修复→验收三步链（修复逐条授权、原件留证、审计验收）→ 收尾 ✓\n')
 
-  // 12. 阶段 J（50/㊾）：修复后载荷活性闭环第四环（回填）：验收达标的修复后载荷按声明回填——
-  //     修复达标数据即刻成为数据燃料（谱系用修复后来源，不冒充原件）。诚实声明：回填声明由
+  // 12. 阶段 J：修复后载荷活性闭环第四环（回填）：验收达标的修复后载荷按声明回填——
+  //     修复达标数据即刻成为数据燃料（谱系用修复后来源，不冒充原件）。演示内的回填声明由
   //     mock 脚本编码，阶段实证的是“观测→修复→验收→入库”四环在 Agent 层全链接的运行时效果。
   await server.close()
   server = await startMockLlmServer({

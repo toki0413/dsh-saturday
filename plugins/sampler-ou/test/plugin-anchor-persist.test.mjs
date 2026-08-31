@@ -1,4 +1,4 @@
-// ㉓ 持久化锚点库原型：库间搬运原语（导出/导入）——跨会话持久化的第一段。
+// 持久化锚点库原型：库间搬运原语（导出/导入）——跨会话持久化的第一段。
 // 导出交付无损 JSON 全量条目（含 graph 本体）；导入复用库层谱系/本体门禁，
 // 同谱系幂等跳过（重放安全）；单条拒绝不中断整批（如实记录）。
 // 诚实边界：库自身仍是会话级内存库，落盘与回填由调用方负责（不伪造库外数据）。
@@ -32,7 +32,7 @@ test('1. 导出/导入往返：无损 JSON 载荷，新库回填后逐字段一�
     const payload = await src.handles.rt.tools.call('sampler.anchor.export', {})
     assert.equal(payload.version, 'saturday-anchor-store/2')
     assert.equal(payload.size, 2)
-    assert.ok(payload.entries.every(e => e.entryVersion === 'saturday-anchor-entry/1'), '㉝ 条目版本戳随导出交付（损坏定位到条目级的载体）')
+    assert.ok(payload.entries.every(e => e.entryVersion === 'saturday-anchor-entry/1'), ' 条目版本戳随导出交付（损坏定位到条目级的载体）')
     // 无损 JSON 对账：序列化往返不丢信息（dsh 出口关卡同款要求的纯层预检）
     assert.deepEqual(JSON.parse(JSON.stringify(payload)), payload, '导出载荷必须是无损 JSON')
     const r = await dst.handles.rt.tools.call('sampler.anchor.import', { entries: payload.entries })

@@ -41,7 +41,7 @@ test('3. parseMilestoneTable（真实契约文档）：76 条且摘要层条款�
   const rows = parseMilestoneTable(md)
   assert.equal(rows.length, 76, '附录 A 当前应为 76 条实证映射')
   assert.ok(rows[rows.length - 1].evidence.includes('failure-drill') && rows[rows.length - 1].evidence.includes('perf-baseline'),
-    '第 76 条证据指向故障演练 + 性能基线 + 发布形态预演')
+    '第 76 条证据指向故障注入 + 性能基线 + 发布形态核验')
   assert.equal(rows[rows.length - 3].index, 74)
   assert.ok(rows[rows.length - 2].evidence.includes('anchor-trigger-derivation') && rows[rows.length - 2].evidence.includes('plugin-anchor-trigger'),
     '第 75 条证据指向修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告')
@@ -61,7 +61,7 @@ test('3. parseMilestoneTable（真实契约文档）：76 条且摘要层条款�
   assert.ok(rows[rows.length - 9].evidence.includes('anchor-lineage-refs') && rows[rows.length - 9].evidence.includes('plugin-anchor-save-load'),
     '第 68 条证据指向恢复闭环接 Agent 层 + 落盘侧谱系可追溯声明 + 落盘载荷完整性校验')
   assert.ok(rows[rows.length - 10].evidence.includes('anchor-resume') && rows[rows.length - 10].evidence.includes('anchor-resume-liveness'),
-    '第 67 条证据指向跨会话恢复端到端 + 回填后活性保持 + 自监督进场条件裁决')
+    '第 67 条证据指向跨会话恢复全链路 + 回填后活性保持')
   assert.ok(rows[rows.length - 11].evidence.includes('plugin-anchor-save-load') && rows[rows.length - 11].evidence.includes('proposal-chain'),
     '第 66 条证据指向持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露')
   assert.ok(rows[rows.length - 12].evidence.includes('plugin-mixture-derivation') && rows[rows.length - 12].evidence.includes('plugin-anchor-persist') && rows[rows.length - 12].evidence.includes('plugin-ternary'),

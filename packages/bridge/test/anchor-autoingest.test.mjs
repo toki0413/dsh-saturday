@@ -1,4 +1,4 @@
-// ⑮ 闭环轨迹自动入库（自监督数据管道第二段）：
+//  闭环轨迹自动入库：
 // 弛豫收敛 + 引擎交付终态结构 → 弛豫后结构自动入锚点库（谱系自动声明，出处可追溯）。
 // 三道门禁的否定路径同样实证：未收敛不入库、旧协议（无终态交付）不入库、幂等。
 // 泄漏防护（纪律）：挂载即拉起 Python sidecar，前置断言入 try，finally 保证 dispose。
@@ -71,7 +71,7 @@ test('1. 收敛 + 终态交付 → 弛豫后结构自动入库（谱系自动声
 test('2. 未收敛不入库（不收敛的结构不是盆地底，入库即伪造数据燃料）', async () => {
   const { fiber, samplerFiber, handles, sampler } = await mount()
   try {
-    // 假引擎：收敛失败但交付终态（门禁 ① 只看 converged，不被终态在场诱导）
+    // 假引擎：收敛失败但交付终态（门禁  只看 converged，不被终态在场诱导）
     handles.potential.register({
       name: 'fake-unconverged',
       manifest: {

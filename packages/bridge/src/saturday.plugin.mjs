@@ -85,7 +85,7 @@ export default {
         )
         const result = await provider.relax(material, { simulated_seconds: args.simulatedSeconds })
 
-        // ⑮ 弛豫后终态随交付呈现（自动入库的数据燃料）：引擎返回终态坐标时构造
+        // 弛豫后终态随交付呈现（自动入库的数据燃料）：引擎返回终态坐标时构造
         // 弛豫后结构入事件（薄事件厚数据：结构体在场，消费方按 converged 门禁消费）；
         // 引擎不返回终态（旧协议/不支持）则如实缺省，自动入库静默跳过不伪造。
         const relaxedStructure = Array.isArray(result.positions) && result.positions.length === material.nAtoms
@@ -121,7 +121,7 @@ export default {
 
     // workflow.screen 已迁出为独立插件 @saturday/plugin-screening（契约 §4.3：工作流不进核心）
 
-    // 可用性预检（①②⑥）：把声明态→实测态回读暴露给 Agent 层——
+    // 可用性预检：把声明态→实测态回读暴露给 Agent 层——
     // 逐已注册引擎探测运行时版本（探测失败不报错：诚实降级保持声明态），
     // 探测成功且 stamp=true 时盖章升级指纹实测态（§4.2 路由契约不变：
     // 不可用引擎不从注册表移除，使用时由 ENGINE_UNAVAILABLE 拦，绝不静默替换）。
@@ -165,7 +165,7 @@ export default {
       },
     })
 
-    // 计算事件统一落 Trajectory（⑮：relaxedStructure 是事件内消费字段，薄事件纪律下不重复落盘）
+    // 计算事件统一落 Trajectory（relaxedStructure 是事件内消费字段，薄事件纪律下不重复落盘）
     rt.on('saturday/simulation/converged', async event => {
       const { relaxedStructure, ...rest } = event.payload
       await rt.appendTrajectory({

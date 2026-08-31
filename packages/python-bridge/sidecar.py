@@ -48,7 +48,7 @@ def pick_backend(structure: dict) -> str:
 
 def handle(method: str, params: dict):
     if method == "hello":
-        # 实测态回读（①）：ASE 可用时携带实际版本，供引擎指纹从声明态升级；
+        # 实测态回读：ASE 可用时携带实际版本，供引擎指纹从声明态升级；
         # 不可用时 None（诚实降级，不冒充已知）
         ase_version = None
         if HAS_ASE:

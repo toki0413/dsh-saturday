@@ -78,7 +78,7 @@ test('4. M2 激活门禁：热切换事件携带指纹差异声明（声明而�
   assert.equal(events.length, 3, '重复激活同名引擎不发事件')
 })
 
-test('5. 实测态回读升级（①）：stampFingerprint 只丰富 version，非实测值即拒（不盖章冒充）', () => {
+test('5. 实测态回读升级：stampFingerprint 只丰富 version，非实测值即拒（不盖章冒充）', () => {
   const reg = new PotentialRegistry(null)
   const provider = { name: 'probe-engine', manifest: { ...baseManifest() } }
   reg.register(provider)

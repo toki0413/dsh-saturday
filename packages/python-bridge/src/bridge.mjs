@@ -1,6 +1,6 @@
 // PythonBridge —— TS 控制面 ↔ Python 数据面
 // MVP 传输：子进程 stdio + 换行分隔 JSON（无第三方依赖）。
-// 生产路径（v3.3 方案）为 ZeroMQ；接口不变，传输层可替换——这正是桥接层存在的意义。
+// 生产路径可换 ZeroMQ 等传输；接口不变，传输层可替换——这正是桥接层存在的意义。
 
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'

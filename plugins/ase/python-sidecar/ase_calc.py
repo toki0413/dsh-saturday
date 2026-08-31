@@ -67,7 +67,7 @@ def relax(spec: dict) -> dict:
         "converged": bool(converged),
         "energy": float(atoms.get_potential_energy()),
         "n_steps": int(opt.nsteps),
-        # ⑮ 弛豫后终态随交付呈现（自动入库的数据燃料）：坐标与晶胞按原协议形态返回；
+        # 弛豫后终态随交付呈现（自动入库的数据燃料）：坐标与晶胞按原协议形态返回；
         # 未收敛时字段仍存在但消费方按 converged 门禁决定是否消费（诚实不丢弃）。
         "positions": atoms.get_positions().tolist(),
         "cell": atoms.get_cell().tolist(),
@@ -249,7 +249,7 @@ def harmonic(spec: dict) -> dict:
 
 def handle(method: str, params: dict):
     if method == "hello":
-        # 实测态回读（①）：ASE 可导入时携带实际版本，供引擎指纹从声明态升级；
+        # 实测态回读：ASE 可导入时携带实际版本，供引擎指纹从声明态升级；
         # 不可用时 None（诚实降级，不冒充已知）
         try:
             import ase as _ase  # noqa: PLC0415

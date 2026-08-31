@@ -114,7 +114,7 @@ function stubMaterialPlugin() {
   }
 }
 
-// ── 温度标定与声明（③：σ² = k_B·T/k_eff，声明 ≠ 替换）────────────────
+// ── 温度标定与声明：σ² = k_B·T/k_eff，声明 ≠ 替换────────────────
 
 test('14. 谐波温度标定闭式：u_eq = √(k_B·T/k_eff)，力常数缺失即拒绝', async () => {
   // 手算：k_B·300/1.0 = 0.025851999786435 → √ = 0.160785570827842
@@ -145,7 +145,7 @@ test('15. 采样器温度声明：随交付呈现且进谱系，但不改变采�
   const params = { n: 4, seed: 7, uEq: 0.05, gammaDt: 1.0 }
   const declared = await ouSampler.sample({ reference }, { ...params, temperatureK: 300 })
   const undeclared = await ouSampler.sample({ reference }, params)
-  // 声明随逐候选交付（筛选层采样入口读入 → 温差诚实声明 ⑳ 的消费源）
+  // 声明随逐候选交付（筛选层采样入口读入 → 温差诚实声明  的消费源）
   for (const c of declared) assert.equal(c.samplerTemperatureK, 300)
   for (const c of undeclared) assert.equal(c.samplerTemperatureK, undefined)
   // 温度声明进谱系（同参数不同声明 = 不同批，不得混淆）
@@ -164,7 +164,7 @@ test('15. 采样器温度声明：随交付呈现且进谱系，但不改变采�
   )
 })
 
-// ── 多锚点混合采样（④：跨盆地 = 编排层多锚点，混合似然仍闭式）────────
+// ── 多锚点混合采样：跨盆地 = 编排层多锚点，混合似然仍闭式────────
 
 test('16. 混合似然闭式：一维双锚点手算对账（独立公式，非实现重跑）', () => {
   const params = { uEq: 0.08, gammaDt: 1.5 }

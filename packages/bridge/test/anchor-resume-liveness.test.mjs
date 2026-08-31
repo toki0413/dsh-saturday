@@ -1,6 +1,6 @@
-// ㉙ 回填后的活性保持（持久化原语的活性侧验收）：
+// 回填后的活性保持（持久化原语的活性侧验收）：
 // 落盘载荷回填的锚点不只是"字段齐全的数据"——其谱系在推导登记簿中照常
-// 归一化登记（㉑），锚点失效仍沿推导图传播到提案、再传播到排序（㉖ 全链
+// 归一化登记，锚点失效仍沿推导图传播到提案、再传播到排序（ 全链
 // 活性跨会话不降级）；回填不产生任何降级的活性近似。
 // 泄漏防护（纪律）：挂载即拉起 Python sidecar，前置断言入 try，finally 保证 dispose + 临时目录清理。
 
@@ -65,7 +65,7 @@ test('1. 回填后全链活性不降级：锚点失效 → 提案失效 → 排�
     await sessionA.sampler.rt.tools.call('sampler.anchor.save', { path })
     await dispose(sessionA)
 
-    // 会话 B：回填 → 提案登记（㉑）→ 排序登记（㉖）→ 失效沿推导图全链传播；
+    // 会话 B：回填 → 提案登记→ 排序登记→ 失效沿推导图全链传播；
     // 基体在会话 B 内重新加载（材料会话级，跨会话引用不冒充在场）
     const cuB = await sessionB.handles.materialService.load('Cu')
     await sessionB.sampler.rt.tools.call('sampler.anchor.load', { path })
@@ -75,7 +75,7 @@ test('1. 回填后全链活性不降级：锚点失效 → 提案失效 → 排�
     const proposalRef = mixture.derivation.proposalRef
     assert.equal(proposalRef, 'result:mixture-resume-live', '回填锚点的提案照常登记推导（活性不因持久化降级）')
     assert.deepEqual(mixture.derivation.anchorRefs, ['job:j-resume'],
-      '自动入库谱系归一化（取 # 前段）跨落盘往返保留（㉑ 归一规则不因回填改变）')
+      '自动入库谱系归一化（取 # 前段）跨落盘往返保留（归一规则不因回填改变）')
 
     const screen = await sessionB.screenRt.tools.call('workflow.screen', {
       materialId: cuB.id, dopants: ['Ag'],

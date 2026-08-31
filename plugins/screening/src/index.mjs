@@ -67,7 +67,7 @@ export default {
         },
         proposalRef: {
           type: 'string',
-          description: '提案推导引用（㉖，可选；如 "result:mixture-<batchId>"，来自 sampler.mixture 的交付）：' +
+          description: '提案推导引用（可选；如 "result:mixture-<batchId>"，来自 sampler.mixture 的交付）：' +
                        '声明后登记为排序层推导输入——提案失效沿推导图传播到排序（锚点→提案→排序全链活性）',
         },
       },

@@ -172,7 +172,7 @@ test('6. 二元路径保持：单掺杂时 mode=binary，判据不变', async ()
   await coreFiber.dispose()
 })
 
-// ── 多浓度扫描（⑮）：同掺杂多内点 → 包络非退化，判据闭式可写 ──
+// ── 多浓度扫描：同掺杂多内点 → 包络非退化，判据闭式可写 ──
 // 能量模型：Cu2Ni2 的 ΔH_f=−0.05 撑起包络；Cu3Ni（x=0.25）在 (0,0)-(0.5,−0.05) 弦上方，
 // 插值 −0.025 → 距离闭式 = 0.05 − (−0.025) = 0.075（非退化判据的最小实证）。
 test('7. 多浓度扫描：二元多内点非退化判据（闭式 0.075 对账）', async () => {
@@ -218,7 +218,7 @@ test('8. maxDopedSites 越界显式报错：全取代 = 纯掺杂端点，属参
   await coreFiber.dispose()
 })
 
-// ── 共掺变体（⑮）：落在稳定相连线以外的成分空间内部 → 非退化判据闭式可写 ──
+// ── 共掺变体：落在稳定相连线以外的成分空间内部 → 非退化判据闭式可写 ──
 // 几何：Cu2PtNi=(0.5,0.25,0.25) 由单形 (Cu3Pt,Pt,Ni) 包含：
 // λ = (2/3, 1/12, 1/4)；包络插值 = (2/3)·(−0.08) = −4/75 → 距离 = 0.04+4/75 = 7/75。
 test('9. 共掺候选：稳定相顶点拉低包络 → 非退化判据（闭式 7/75 对账）', async () => {
@@ -271,7 +271,7 @@ test('10. codopants 参数校验：元素重复/位点冲突/单元素均显式�
   await coreFiber.dispose()
 })
 
-// ── 采样候选联合排序（⑯⑰，Logits 组合律）：单点回算能量证据 × 提议似然证据 ──
+// ── 采样候选联合排序（，Logits 组合律）：单点回算能量证据 × 提议似然证据 ──
 // 确定性对账：两采样候选单点能 E₀=−12.0 / E₁=−11.99（总能量，非每原子），
 // logProb = 0 / −ln2，T = 1/(100·kB) K → β = 100 eV⁻¹。
 // 联合 log 权重差：βΔE + ΔlogProb = 1 + ln2 → 权重比 w₀/w₁ = 2e，归一良态闭式可写。
@@ -326,7 +326,7 @@ test('11. 采样候选联合排序：重要性权重闭式对账（能量证据 
     assert.deepEqual(joint.entries[0].coverage, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
     assert.deepEqual(joint.sourceNames, ['boltzmann:stub-engine', 'proposal:stub-sampler'])
     assert.match(joint.independence, /条件独立/, '独立性声明随交付呈现')
-    // ⑤ 机器审计：两源都声明依赖坐标 → 机械检出共享，声明文本解释为"给定坐标下条件独立" → 放行且如实标记
+    // 机器审计：两源都声明依赖坐标 → 机械检出共享，声明文本解释为"给定坐标下条件独立" → 放行且如实标记
     assert.equal(joint.correlationAudit.status, 'degenerate')
     assert.deepEqual(joint.correlationAudit.pairs[0].shared, ['坐标'], '能量×似然的条件独立性是给定坐标下的——机器可验不靠口头')
     assert.equal(joint.likelihood, 'exact')
@@ -430,7 +430,7 @@ test('14. 工具层采样候选解析：materialId 逐个解析，未知 ID 显�
   }
 })
 
-// ── 枚举候选第三证据源（⑲，组合律可扩展性检验）：凸包距离证据 ──
+// ── 枚举候选第三证据源（，组合律可扩展性检验）：凸包距离证据 ──
 // 能量模型（4 原子胞，ref 全 −3.0 → 端点全零，包络 = z=0 超平面）：
 // Cu: ΔH_f=0（hull=0）、Cu3Ag: ΔH_f=−0.01（稳定，hull 掩码 0）、Cu3Ni: ΔH_f=+0.01（hull=0.01）。
 // β = 100 eV⁻¹ → log 权重 [0, +1, −2]：凸包证据把包外候选的罚分翻倍（闭式可写）。
@@ -503,7 +503,7 @@ test('16. 第三证据源门禁：缺温度 / 缺参考态（无凸包）/ 未�
   }
 })
 
-test('17. 温差诚实声明（⑳）：采样器声明温度与目标不一致时随交付呈现，不纠正', async () => {
+test('17. 温差诚实声明：采样器声明温度与目标不一致时随交付呈现，不纠正', async () => {
   let calcCount = 0
   const coreFiber = await ctx.registry.plugin(stubCorePluginWithCalc(
     () => async (material) => ({
@@ -542,7 +542,7 @@ test('17. 温差诚实声明（⑳）：采样器声明温度与目标不一致�
   }
 })
 
-// ── 证据源注册表化（②）：新证据源接入不改筛选代码 ──────────────
+// ── 证据源注册表化：新证据源接入不改筛选代码 ──────────────
 // 描述符形态 = { name, requires, logWeights, independenceNote }；筛选层只做通用循环。
 test('18. 证据源注册表化：解析三态 + 描述符闭式 + 自定义源端到端注入', async () => {
   // 纯层：解析三态（内置命中 / 未知拒绝 / 自定义注册表）
@@ -621,8 +621,8 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
   try {
     const cu = await coreFiber.store.stub.materialService.load('Cu')
     const sameSource = { software: 'stub-engine', method: 'stub' }
-    // ① 同指纹（version 归一 unknown，两边缺视同）+ eV 单位 → 放行，provenance 声明态；
-    //    能量来源可追溯性随交付呈现（消费方可据此核对跨批次可比性）
+    // 同指纹（version 归一 unknown，两边缺视同）+ eV 单位 → 放行，provenance 声明态；
+    // 能量来源可追溯性随交付呈现（消费方可据此核对跨批次可比性）
     const ok = await screenDopants({
       material: cu, dopants: ['Ag'],
       potential: coreFiber.store.stub.potential,
@@ -634,7 +634,7 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
     assert.equal(ok.thermo.referenceProvenance, 'declared', '指纹全声明 → 来源声明态')
     assert.deepEqual(ok.providerFingerprint, { software: 'stub-engine', method: 'stub', version: 'unknown' })
     assert.deepEqual(ok.providerUnits, { energy: 'eV', length: 'Å', time: 'fs' })
-    // ② 指纹不同源 → 显式拒绝（DFT 参考态混进 mock 引擎凸包 = 物理无意义的包络）
+    // 指纹不同源 → 显式拒绝（DFT 参考态混进 mock 引擎凸包 = 物理无意义的包络）
     await assert.rejects(() => screenDopants({
       material: cu, dopants: ['Ag'],
       potential: coreFiber.store.stub.potential,
@@ -643,7 +643,7 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
         Ag: { energyPerAtom: -3.7, fingerprint: { software: 'vasp', method: 'DFT-PBE' } },
       },
     }), /不同源/, '异源能量混入凸包必须显式拒绝')
-    // ③ 单位不一致 → UNIT_MISMATCH（不自动换算：是否可比推回调用方显式决策）
+    // 单位不一致 → UNIT_MISMATCH（不自动换算：是否可比推回调用方显式决策）
     await assert.rejects(() => screenDopants({
       material: cu, dopants: ['Ag'],
       potential: coreFiber.store.stub.potential,
@@ -652,14 +652,14 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
         Ag: { energyPerAtom: -0.22, energyUnit: 'Ry' },
       },
     }), err => err.code === 'UNIT_MISMATCH')
-    // ④ 纯数值形态（无声明）→ 诚实降级 provenance=undeclared，既有行为不变（门禁不追溯拦截）
+    // 纯数值形态（无声明）→ 诚实降级 provenance=undeclared，既有行为不变（门禁不追溯拦截）
     const legacy = await screenDopants({
       material: cu, dopants: ['Ag'],
       potential: coreFiber.store.stub.potential,
       references: { Cu: -3.0, Ag: -3.0 },
     })
     assert.equal(legacy.thermo.referenceProvenance, 'undeclared')
-    // ⑤ 升级形态缺能量 → 显式拒绝（不得拿空壳声明冒充参考态）
+    // 升级形态缺能量 → 显式拒绝（不得拿空壳声明冒充参考态）
     await assert.rejects(() => screenDopants({
       material: cu, dopants: ['Ag'],
       potential: coreFiber.store.stub.potential,
@@ -670,7 +670,7 @@ test('19. M3 参考态指纹/单位门禁：同源放行，异源/异单位显�
   }
 })
 
-// ── ⑧ 换算审计通道：convertedFrom 声明"原值单位 + 已显式换算"，因子机械重算随交付呈现 ──
+// ──  换算审计通道：convertedFrom 声明"原值单位 + 已显式换算"，因子机械重算随交付呈现 ──
 test('20. 换算审计：convertedFrom 因子闭式对账（声明 ≠ 替换，不绕过单位门禁）', async () => {
   const energies = { Cu: -12.0, Cu3Ag: -12.04 }
   const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
@@ -714,7 +714,7 @@ test('20. 换算审计：convertedFrom 因子闭式对账（声明 ≠ 替换，
   }
 })
 
-// ── ⑦ 工具层消费指纹：自产参考态升级声明形态，指纹/单位随交付投影给 Agent ──
+// ──  工具层消费指纹：自产参考态升级声明形态，指纹/单位随交付投影给 Agent ──
 test('21. 工具层：自产参考态同源声明（provenance 声明态）+ 指纹随交付投影', async () => {
   const energies = { Cu: -12.0, Cu3Ag: -12.04 }
   const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
@@ -752,10 +752,10 @@ test('21. 工具层：自产参考态同源声明（provenance 声明态）+ 指
   }
 })
 
-// ── ④ 证据源注册表第二内置源：理想混合熵（只消费组分，零能量信息共享）──
+// ──  证据源注册表第二内置源：理想混合熵（只消费组分，零能量信息共享）──
 test('22. 混合熵证据源：每点位熵闭式 + 端到端联合排序（注册表化实证：第二源不改筛选代码）', async () => {
   // 纯层闭式（先手算再对账）：纯元素 = 0；Cu3Ag（x=0.75/0.25）= −(0.75 ln 0.75 + 0.25 ln 0.25)
-  //   = 0.5623351446188083；组分是计数形态，源内归一（与凸包构造同源同形）
+  // = 0.5623351446188083；组分是计数形态，源内归一（与凸包构造同源同形）
   const s = mixingEntropyEvidenceSource.logWeights({
     ranked: [{ composition: { Cu: 4 } }, { composition: { Cu: 3, Ag: 1 } }],
   })
@@ -797,7 +797,7 @@ test('22. 混合熵证据源：每点位熵闭式 + 端到端联合排序（注�
   }
 })
 
-// ── ⑤ 机器审计端到端：双源同启，退化关联由机器检出而非口头声明 ──
+// ──  机器审计端到端：双源同启，退化关联由机器检出而非口头声明 ──
 test('23. 机器审计端到端：hull+mixing-entropy 同启，共享变量机械检出且被声明解释（放行）', async () => {
   const energies = { Cu: -12.0, Cu3Ag: -12.04, Cu3Ni: -11.96 }
   const coreFiber = await ctx.registry.plugin(stubCorePlugin(() => async (material) => ({
@@ -831,7 +831,7 @@ test('23. 机器审计端到端：hull+mixing-entropy 同启，共享变量机�
 })
 
 // ── 接入契约套件（§8.3：兼容性由测试承诺）：纯编排层走 screenDopants，
-//    缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
+// 缺依赖断言走工具层（此时无核心服务挂载，最后执行）──
 workflowContract({
   subject: 'screen',
   formula: 'Cu',

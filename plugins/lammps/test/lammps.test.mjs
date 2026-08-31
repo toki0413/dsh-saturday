@@ -151,7 +151,7 @@ potentialProviderContract({
   },
 })
 
-test('7. 实测态回读（①）：probeVersion 解析 `binary -h` 横幅；探测失败诚实返回 null', async () => {
+test('7. 实测态回读：probeVersion 解析 `binary -h` 横幅；探测失败诚实返回 null', async () => {
   // LAMMPS 横幅在 stdout 且退出码 0 → 实测版本（调用方据此盖章升级指纹）
   const ok = new LammpsProvider({
     spawnImpl: () => fakeChild({ stdout: 'Large-scale Atomic Massively Parallel Simulator\nLAMMPS (2 Aug 2023)\nusage: lmp ...' }),

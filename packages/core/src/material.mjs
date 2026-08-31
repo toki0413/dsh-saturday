@@ -1,5 +1,5 @@
 // Material —— 材料领域对象
-// 要点（对应 v3.3 设计原则与修订 #8/#9）：
+// 要点：
 //  - formula-only 构建必须显式提供 StructureResolver，结构来源写入谱系
 //  - electronicView 是异步计算产物，不是同步 getter
 

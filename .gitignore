@@ -27,3 +27,6 @@ Thumbs.db
 .dsh-demo/
 
 reg-stream.ps1
+
+.git-commit-msg.txt
+scripts/.tmp-*

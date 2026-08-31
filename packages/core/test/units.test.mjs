@@ -101,7 +101,7 @@ test('8. 白名单与基准单位自洽：每维度基准单位在白名单内�
   }
 })
 
-test('9. version 维 unknown 通配（① 实测态纪律）：未探测不构成差异证据，但如实声明未验证维', () => {
+test('9. version 维 unknown 通配（实测态纪律）：未探测不构成差异证据，但如实声明未验证维', () => {
   const measured = { software: 'ase', method: 'ASE-calculator', version: '3.23.0' }
   const unprobed = { software: 'ase', method: 'ASE-calculator', version: 'unknown' }
   // 一侧实测一侧未探测 → 同源（不按 version 判异源），但 reason 声明未验证维（不冒充全验证）

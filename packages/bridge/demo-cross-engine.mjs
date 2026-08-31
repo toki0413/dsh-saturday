@@ -1,4 +1,4 @@
-// 跨引擎对照演示（⑥）：异构引擎生态的泛化地基实证
+// 跨引擎对照演示：异构引擎生态的泛化地基实证
 // 同一条候选链（Cu + Ag 掺杂）分别经两个指纹不同的引擎回算，演示：
 //   A. 筛选交付自带能量来源可追溯性（providerFingerprint/providerUnits + 参考态来源声明态）
 //   B. M3 拦截：异源参考态混入凸包前显式拒绝（不静默混源）
@@ -94,7 +94,7 @@ for (const d of [d1, d2]) {
   console.log(`${d.provider.padEnd(20)} ${fp.padEnd(39)} ${e.Cu.toFixed(4).padStart(9)}  ${(e.Cu3Ag ?? NaN).toFixed(4).padStart(12)}`)
 }
 console.log('\n诚实声明：两份能量来自不同 software/method 指纹（LJ-mock vs DFT-PBE 桩），')
-console.log('数值差异不构成任何物理比较依据——跨引擎比较须调用方显式声明换算与可比性假设（M3/⑧ 纪律）。')
+console.log('数值差异不构成任何物理比较依据——跨引擎比较须调用方显式声明换算与可比性假设（M3 纪律）。')
 
 await screenFiber.dispose()
 await fiber.dispose()

@@ -1,5 +1,5 @@
-// 可用性预检演示（②）：异构引擎生态的环境诚实报告
-// 对每个已注册引擎：可用性探测 + 运行时版本回读（① 实测态升级）——
+// 可用性预检演示：异构引擎生态的环境如实报告
+// 对每个已注册引擎：可用性探测 + 运行时版本回读（实测态升级）——
 //   可用者呈实测态（指纹 version 从声明态 'unknown' 盖章升级），
 //   不可用者如实报告原因（注册 = 声明层，可用 = 运行时层，两层各自诚实）。
 // 诚实声明：本演示输出依赖运行环境——同一份代码在装了/没装 LAMMPS/MACE 的
@@ -33,7 +33,7 @@ const mace = new MaceProvider()
 potential.register(lammps)
 potential.register(mace)
 
-console.log('── 可用性预检 + 实测态版本回读（①②）──\n')
+console.log('── 可用性预检 + 实测态版本回读──\n')
 const engines = [
   { name: 'emt-mock', probe: async () => null,
     note: 'mock 引擎：按定义不回读（身份即 LJ-mock，version 声明 unknown 本身就是诚实）' },
