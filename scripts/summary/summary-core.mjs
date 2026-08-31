@@ -1,10 +1,10 @@
 // 摘要层纯函数（零依赖）——把仓库实证状态压缩成可再生摘要。
 //
-// 诚实边界：
+// 设计约束：
 //  - 摘要不是手写文档：每个字段可追溯到来源（测试输出 / package.json / 契约文档附录 A），
 //    任何状态变更后重跑生成器即同步，不靠人工维护；
 //  - 计数对账门禁：汇总数与逐包实跑结果不一致时显式报错，不静默出摘要；
-//  - 失败不隐藏：任何包有失败用例，摘要里显式标记（诚实优先于好看）。
+//  - 失败用例显式标记，不隐藏。
 
 /** 解析 node --test 的 TAP 输出，取 # pass / # fail 计数；缺行显式报错 */
 export function parseTestTap(tapText) {
@@ -52,7 +52,7 @@ export function parseMilestoneTable(markdown) {
  * 组装摘要（纯函数：给定输入，产出 markdown + json）。
  * @param {Object} opts
  * @param {Array<{dir: string, name: string, version: string, description: string, hasTests: boolean}>} opts.workspaces
- *        hasTests=false 的包（如防腐层，由契约套件覆盖）诚实标记“无独立测试”，不计入汇总；
+ *        hasTests=false 的包（如防腐层，由契约套件覆盖）标记“无独立测试”，不计入汇总；
  *        hasTests=true 但缺结果的包显式报错（不得静默出摘要）
  * @param {Object<string, {pass: number, fail: number}>} opts.testResults 按 dir 索引
  * @param {Array<{index, clause, evidence}>} opts.milestones
@@ -99,8 +99,8 @@ export function buildSummary({ workspaces, testResults, milestones, generatedAt 
     md.push(`- **#${m.index}** ${m.clause}（证据：${m.evidence}）`)
   }
   md.push('')
-  md.push('> 诚实声明：本摘要由生成器从测试输出、package.json 与契约文档机械汇编；')
-  md.push('> 未包含在以上来源中的内容一律不出现。失败用例显式标记，不隐藏。')
+  md.push('> 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，')
+  md.push('> 未包含在以上来源中的内容一律不出现；失败用例显式标记。')
 
   const json = {
     generatedAt: generatedAt ?? new Date().toISOString(),

@@ -1,10 +1,10 @@
 # Saturday Plugin Contract — English Digest
 
-**Version**: v0 (experimental) · **Digest date**: 2026-08-30
-**Authoritative text**: this is a faithful translation **digest** of
+**Version**: v0 (experimental)
+**Authoritative text**: this is a translation digest of
 [`plugin-contract-v0.md`](./plugin-contract-v0.md) (Chinese). Where the two differ,
-the Chinese original and the contract test suite prevail ("contract is the constitution,
-tests are the verdict"). Section numbers below map 1:1 to the original.
+the Chinese original and the contract test suite prevail. Section numbers below map
+1:1 to the original.
 
 ---
 
@@ -20,7 +20,7 @@ the "constitution" of the ecosystem, taking precedence over any single feature.
 
 | Discipline | Content |
 |---|---|
-| **Dependency hygiene (anti-corruption layer)** | Plugins depend only on the `SaturdayRuntime` interface exposed by `@saturday/kernel`; importing cordis/dsh is forbidden. The goal is not host-neutrality but confining upstream breaking changes to a single adapter file. |
+| **Dependency hygiene (anti-corruption layer)** | Plugins depend only on the `SaturdayRuntime` interface exposed by `@saturday/kernel`; importing cordis/dsh is forbidden. Upstream breaking changes are confined to a single adapter file. |
 | **Contract is the constitution** | This document + the contract test suite form the compatibility commitment; when doc and tests conflict, tests prevail. |
 | **Lean core** | Everything is a plugin by default; entering the core requires proof (cross-plugin consistency / performance / security, pick one). |
 
@@ -29,8 +29,8 @@ the "constitution" of the ecosystem, taking precedence over any single feature.
 | Scope | Semantics | Mechanism |
 |---|---|---|
 | Software resources | Fully reversible | Every registration is an effect, auto-reverted on unload (cordis semantics) |
-| Computation tasks | Idempotent + cancellable; **no rollback of completed computations** | `inputHash` dedup; tasks cancellable, no orphan processes |
-| Physical devices | **Never rolled back** | Approval + audit + parameter allowlists (out of scope for v0) |
+| Computation tasks | Idempotent + cancellable; no rollback of completed computations | `inputHash` dedup; tasks cancellable, no orphan processes |
+| Physical devices | Never rolled back | Approval + audit + parameter allowlists (out of scope for v0) |
 
 ## 2. Plugin shape and lifecycle
 
@@ -44,7 +44,7 @@ Lifecycle rules: (1) registration is an effect — nothing may survive `fiber.di
 (4) missing config falls back to declared defaults or fails explicitly — never silent
 degradation to undeclared behavior.
 
-## 4. The five seam contracts
+## 4. The seam contracts
 
 ### 4.1 structure-resolver — structure source plugins
 
@@ -69,26 +69,6 @@ capabilities via `manifest` for routing. Key clauses:
 - **Idempotence**: same `graph + params` ⇒ same result (cache hits allowed). `md` is the
   exception: idempotence holds only under a fixed `params.seed`.
 
-**Units and capability fingerprint (M1/M2/M3 — the generalization foundation for
-heterogeneous engine ecosystems):**
-
-- **M1 (registration gate)**: `manifest.units` (energy/length/time triple; values outside
-  the allowlist or wrong dimensions are rejected) and `manifest.fingerprint`
-  (`software`/`method` required; `version` honestly degrades to `'unknown'` when
-  unobtainable) are validated at registration.
-- **M2 (activation gate)**: hot-switching emits an event carrying a `fingerprintChange`
-  diff declaration — stating *why* old energies are no longer comparable (liveness /
-  invalidation propagation closes the loop).
-- **M3 (energy-combination gate)**: before energies from different provenances enter a
-  convex hull or ranking, fingerprint/units are reconciled; heterogeneous sources or unit
-  systems are explicitly rejected — no silent mixing, no silent conversion. Explicit
-  `unitConvert` is caller-initiated only and leaves a `convertedFrom` audit trail
-  (declaration ≠ substitution; factors are mechanically recomputable).
-- **Runtime version read-back (①)**: declared state ≠ measured state. `stampFingerprint`
-  upgrades the fingerprint `version` from `'unknown'` to a probed value (enriching
-  `version` only; probe failure never stamps). Fingerprint comparison applies an
-  `unknown` wildcard on the version dimension: unprobed is not evidence of difference.
-
 ### 4.3 workflow — workflow plugins
 
 Workflows are orchestration plugins (screening, free energy, ergodic reconciliation, …).
@@ -101,9 +81,9 @@ Input/output type declarations + lineage registration are the two freeze points;
 results land in Trajectory alongside computation events (NEB barriers, EOS fitting are the
 first two implementations).
 
-### 4.5 sampler — inverse-design plugins (sampling semantics; clauses frozen)
+### 4.5 sampler — inverse-design plugins (sampling semantics)
 
-The **only entry point for generative inverse design** (Boltzmann generators, latent
+The entry point for generative inverse design (Boltzmann generators, latent
 normalizing flows, crystal diffusion models all mount here). Core clauses:
 
 - **Sampling is the only semantics**: relaxation is a many-to-one projection, so its
@@ -113,8 +93,8 @@ normalizing flows, crystal diffusion models all mount here). Core clauses:
 - **Candidates do not self-attest**: every candidate must be verifiable by sending it to
   an engine (`relax`/`calculate`); the generate → relax → reconcile loop is enforced by
   workflow orchestration. The engine is the only oracle.
-- **Honest declarations are executable**: `likelihood: 'exact' | 'approximate' | 'none'`
-  must be truthful — no pseudo-likelihoods; `invertible: false` must not provide `encode`
+- **Declarations are executable**: `likelihood: 'exact' | 'approximate' | 'none'` must be
+  truthful — no pseudo-likelihoods; `invertible: false` must not provide `encode`
   (callers get an explicit error).
 - **Ergodic reconciliation (oracle clause)**: given `energyModel`, ensemble statistics
   must reconcile against MD time averages of the same energy function; the reconciliation
@@ -124,16 +104,93 @@ normalizing flows, crystal diffusion models all mount here). Core clauses:
   likelihoods (no downgrade of `'exact'`). An anchor store (provenance-checked retrieval)
   feeds mixture targets from accumulated closed-loop trajectories.
 
+#### Anchor store, persistence, and data governance (§4.5.1–4.5.3)
+
+The anchor pipeline is the data foundation beneath mixture proposals:
+
+- **Anchor store** (session-scoped, pure layer): `add` requires lineage; `retrieve`
+  applies a topology gate plus composition L1 distance ordering (missing composition ranks
+  last with `distance: null`); empty retrieval refuses to fabricate anchors.
+- **Auto-ingest**: converged relaxations deliver their final structure into the store
+  automatically, with provenance declared from the job; non-converged results and legacy
+  payloads without final structures are refused — input never impersonates the relaxed
+  product.
+- **Persistence**: `sampler.anchor.save` / `load` are transport primitives over lossless
+  JSON payloads (`saturday-anchor-store/2` with per-entry `saturday-anchor-entry/1`
+  stamps). Gates-first integrity: read/parse/version/size/entry stamps all pass before any
+  reload begins; corrupted entries are localized, never guilt-by-association; multi-payload
+  merges deduplicate by lineage.
+- **Governance**: `sampler.anchor.audit` is a read-only three-state lineage audit
+  (traceable / untracked / corrupt) with actionable repair hints; `sampler.anchor.repair`
+  writes a new payload under per-entry explicit authorization (the original is kept as
+  evidence; corruption is never repaired into existence); auditing is repair's acceptance
+  surface; `sampler.anchor.stats` observes capacity without mutating.
+  Observe → repair → accept → ingest is the four-ring chain.
+- **Trigger criteria**: `trajectoryTriggerAssessment` reconciles capacity readings against
+  caller-declared thresholds (quantity / coverage / trackable-ratio dimensions reported
+  independently); conclusions persist as snapshots (`saturday-trigger-snapshot/1`) that
+  survive sessions verbatim; `trajectoryTriggerReadiness` reports the presence/gaps of the
+  five infrastructure surfaces (observation / criterion / snapshot / repair / derivation).
+  Reports are presented, not enforced — criteria inform decisions, they do not gate them.
+
 ### 4.6 derivation — derivation registry (liveness foundation)
 
 Every derived quantity registers its derivation inputs; upstream invalidation propagates
 downstream along the derivation graph (idempotently); frozen results (experimental data,
 delivered artifacts) receive correction entries instead of recomputation.
 
+### 4.7 Units and capability fingerprint
+
+The generalization foundation for heterogeneous engine ecosystems, enforced as three
+gates:
+
+- **M1 (registration gate)**: `manifest.units` (energy/length/time triple; values outside
+  the allowlist or wrong dimensions are rejected) and `manifest.fingerprint`
+  (`software`/`method` required; `version` degrades to `'unknown'` when unobtainable) are
+  validated at registration.
+- **M2 (activation gate)**: hot-switching emits an event carrying a `fingerprintChange`
+  diff declaration — stating why old energies are no longer comparable (invalidation
+  propagation closes the loop).
+- **M3 (energy-combination gate)**: before energies from different provenances enter a
+  convex hull or ranking, fingerprint/units are reconciled; heterogeneous sources or unit
+  systems are explicitly rejected — no silent mixing, no silent conversion. Explicit
+  `unitConvert` is caller-initiated only and leaves a `convertedFrom` audit trail
+  (declaration ≠ substitution; factors are mechanically recomputable).
+
+Supporting mechanisms:
+
+- **Runtime version read-back**: `stampFingerprint` upgrades the fingerprint `version`
+  from `'unknown'` to a probed value (enriching `version` only; probe failure never
+  stamps). Fingerprint comparison applies an `unknown` wildcard on the version dimension:
+  unprobed is not evidence of difference.
+- **Availability pre-flight**: `engine.availability` reports per engine — registration is
+  the declaration layer, availability is the runtime layer. A pre-flight is a query, not a
+  mutation (`stamp` defaults to false).
+
+### 4.8 Evidence composition law (joint ranking over multiple evidence sources)
+
+`combineEvidence` (pure layer) adds log-weights of independent evidence sources under
+three disciplines:
+
+1. **Independence declaration is mandatory** (missing ⇒ `EVIDENCE_INDEPENDENCE_UNDECLARED`);
+   sources may declare a dependency-variable vocabulary (`variables`), machine-audited
+   three-state (independent / degenerate / unverifiable): detected shared variables must be
+   explained in the declaration text;
+2. **Per-candidate evidence masks**: missing is missing — zero-fill is forbidden (log
+   weight 0 = fabricated neutral evidence); candidates with no source coverage are refused
+   from ranking (`EVIDENCE_NO_COVERAGE`);
+3. **log-sum-exp normalization** (shift-invariant) + combination-cap gate + source-name
+   deduplication.
+
+Evidence sources are registry-driven descriptors `{ name, requires, logWeights,
+independenceNote }` (optional `variables`); injecting a custom source changes no screening
+code. Built-in sources: energy (enumeration/sampling recheck), distance-to-hull (`hull`),
+and ideal mixing entropy (`mixing-entropy`, per-candidate composition prior −Σ x·ln x).
+
 ## 5–7. Handshake, domain objects, events
 
 - **hello handshake**: the compute bridge declares capabilities (e.g. available
-  calculators) at handshake; consumers branch on it honestly.
+  calculators) at handshake; consumers branch on it.
 - **Event granularity**: `eventGranularity: 'iteration' | 'job'` — orchestrators must not
   request finer monitoring than declared (`GRANULARITY_UNAVAILABLE`).
 - **Material**: immutable domain object; `substitute` returns a fork (lineage appended,
@@ -153,253 +210,56 @@ pass the constitution by running `npm test`.
 workspace regression **335/335** across 19 packages + summary layer 7/7;
 Appendix A lists **76** clause-to-test evidence mappings.
 
+**Release form**: per-package `files` whitelists keep artifacts to implementation and
+necessary data (verified mechanically by `scripts/pack-check.mjs`); `repository` / `bugs`
+metadata point at the real repository (github.com/toki0413/dsh-saturday).
+
 ## Appendix A (digest)
 
-Appendix A maps each contractual clause to its enforcing test. Highlights of the most
-recent entries (full table in the Chinese original):
+Appendix A maps each contractual clause to its enforcing test (full table in the Chinese
+original). The most recent capabilities, grouped by theme:
 
-- **49–52**: cross-engine four-stage evidence (unit/fingerprint gates: delivery
-  declaration → M3 interception → M2 event → dual-engine comparison), conversion audit
-  channel.
-- **53**: runtime fingerprint read-back (stamp gate + per-engine probing + `unknown`
-  wildcard).
-- **54**: availability pre-flight demo (registration = declaration layer, availability =
-  runtime layer; both honest).
-- **55**: multi-anchor mixture sampling demo (closed-form likelihood recomputation, zero
-  deviation; real-engine oracle recheck).
-- **56**: second built-in evidence source (ideal mixing entropy −Σ x·ln x; extensibility
-  of the Logits composition law demonstrated twice).
-- **57**: machine audit of evidence-source independence (declarative `variables`
-  vocabulary; three-state audit; gate rejects shared variables unexplained by the
-  independence declaration; per-source mask counts delivered).
-- **58**: `engine.availability` pre-check tool (query, not mutation: stamping off by
-  default; registry never shrinks on probe failure).
-- **59**: anchor store for mixture proposals (lineage-mandatory ingest, topology gate
-  + composition L1 retrieval, empty retrieval refuses to fabricate anchors) — the
-  first segment of the data pipeline toward self-supervised sampling.
-- **60**: anchor-guided mixture proposals at the tool layer (`sampler.anchor.add` +
-  `sampler.mixture`; session-scoped store, inline-anchor path shares the same pure
-  target construction — no gate bypass; candidates never self-certify).
-- **61**: anchor-guided closed loop end-to-end (`demo:anchor-guided`: ingest → retrieve
-  → propose → real-EMT recheck → joint ranking, Σw = 1; tool-to-tool handoff carries
-  deliverables only) + tool-chain contract review (anchor tools stay at the tool layer,
-  no new `StructureSampler` seam; §4.5 ruling: `workflow.screen` does not take `anchors`
-  directly — two-step orchestration is the composition law itself).
-- **62**: closed-loop trajectory auto-ingest (second segment of the self-supervised data
-  pipeline): converged relaxation + delivered final structure → relaxed structure auto-
-  ingested into the session anchor store (provenance auto-declared `job:<id>#engine=<name>`);
-  negative gates enforced (non-converged refused; legacy protocol without final structure
-  refused — input never impersonates the relaxed product; idempotent under duplicate
-  events); thin-event discipline: structure never duplicated into the Trajectory.
-- **63**: anchor tools at the Agent layer (`demo:agent` stage D; tool-exit gate lesson:
-  `graph: undefined` overwrite triggers 'not lossless JSON' rejection — explicit
-  projection instead) + largest-remainder quota closed-form reconciliation (quota depends
-  only on (n, normalized weights), seed-invariant; fractional ties go to the earlier
-  anchor).
-- **64**: fully automatic anchor-guided closed loop (`demo:anchor-auto`: real relaxations
-  auto-ingested via the convergence-event listener — zero manual anchor operations —
-  then retrieve → propose → recheck → joint ranking) + unknown-composition honest
-  degradation chain (`distance: null` anchors rank last without fabricating values,
-  yet still participate in mixtures — ranking last is not exclusion; distance
-  declaration delivered faithfully at the tool layer); §4.5 ruling: no eviction/cap
-  for the session anchor store (store lives and dies with the closed loop; eviction
-  belongs to a persistent store; `topK` already bounds proposal participation).
-- **65**: proposal lineage wired into the derivation registry (㉑, live context §8.2:
-  optional `derivation` service — one proposal-level record with normalized anchor
-  sources as inputs; anchor invalidation propagates to the proposal; untrackable
-  sources never fake inputs; behavior unchanged without the service) + ternary
-  scalability (㉒: {Cu,Ag,Au} retrieval ordering with the null-distance chain intact,
-  three-weight quota closed form [0.5,0.3,0.2]×9 → [4,3,2] seed-invariant, deterministic
-  proposal reproduction) + persistent anchor store prototype (㉓: lossless-JSON
-  export / gated idempotent import primitives — the store itself stays session-scoped,
-  disk persistence is the caller's responsibility, never fabricated).
-- **66**: persistence file side + full-chain liveness of ranking-layer proposal refs +
-  persistence primitives at the Agent layer (㉔/㉕/㉖): `sampler.anchor.save`/`load`
-  (file end of the transport primitives — shared import loop, gates never bypassed;
-  error paths honest: missing/corrupt/non-payload files refuse explicitly with
-  `ANCHOR_PERSIST`, path always caller-declared; same-store reload idempotent) +
-  `demo:agent` stage E (`save`/`load` exposed through the dsh harness — lossless-JSON
-  exit gate stress-tested with full graph payloads; disk→reload→skip replay idempotence
-  at the Agent layer) + `workflow.screen` accepts `proposalRef` as a ranking-layer
-  derivation input: anchor invalidation → proposal invalidation → ranking invalidation
-  (three-stage propagation fully live); undeclared behavior unchanged (no fabricated
-  derivation inputs); invalid refs rejected by the registry. Division of labor with the
-  §4.5 ruling on ⑬: what is not taken directly is `anchors` (structure bodies +
-  sampling logic); what is taken directly is a derivation reference (orchestration-layer
-  lineage wiring) — the composition law stays intact.
-- **67**: cross-session resume end-to-end + post-reload liveness + self-supervised
-  entry-condition ruling (㉗/㉘/㉙): `demo:anchor-resume` fulfills the caller-side
-  responsibility of the persistence boundary at the orchestration layer (session one:
-  real relaxations auto-ingested then `save` to a caller-declared path, session fully
-  reclaimed; session two: fresh mount with an empty store loads the payload — retrieval,
-  mixture proposals, recheck, joint ranking with lineage intact across sessions);
-  behavioral-lossless reconciliation (disk round-trip changes no sampling behavior:
-  per-candidate structure/likelihood/anchor attribution/source strictly equal);
-  post-reload liveness never degrades (reloaded anchors still register proposal
-  derivations with the same normalization, invalidation still propagates anchor →
-  proposal → ranking across sessions; materials stay session-scoped — cross-session
-  references never impersonate presence); ㉘ ruling: trigger conditions re-examined
-  item by item and "no self-supervised components" upheld — pipeline segments and
-  cross-session supply machinery are all in place (infrastructure for the first
-  trigger condition complete), yet neither "sufficient trajectories" nor an
-  "exploration-efficiency bottleneck" has materialized (data before mechanisms,
-  same ruling pattern as ⑬/⑱).
-- **68**: resume loop at the Agent layer + disk-side lineage traceability + payload
-  integrity verification (㉚/㉛/㉜): `demo:agent` stage F (natural language "run a
-  mixture proposal on the restored anchor store" → `sampler.mixture`: reloaded anchors
-  participate immediately with lineage intact across the resume; the reload delivery's
-  `lineageRefs` surface in stage logs — the resume loop closes at the Agent layer,
-  continuing the ㉕ host-exit lesson) + `load` delivers `lineageRefs` (normalized
-  trackable-source declaration from the payload, same ㉑ normalization: segment before
-  '#') — the declaration is not decoration: invalidating along `lineageRefs` genuinely
-  fails the proposal derivation (lineage upgraded from "preserved across sessions" to
-  "revocable across sessions"; consumers need no store inspection) + integrity checks:
-  version gate (only `saturday-anchor-store/1`; unknown/missing versions never silently
-  accepted) + `size` declaration reconciliation (declaration ≠ substance is refused, no
-  guessed fill-in); single corrupt entries never guilt-by-association (the shared import
-  loop rejects entry by entry while legitimate entries load normally, same ㉓ discipline);
-  all three gates never pollute the store.
-- **69**: entry-level version stamps + multi-payload merged reload + payload lineage
-  audit (㉝/㉞/㉟): payload form upgraded to `saturday-anchor-store/2` (entries carry
-  `entryVersion: 'saturday-anchor-entry/1'`) — `load` checks the stamp entry by entry:
-  missing/unknown stamps are entry-level corruption, localized to the payload's original
-  index (localization survives filtering) while legitimate entries load without
-  guilt-by-association (corruption detection sinks from "whole file is not a payload" to
-  entry level) + `load`/`audit` accept `path` (single payload) or `paths` (multi-payload
-  merge), exactly one of the two (never guessing caller intent); gates-first — every file
-  passes the full integrity checks (read/parse/version/size/entry stamps) before any
-  reload begins (any failing file → whole batch refused, zero store pollution on error);
-  same-lineage idempotence naturally deduplicates across payloads (multi-source data-fuel
-  confluence); per-file breakdown delivered + `sampler.anchor.audit` read-only three-state
-  lineage audit (traceable / untracked / corrupt): auditing never reloads and never
-  pollutes the store, anomalous files reported faithfully without guilt-by-association —
-  the first-hand data-quality observation surface before any reload.
-- **70**: audit wired to the Agent layer + liveness after multi-payload merge + anchor
-  store capacity observation (㊱/㊲/㊳): stage G of `demo:agent` — "audit the persisted
-  payload's lineage before deciding to reload" → tool_call(sampler.anchor.audit): the
-  read-only three-state report flows back (all traceable, nothing corrupt), store state
-  unchanged (the observation-before-action data discipline proven at the Agent layer) +
-  liveness preserved after multi-payload merge: two payloads from different origins,
-  merged via ㉞ — lineages confluent across payloads remain independently revocable
-  (invalidating one origin fails the proposal derivation; invalidation deletes no data,
-  the other origin and all store entries stay present); merged proposals' anchor
-  attribution matches payload lineages entry by entry (confluence never impersonates,
-  loses, or rewrites lineage) + `sampler.anchor.stats` read-only in-store capacity
-  observation (entry count + normalized lineage-form distribution + composition
-  coverage): observing never mutates the store, forming the "inside + outside" dual
-  observation surface with ㉟ payload audit (quantified readings for ㉘'s "enough
-  trajectories" trigger condition).
-- **71**: audit-driven confluence-reload decision chain + "enough trajectories"
-  trigger-criterion prototype + audit repair-hint channel (㊴/㊵/㊶): stage H of
-  `demo:agent` — "audit these two candidate payloads, reload only the passing one"
-  → audit (with repair hints) → reload only the passing payload per the report
-  (failing payloads never enter the data fuel; the decision itself is mock-scripted,
-  the stage proves the runtime effect of the report → action chain) +
-  `trajectoryTriggerAssessment` pure-layer criterion: ㊳ capacity readings matched
-  against caller-declared thresholds (`minSize`/`minCompositionCoverage`) as a
-  declarative reconciliation, not a gate (pass/fail reported faithfully, mechanism
-  entry still decided by the arbiter, same as ⑬/⑱/㉘); thresholds never hardcoded,
-  no defaults (undeclared → refused); two gaps reported independently; empty store
-  coverage defined as 0 (no divide-by-zero) + audit delivers actionable repair
-  declarations for non-traceable entries (`repairHints`: original payload index +
-  state + hint) — corruption distinguished from untracked (the former always refused
-  on reload, the latter loadable but advised to declare a traceable origin); auditing
-  remains read-only, never rewriting payloads.
-- **72**: closing criterion snapshot + payload-side repair primitive + criterion
-  reconciliation lineage (㊷/㊸/㊹): the closing of `demo:anchor-resume` session two —
-  `stats` readings → criterion reconciliation → the criterion snapshot printed with
-  the log (`met=false`, gap reported faithfully: entry count 2 below minSize 100);
-  the "enough trajectories" ruling upgraded from manual checklist to a
-  machine-readable snapshot (readings → thresholds → conclusion traceable and
-  recomputable), thresholds caller-declared (prototype thresholds, not built-in
-  constants), conclusion reported faithfully not gated (ruling ㉘ upheld) +
-  `sampler.anchor.repair` payload-side repair primitive (observation/repair
-  responsibility split): auditing only shows the way (㊶), repair is a separate
-  primitive requiring per-entry explicit caller authorization; repair writes a new
-  payload, never touching the original (kept as evidence; `out` equal to `path`
-  refused); only untracked entries are repairable — repairing corruption is
-  fabrication (refused), repairing already-traceable entries is deciding for the
-  caller (also refused); repair never reloads (zero store pollution), auditing is
-  repair's acceptance surface + criterion reconciliation lineage: the conclusion
-  optionally registers as a derivation (`result:trigger-<batchId>`, inputs =
-  caller-declared traceable evidence refs, normalized same as ㉑); evidence-ref
-  invalidation fails the conclusion along the derivation graph (ruling basis
-  revocable, not eternal truth); no traceable evidence refs → no fake registration;
-  behavior unchanged without the derivation service injected.
-- **73**: repair linked to the Agent layer + criterion snapshot cross-session
-  continuity + criterion lineage-quality dimension (㊺/㊻/㊼): `demo:agent` stage I —
-  natural language "repair the untracked entries per audit advice and re-audit to
-  accept" → repair (per-entry explicit authorization, new payload, original
-  untouched) → re-audit acceptance (repaired payload fully traceable, original
-  intact: auditing is repair's acceptance surface) — the observe→repair→accept
-  three-step chain linked at the Agent layer (repair declarations encoded by the
-  mock script, honestly stated) + `sampler.trigger.snapshot.save`/`load` criterion
-  snapshot persistence/reload primitives: the reconciliation conclusion persisted
-  verbatim as a whole (readings/thresholds/conclusion all preserved; persistence
-  never re-judges) → reload delivers verbatim after read-only validation of the
-  version stamp (`saturday-trigger-snapshot/1`) and shape (unknown stamp /
-  incomplete shape / missing batch id all refused faithfully); a snapshot is not an
-  anchor entry — it never enters the anchor store nor the data fuel (ruling basis
-  continuable across sessions, recomputable) + criterion lineage-quality dimension:
-  optional threshold `minTrackableRatio` (traceable ratio) caller-declared —
-  behavior unchanged when undeclared; declared but readings lack the lineage
-  distribution dimension → explicit refusal (never guessing quality readings for
-  the caller); quality-dimension gaps reported independently of quantity/coverage
-  dimensions ("enough trajectories" must be traceable enough, not only numerous
-  enough).
-- **74**: criterion snapshot cross-session continuity + repaired-payload liveness
-  loop + quality-dimension observation reconciliation (㊽/㊾/㊿): the closing of
-  `demo:anchor-resume` session two persists the criterion snapshot via
-  `snapshot.save` (in-session log upgraded to on-disk evidence; persistence never
-  re-judges) → session three mounts fresh and reloads via `snapshot.load`, the
-  continuity reconciliation field-by-field identical (recomputable, never
-  re-estimated); the snapshot never enters the anchor store (evidence payload
-  orthogonal to structural data fuel) + repaired-payload liveness loop (the
-  observe→repair→accept→ingest four-ring chain): an untracked payload repaired and
-  audit-accepted then reloaded becomes data fuel — proposals register derivations
-  as usual (lineage uses the repaired source, never impersonating the original;
-  normalization same as ㉑); invalidation along the repaired lineage fails the
-  proposal faithfully (traceable means revocable; liveness never degraded by
-  repair history); invalidation never deletes data + quality-dimension observation
-  reconciliation: the criterion's returned traceable ratio equals the store's
-  per-entry lineage counts from ㊳ observation (never re-estimated); observation
-  readings change → the reconciliation conclusion flips faithfully (conclusion
-  never hard-coded); observation/criterion never mutate the store.
-- **75**: repair four-ring linked to the Agent layer + criterion evidence-chain
-  wiring + trigger-condition readiness report (50/51/52): 50 `demo:agent` stage J
-  — after acceptance, natural language "reload the repaired payload" →
-  tool_call(sampler.anchor.load): audit-passed repaired data instantly becomes
-  data fuel (lineage uses the repaired source, never impersonating the original);
-  the untracked original never enters the store — the observe→repair→accept→ingest
-  four-ring chain fully linked at the Agent layer (orchestration-layer complement
-  to ㊾'s test surface; reload declarations encoded by the mock script). 51 the
-  snapshot optionally carries a derivation reference (`triggerRef` from ㊹'s
-  registration): declared then persisted/reloaded verbatim — after reload the
-  reference is queryable for liveness, evidence invalidation propagates along it
-  (criterion ↔ evidence file bidirectionally traceable); undeclared never
-  fabricated (empty-string declaration rejected). 52 `trajectoryTriggerReadiness`
-  pure layer: the five infrastructure surfaces of ㉘'s trigger condition
-  (observation/criterion/snapshot/repair/derivation) declared by the caller
-  item by item; the report faithfully summarizes presence/gaps (a gap is reported
-  as a gap, never an error) — a report, not a gate: mechanism entry is still the
-  adjudicator's decision (㉘ see the data before the mechanism).
-- **76**: pre-release drill batch: failure drills + performance baseline + release
-  form rehearsal (53/54/55): 53 accept failure modes, not success paths — torn
-  payloads (interrupted-write / power-loss simulation: half-written, garbage
-  trailer) → reload honestly refused with zero store pollution; torn criterion
-  snapshot → reload refused (damaged adjudication evidence never impersonates
-  continuity); one-good-one-bad multi-payload merge → whole batch refused
-  (gate-first, same as ㉞); the control side (intact payload) reloads normally
-  (drills never hurt good data). 54 order-of-magnitude readings at thousand-scale
-  reported faithfully (2000-anchor ingest / retrieval / mixture n=64 / save-load
-  roundtrip of 500 entries) — readings are facts, no thresholds, no gates
-  (assertions only guarantee readings exist and are finite) — the first
-  recomputable performance evidence toward industrial acceptance. 55
-  `scripts/pack-check.mjs` per-package `npm pack --dry-run`: version consistency
-  (any drift is a violation) + `files` whitelist verification (no test/log/temp
-  artifacts in artifacts, same as ⑧/⑪) + manifest reported faithfully; violations
-  exit non-zero; no .tgz produced, no network (rehearsal is verification, not
-  publication).
+- **Cross-engine comparability**: four-stage evidence chain across engines — delivery
+  declaration → M3 interception → M2 fingerprint-change event → dual-engine comparison;
+  plus the conversion audit channel (`convertedFrom`, mechanically recomputable factors).
+- **Runtime read-back and availability**: fingerprint stamping with per-engine probing
+  (sidecar handshake / binary banner / `__version__`) and the `unknown` wildcard;
+  availability pre-flight demos and the `engine.availability` query tool.
+- **Mixture sampling**: multi-anchor mixture proposals with closed-form likelihood
+  recomputation (zero deviation from the `'exact'` declaration) and real-engine oracle
+  recheck; the second built-in evidence source (ideal mixing entropy) demonstrating the
+  extensibility of the composition law.
+- **Evidence independence**: machine audit of evidence-source independence over a
+  declarative `variables` vocabulary; the gate rejects shared variables unexplained by the
+  independence declaration; per-source mask counts are delivered with results.
+- **Anchor pipeline**: provenance-mandatory ingest → topology + composition retrieval →
+  mixture proposals → anchor-guided closed loop (`demo:anchor-guided`: ingest, retrieve,
+  propose, real-EMT recheck, joint ranking with Σw = 1) → fully automatic ingest from
+  converged relaxations (`demo:anchor-auto`) — with honest degradation for unknown
+  composition (`distance: null` ranks last without fabricating values, yet still
+  participates in mixtures).
+- **Agent-layer orchestration**: anchor tools, audit, repair, and reload all reachable
+  through natural language in `demo:agent`; tool-to-tool handoff carries deliverables
+  only; the lossless-JSON tool-exit gate is enforced end to end; largest-remainder quota
+  allocation is closed-form and seed-invariant.
+- **Persistence and resume**: lossless-JSON save/load primitives with gates-first
+  integrity (version stamps, size reconciliation, entry-level corruption localization,
+  multi-payload merged reload with lineage dedup); `demo:anchor-resume` carries lineage
+  across sessions — reloaded anchors participate immediately, and behavior is provably
+  lossless across the disk round-trip.
+- **Governance**: read-only three-state lineage audit with repair hints; payload-side
+  repair under per-entry explicit authorization (original kept as evidence; corruption
+  never repaired into existence); repaired-and-accepted payloads become data fuel with
+  lineage using the repaired source — observe → repair → accept → ingest, fully linked at
+  the Agent layer.
+- **Trigger criteria**: capacity observation (`stats`) reconciled against caller-declared
+  thresholds; conclusions persisted as verbatim snapshots that survive sessions;
+  criterion conclusions optionally registered as derivations so evidence invalidation
+  revokes them; a readiness report over the five infrastructure surfaces.
+- **Release readiness**: failure drills (torn payloads and snapshots refused with zero
+  store pollution; one-good-one-bad merges refused whole-batch); order-of-magnitude
+  performance readings at thousand scale presented as facts without gates; per-package
+  `npm pack --dry-run` verification (version consistency + `files` whitelist).
 
 ## Citation
 

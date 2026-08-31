@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-31T03:43:38.171Z",
+  "generatedAt": "2026-08-31T04:16:31.546Z",
   "totalPass": 335,
   "totalFail": 0,
   "packageCount": 19,
@@ -157,7 +157,7 @@
     },
     {
       "index": 4,
-      "clause": "autoRoute 画像评分（修订 #7）",
+      "clause": "autoRoute 画像评分",
       "evidence": "测试 5"
     },
     {
@@ -187,8 +187,8 @@
     },
     {
       "index": 10,
-      "clause": "license 前置门禁（修订 #10）",
-      "evidence": "测试 12（含失败不污染状态、门禁可重入）"
+      "clause": "license 前置门禁（含失败不污染状态、门禁可重入）",
+      "evidence": "测试 12"
     },
     {
       "index": 11,
@@ -207,7 +207,7 @@
     },
     {
       "index": 14,
-      "clause": "结构源 seam 可互换：远端来源写谱系（修订 #8）",
+      "clause": "结构源 seam 可互换：远端来源写谱系",
       "evidence": "plugin-mp 测试 1-4"
     },
     {
@@ -217,7 +217,7 @@
     },
     {
       "index": 16,
-      "clause": "批处理引擎：缺二进制显式报 ENGINE_UNAVAILABLE，不静默降级",
+      "clause": "批处理引擎：缺二进制显式报 ENGINE_UNAVAILABLE",
       "evidence": "plugin-lammps 测试 3"
     },
     {
@@ -227,7 +227,7 @@
     },
     {
       "index": 18,
-      "clause": "ML 势引擎：可用性预检（`import mace` 探测），不可用显式报 ENGINE_UNAVAILABLE",
+      "clause": "ML 势引擎：可用性预检，不可用显式报 ENGINE_UNAVAILABLE",
       "evidence": "plugin-mace 测试 1、2"
     },
     {
@@ -237,7 +237,7 @@
     },
     {
       "index": 20,
-      "clause": "插件自带数据面：计算器显式指定，缺失显式报错绝不隐式替换",
+      "clause": "插件自带数据面：计算器显式指定，缺失显式报错",
       "evidence": "plugin-ase 测试 1-3（含真实 sidecar）"
     },
     {
@@ -247,277 +247,277 @@
     },
     {
       "index": 22,
-      "clause": "sampler seam（§4.5）：采样语义强制声明 / 似然与可逆性诚实声明 / 回算验证闭环 / 生成失败显式错",
-      "evidence": "plugin-sampler-perturb 测试 1-8（首个实证：微扰采样器；MD 对账已由 #28 补齐）"
+      "clause": "sampler seam：采样语义强制声明 / 似然与可逆性声明 / 回算验证闭环 / 生成失败显式错",
+      "evidence": "plugin-sampler-perturb 测试 1-8（微扰采样器）"
     },
     {
       "index": 23,
-      "clause": "analysis seam（§4.4）两个冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错不静默",
+      "clause": "analysis seam 冻结点：输入/输出类型声明 + 谱系登记（分析结果落 Trajectory）；缺输入显式报错",
       "evidence": "plugin-neb 测试 6-8（含真实挂载与卸载回收）"
     },
     {
       "index": 24,
-      "clause": "analysis seam（§4.4）第二实证：双数据路（显式序列 / 服务自产）+ 拟合质量诚实声明（converged/rmse/r²）+ 服务依赖调用时解析",
+      "clause": "analysis seam 双数据路（显式序列 / 服务自产）+ 拟合质量声明（converged/rmse/r²）+ 服务依赖调用时解析",
       "evidence": "plugin-eos 测试 1-8（含真实桥 Cu EOS 集成）"
     },
     {
       "index": 25,
-      "clause": "workflow seam（§4.3）套件化：结果形状与排序（energyPerAtom 升序）/ 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错",
+      "clause": "workflow seam 套件化：结果形状与排序 / 逐变体事件（薄载荷含引用）/ 不吞错 / 缺依赖显式报错",
       "evidence": "`workflowContract`（套件自检 + plugin-screening 测试 5-8）"
     },
     {
       "index": 26,
-      "clause": "sampler seam（§4.5）套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实（none 禁伪造 logProb）/ 种子确定性 / 两码显式失败 / 候选可回算构造 Material",
+      "clause": "sampler seam 套件化：manifest 自洽（invertible⇔encode）/ generative: 谱系前缀 / 似然诚实 / 种子确定性 / 显式失败 / 候选可回算构造 Material",
       "evidence": "`samplerContract`（套件自检 mock-sampler + plugin-sampler-perturb 测试 1-4）"
     },
     {
       "index": 27,
-      "clause": "§4.5 oracle 条款首个实证：采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选 Material 带 sampled-candidate 谱系标记，事件薄载荷含谱系 source；基线缺失时 dE 诚实置 null",
+      "clause": "采样 → 回算闭环（候选不自证，引擎是唯一 oracle）；候选带 sampled-candidate 谱系标记；基线缺失时 dE 置 null",
       "evidence": "plugin-explore 测试 1-9（含排序非透传验证 + `workflowContract` 第三个接入者）"
     },
     {
       "index": 28,
-      "clause": "§4.5 遍历对账（oracle 条款）实证：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化（§4.2 枚举扩展，声明即承诺原语）；判定强度随采样器似然声明三档分级（none 仅信息性；声明可求且候选附 logProb 时重要性重加权后直接检验；声明与交付不一致降级并明说）",
+      "clause": "遍历对账：采样系综平均 对 同一能量函数恒温 MD 时间平均；`md` 能力契约化；判定强度随似然声明三档分级",
       "evidence": "plugin-ergodic 测试 1-14（纯层统计判定 + 升档解析对账 + 插件层挂载/缺服务显式错/非透传 + 真实 ASE sidecar Langevin MD 全链路）"
     },
     {
       "index": 29,
-      "clause": "§8.2 活性上下文地基首个实证：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞（§7）/ 查无显式错 / 惰性重算预算受控 + 拓扑序 + append-only / substitute fork 非失效源（§6）",
+      "clause": "活性上下文地基：登记即声明推导来源 / 失效沿推导图向下游传递（幂等）/ 冻结只追加修正且传播不吞 / 查无显式错 / 惰性重算预算受控 + 拓扑序 / substitute fork 非失效源",
       "evidence": "`derivationContract`（套件自检 mock-derivation + plugin-derivation 测试 1-14）"
     },
     {
       "index": 30,
-      "clause": "§8.2 活性上下文接真实工作流：排序 = f(基体, 引擎)——筛选完成即登记两层推导（候选能量/排序，`engine:<id>` 契约化入推导输入）；势函数热替换（`activate` 发 `saturday/potential/activated`）即失效源，全链失效 + 重算拓扑序；推导插件可选（未挂载优雅降级）",
+      "clause": "活性上下文接真实工作流：筛选完成即登记两层推导（`engine:<id>` 入推导输入）；势函数热替换即失效源，全链失效 + 重算拓扑序；推导插件可选（未挂载优雅降级）",
       "evidence": "`derivationContract` 引擎条款 + bridge live-context 测试 1-4"
     },
     {
       "index": 31,
-      "clause": "热力学第一档（§9 欠账清偿）：能量零点显式化——数据面 `reference_energy` 算子（fcc 单胞全弛豫，无承诺后端诚实报错）+ 纯层严格形成焓/二元凸包（缺参考态/超范围显式错，不静默假设零点）；筛选接严格形成焓 + `energyAboveHull` 凸包判据，`thermo.level` 声明精度等级；参考态不可得时诚实降级保留“近似”声明",
+      "clause": "能量零点显式化：数据面 `reference_energy` 算子 + 纯层严格形成焓/二元凸包；筛选接严格形成焓 + `energyAboveHull` 凸包判据，`thermo.level` 声明精度等级",
       "evidence": "core thermo 测试 1-8 + python-bridge 参考态 4-5 + bridge thermo 端到端 1-4"
     },
     {
       "index": 32,
-      "clause": "sampler seam（§4.5）第二实证：OU（Ornstein-Uhlenbeck）参考结构采样——闭式转移核 + 精确提议似然（`likelihood: 'exact'` 升档，`samplerContract` 第三个接入者）；诚实边界写进交付：exact 指提议核自身（非玻尔兹曼，热力学加权仍须引擎回算）、OU 单峰定位为局部采样器、γΔ 有效性窗口门禁（非正/非有限显式错）",
+      "clause": "OU 参考结构采样：闭式转移核 + 精确提议似然（`likelihood: 'exact'`）；交付边界：exact 指提议核自身（非玻尔兹曼）、单峰局部采样器定位、γΔ 有效性窗口门禁",
       "evidence": "plugin-sampler-ou 测试 1-13（契约 5 + 似然自洽独立重算 + 平稳幅度闭式统计验证 + 均值回归语义 + 插件层挂载/缺依赖/端到端/确定性）"
     },
     {
       "index": 33,
-      "clause": "§4.5 升档实证：判定强度随似然声明实质升档——`workflow.ergodic` 接 `sampler.ou`（likelihood: 'exact'）后判据从原始均值对比升为重要性重加权（log w = −βU − log q，log-sum-exp 归一）均值对 MD 时间平均；ESS 占比作为重叠度诊断随判定/事件载荷呈现；解析对账体系（σ_q = σ_t 时权重均匀、ESS=1、重加权均值不变，⟨‖u‖²⟩ 落能量均分闭式）不靠数值巧合",
+      "clause": "遍历对账升档：接精确似然采样器后判据升为重要性重加权（log w = −βU − log q，log-sum-exp 归一）均值对时间平均；ESS 占比作重叠度诊断；解析对账体系不靠数值巧合",
       "evidence": "plugin-ergodic 测试 4/4a-4c/6/7b（三档判定 + 重加权纯层 + checkErgodic 解析引擎端到端 + 工具层升档）"
     },
     {
       "index": 34,
-      "clause": "热力学第二档（§9 从焓到自由能）：`workflow.freeEnergy` 温度网格逐点恒温 MD（复用 `md` 原语）得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线（d(βF_conf)/dβ = ⟨U⟩）；自由能零点延续第一档纪律——锚点必须显式注入（缺锚点 `THERMO_REFERENCE_MISSING`），锚点物理来源声明随交付呈现；诚实声明不含动量部分、逐点附统计标准误；解析对账双核（线性核梯形精确闭式 1e-9 + 谐波核密网格截断收敛），测试首跑即抓出定向积分符号 bug（锚点升温侧不得取绝对值）；曲线型工作流不接 `workflowContract`（变体排序形态不适配，强套会扭曲契约，诚实声明而非冒充合规）",
+      "clause": "构型自由能：温度网格逐点恒温 MD 得 ⟨U⟩(β)，沿 β 热力学积分出曲线（d(βF_conf)/dβ = ⟨U⟩）；锚点必须显式注入（缺锚点 `THERMO_REFERENCE_MISSING`）；逐点附统计标准误；解析对账双核（线性核梯形闭式 + 谐波核截断收敛）；曲线型工作流不接 `workflowContract`（形态不适配）",
       "evidence": "plugin-free-energy 测试 1-9（锚点门禁 + 双核解析对账 + 统计诚实 + 挂载/缺服务/端到端/真实 ASE 冒烟）"
     },
     {
       "index": 35,
-      "clause": "多组分凸包（第 1.5 档，二元→d 维推广）：成分空间维度 d = 元素数−1，显式穷举 d-单形（d+1 点仿射无关子集）构造下包络，重心坐标插值 + 最小包络；二元退化与既有实现数值一致（1e-12 对账）；非轴对齐单形闭式核验；端点纪律延续（缺纯元素端点 `THERMO_REFERENCE_MISSING`，不外推）；组合上限显式门禁（`THERMO_TOO_MANY_COMBINATIONS`，不静默换近似算法）；包络单形只用包上点构造（包外点不得参与包络，测试首跑抓出）；包外成分查询显式报错",
+      "clause": "多组分凸包：成分空间维度 d = 元素数−1，显式穷举 d-单形构造下包络 + 重心坐标插值；二元退化与既有实现数值一致；端点纪律（缺纯元素端点不外推）；组合上限显式门禁；包络单形只用包上点构造",
       "evidence": "core thermo 测试 9-14（二元退化对账 + 三元四边形 + 重心闭式 + 端点纪律 + 门禁）"
     },
     {
       "index": 36,
-      "clause": "摘要层（可再生产物而非手写文档）：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；计数对账门禁（有测试但缺结果显式报错）；无独立测试的包（防腐层）诚实标记不计数；失败用例显式标记不隐藏；子进程不继承 `NODE_TEST_*` 环境（嵌套 runner 防御）；摘要只含来源可追溯字段",
+      "clause": "摘要层（可再生产物）：实跑全部包测试 + 扫描 package.json + 提取附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；计数对账门禁；无独立测试的包标记不计数；失败用例显式标记；子进程不继承 `NODE_TEST_*` 环境",
       "evidence": "scripts/summary 测试 1-7（TAP 解析 + 附录 A 表解析 + 组装门禁/确定性 + 真实小包冒烟）"
     },
     {
       "index": 37,
-      "clause": "多组分凸包接真实工作流 + 自由能端到端演示 + 分析事件溯源闭环：筛选注入参考态后元素数 ≥ 3 自动升级为统一成分空间凸包（每个元素参考态是端点——形成焓按定义 = 0，是定义事实而非外推），`thermo.mode/hullDimension` 声明判据形态；端点全零时包络即 z=0 超平面，判据与二元弦数值一致（闭式对账）；≤2 元素保持二元 0-0 弦路径不变；自由能端到端演示（真实 ASE/EMT Langevin，`demo:freeenergy`）F(T) 曲线物理一致（⟨U⟩ 随温单调升、ΔF 单调降）；分析事件 `saturday/analysis/complete` 落 Trajectory（`analysis_complete`，与计算事件同一溯源链）；dsh profile 示例补齐工作流插件挂载行（工具自动暴露给 Agent）",
+      "clause": "多组分凸包接真实工作流 + 自由能端到端 + 分析事件溯源：元素数 ≥ 3 自动升级统一成分空间凸包（元素参考态是端点——形成焓按定义 = 0），`thermo.mode/hullDimension` 声明形态；≤2 元素保持二元路径；自由能曲线物理一致（⟨U⟩ 随温单调升、ΔF 单调降）；分析事件 `analysis_complete` 与计算事件同一溯源链",
       "evidence": "plugin-screening 测试 5-6（三元升级闭式对账 + 二元路径保持）+ bridge thermo 测试 3（真实 EMT 多组分）+ demo:freeenergy 端到端验证"
     },
     {
       "index": 38,
-      "clause": "三元混掺真实筛选演示（⑬）：Cu + Ag/Au/Ni/Pt 五元素统一成分空间（d=4），真实 EMT 弛豫 + 全元素参考态显式计算；Cu-Pt/Cu-Au 负 ΔH_f 候选成为稳定相顶点；几何诚实声明：单点掺杂候选位于\"基体端点→掺杂端点\"连线上，该连线内包络由 0-0 弦主导，判据保持 max(0, ΔH_f) 退化形——非退化判据需共掺内点（见第 39 条），不夸大多组分凸包在单点候选上的作用",
+      "clause": "三元混掺真实筛选：五元素统一成分空间（d=4），真实 EMT 弛豫 + 全元素参考态显式计算；负形成焓候选成为稳定相顶点；单点掺杂候选位于端点连线上（包络由 0-0 弦主导，非退化判据需共掺内点，见第 39 条）",
       "evidence": "demo:screening-ternary 端到端验证（真实 EMT，0.2 s）"
     },
     {
       "index": 39,
-      "clause": "多浓度 + 共掺候选接筛选（⑮）：`maxDopedSites` 浓度扫描（每掺杂 k=1..max 各一个变体，越界显式报错：全取代 = 纯掺杂端点属参考态而非候选）+ `codopants` 共掺变体（元素重复/位点冲突/单元素显式报错）；二元分支泛化为逐掺杂系多内点构包，单内点退化为 0-0 弦（行为兼容）；非退化判据闭式对账：共掺候选由单形 (Cu3Pt,Pt,Ni) 包含，包络插值 = −4/75，距离 = 7/75（1e-9 精确）；真实演示（demo:concentrations）：EMT Cu-Pt-Ni 全候选负/正 ΔH_f 分区，Cu2NiPt 共掺有序化（−0.0895）成为稳定相顶点",
-      "evidence": "plugin-screening 测试 7-10（多浓度闭式 0.075 + 越界报错 + 共掺闭式 7/75 + 参数校验）+ demo:concentrations 端到端"
+      "clause": "多浓度 + 共掺候选：`maxDopedSites` 浓度扫描（越界显式报错：全取代 = 纯掺杂端点属参考态）+ `codopants` 共掺变体（元素重复/位点冲突/单元素显式报错）；二元分支泛化为逐掺杂系多内点构包；非退化判据闭式对账（共掺候选由单形包含，包络插值 −4/75，距离 7/75）",
+      "evidence": "plugin-screening 测试 7-10（多浓度闭式 + 越界报错 + 共掺闭式 + 参数校验）+ demo:concentrations 端到端"
     },
     {
       "index": 40,
-      "clause": "谐波锚点物理化（⑭）：sidecar 新增 harmonic 算子（弛豫→中心差分 Hessian→质量加权简正模；平动零模与真虚频分开计数，零模不进振动闭式，虚频拒绝锚点——两种情况都不静默修正）；量子谐振子闭式在 JS 纯层（单一闭式来源，低温→零点能/高温→经典极限/模间线性叠加/虚频拒收）；`anchorMode='harmonic'` 接线（引擎无原语显式报错，锚点来源声明物理化随交付呈现）；LJ 谱形对账：匹配晶格参数下横模 6 重/纵模 3 重简并（fcc 立方对称）+ ν_L/ν_T ≈ √2（中心力+张力对称比，实测 0.1% 内）",
+      "clause": "谐波锚点物理化：sidecar `harmonic` 算子（弛豫→中心差分 Hessian→质量加权简正模；平动零模与真虚频分开计数，都不静默修正）；量子谐振子闭式在 JS 纯层（单一闭式来源）；`anchorMode='harmonic'` 接线；LJ 谱形对账（横模 6 重/纵模 3 重简并 + ν_L/ν_T ≈ √2）",
       "evidence": "plugin-free-energy 测试 10-12（纯层闭式 + 接线纪律 + 端到端对账）+ plugin-ase 测试 6（真实 sidecar 谱形）+ demo:freeenergy 升级（EMT Cu 谐波锚点端到端）"
     },
     {
       "index": 41,
-      "clause": "Logits 组合律纯层 + 联合排序接线（⑯）：`combineEvidence` 把仓库既有孤立 log 权重实例（ergodic 重加权/OU logProb/自由能 βF/谐波锚点局部配分）的组合本身立为纯层——独立证据源 log 权重相加（独立性声明必填，缺失即拒 `EVIDENCE_INDEPENDENCE_UNDECLARED`）；候选级证据掩码：缺失即缺失，零填充禁止（log 权重 0 = 伪造中立证据），全源缺失候选拒排（`EVIDENCE_NO_COVERAGE`）；log-sum-exp 归一（整体偏移不变）+ 组合爆炸门禁 + 源名重复防证据重复计数；`screenDopants` 接 `sampled`+`temperatureK`：采样候选逐候选单点回算（不弛豫——弛豫抹掉待加权的涨落信息；不入凸包——成分点与基体重合，候选不自证 §4.5），能量证据 −βU × 提议似然 q → 重要性权重（与 ergodic 升档同形），`sampledJoint` 段附逐候选覆盖/独立性/ESS 诊断；闭式对账：双源权重 2e/(1+2e)、log 权重差 βΔE+ΔlogProb；测试首跑抓出 β 算术错（kB·300≈1/38.7 非 1/1000，换 β=100 eV⁻¹ 良态条件）",
+      "clause": "证据组合律纯层 + 联合排序接线：`combineEvidence` 独立证据源 log 权重相加（独立性声明必填）；候选级证据掩码（缺失即缺失，零填充禁止，全源缺失拒排）；log-sum-exp 归一 + 组合爆炸门禁 + 源名去重；筛选接 `sampled`+`temperatureK`：采样候选逐候选单点回算，能量证据 −βU × 提议似然 → 重要性权重，`sampledJoint` 段附逐候选覆盖/独立性/ESS 诊断；闭式对账：双源权重 2e/(1+2e)",
       "evidence": "plugin-screening evidence 测试 1-8（组合律闭式 + 五条拒绝路径 + ESS）+ screening 测试 11-14（联合排序闭式 + 掩码 + 门禁 + 工具层解析）"
     },
     {
       "index": 42,
-      "clause": "采样器 → 筛选真实接线（⑰，候选来自系综而非枚举）：`workflow.screen` 接受 `{materialId, logProb}` 或 `{graph, source, logProb}`（§4.5 SampledStructure 透传，纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错不静默丢弃）；OU 候选真实 EMT 单点回算 → 联合权重归一 + 逐候选双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码（覆盖子集组合，权重仍归一）；logProb 可由位移闭式独立重算（1e-9，exact 似然声明的实证）；Agent 编排链：sampler.ou → workflow.screen，谱系在编排层不断",
+      "clause": "采样器 → 筛选真实接线（候选来自系综而非枚举）：`workflow.screen` 接受 SampledStructure 透传（纯层 graph 模态构造 + 谱系登记采样来源；缺结构显式报错）；候选真实单点回算 → 联合权重归一 + 双源覆盖 + ESS 诊断；缺似然候选保留并标 null 掩码；logProb 可由位移闭式独立重算（1e-9）",
       "evidence": "bridge sampled-screen 测试 1-3（真 OU + 真 EMT 完整工具链 + 混合覆盖 + 双门禁）"
     },
     {
       "index": 43,
-      "clause": "组合律可扩展性实证（⑲⑳，第三证据源）：枚举候选联合排序显式启用 `evidenceSources: ['hull']`——凸包距离作为逐候选稳定性证据（−β·max(0,energyAboveHull)，包内点掩码 0：不伪造“越稳越好”的梯度），焓证据 + 凸包证据双源叠加把包外候选罚分翻倍（闭式 e⁻² 对账）；独立性声明如实含退化关联（包上点凸包证据恒 0，不冒充独立）；无参考态即无凸包即无稳定性证据（显式拒绝不静默近似）；缺省不启用行为与既有完全一致（既有消费方零影响）；温差诚实声明（⑳）：采样器声明自身温度与目标不一致时 `temperatureMismatch` 随交付呈现（声明而非拒绝，不静默纠正）",
+      "clause": "组合律可扩展性（第三证据源）：`evidenceSources: ['hull']`——凸包距离作逐候选稳定性证据（−β·max(0,energyAboveHull)，包内点掩码 0），双源叠加把包外候选罚分翻倍（闭式 e⁻² 对账）；独立性声明如实含退化关联；无参考态即无凸包即无稳定性证据；温差声明：采样器声明温度与目标不一致时 `temperatureMismatch` 随交付呈现",
       "evidence": "plugin-screening 测试 15-17（闭式对账 + 三门禁 + 温差三态）"
     },
     {
       "index": 44,
-      "clause": "Agent 编排链扩展到采样→联合排序（㉑）：`demo:agent` 阶段 C——自然语言 → tool_call(workflow.screen，args 携带 OU 采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具三连坑实证入纪律：工作流插件需自行动态 import `defineTool`（否则工具落本地注册表对 dsh 不可见）、`output.render` 必填（工具出口投影）、object 型 `items` 必须显式 `additionalProperties`（UNSUPPORTED_SCHEMA）；根依赖补 `@deepseek-ai/dsh-timeout`（dsh-llm 导入但未声明的隐性依赖）",
-      "evidence": "demo:agent 阶段 C 端到端（真实 EMT，三阶段全绿）"
+      "clause": "Agent 编排链覆盖采样→联合排序：自然语言 → tool_call(workflow.screen，args 携带采样交付 {graph, source, logProb}）→ 逐候选真实单点回算 + 联合权重归一（谱系在编排层不断）；dsh 工具出口纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`",
+      "evidence": "demo:agent 阶段 C 端到端（真实 EMT）"
     },
     {
       "index": 45,
-      "clause": "证据源注册表化（②）：`evidenceSources` 白名单分支重构为描述符注册表（{ name, requires, logWeights, independenceNote } 四要素，缺一即接入即坏）；筛选层只做通用循环（解析 → 校验输入要求 → 取逐候选 log 权重 → 追加独立性声明），新证据源在 evidence-sources.mjs 注册描述符即可接入不改筛选代码；`evidenceSourceRegistry` 可注入（第三方自定义源端到端参与组合律，闭式对账），未知源仍显式拒绝（注入注册表不绕过门禁）；组合律三条诚实纪律由 combineEvidence 强制，与源的数量和种类无关——这就是可扩展性本身",
+      "clause": "证据源注册表化：`evidenceSources` 描述符注册表（{ name, requires, logWeights, independenceNote } 四要素）；筛选层只做通用循环，新源在 evidence-sources.mjs 注册即可接入；`evidenceSourceRegistry` 可注入（第三方自定义源端到端参与组合律），未知源仍显式拒绝",
       "evidence": "plugin-screening 测试 18（解析三态 + 描述符闭式 + 自定义源端到端注入）"
     },
     {
       "index": 46,
-      "clause": "采样温度标定与声明（③）：`uEqFromHarmonicTemperature` 闭式 u_eq = √(k_B·T/k_eff)（能量均分语义：温度翻倍幅度 ×√2；力常数必须显式注入——无势能面信息就没有涨落幅度，静默假设力常数 = 伪造涨落标度）；`sampler.ou` 接受显式 `temperatureK` 声明：声明 ≠ 替换（不改变采样行为，uEq 仍是直接参数）——随逐候选交付 `samplerTemperatureK`（⑳ 温差诚实声明的消费源落地）并进谱系（&T=300K，同参数不同声明 = 不同批）；声明前后采样序列与似然逐位一致（闭式回归）",
+      "clause": "采样温度标定与声明：闭式 u_eq = √(k_B·T/k_eff)（能量均分语义；力常数必须显式注入）；`sampler.ou` 接受显式 `temperatureK` 声明（声明不改采样行为，随交付 `samplerTemperatureK` 并进谱系）；声明前后采样序列与似然逐位一致",
       "evidence": "plugin-sampler-ou 测试 14-15（标定闭式 + 五门禁 + 声明不改行为）"
     },
     {
       "index": 47,
-      "clause": "多锚点混合采样（④）：OU 单峰 = 局部采样器，跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度仍闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然声明保持 'exact' 不降档；交付的 logProb 是相对**全部锚点**的混合似然（非单锚点似然冒充，可独立重算 1e-9）；候选按锚点配比最大余数法确定性分配（平手取靠前）；归一混合权重随交付呈现（诚实声明的输入）；谱系记所属锚点（#mixture#anchor=k，可追到具体盆地）；同拓扑门禁（跨锚点位移仅在节点数一致时有定义，不静默近似）；单锚点退化与单核采样逐坐标一致（严格推广无隐式行为变化）",
+      "clause": "多锚点混合采样：跨盆地探索 = 多参考加权混合（`ouSampleMixture`）。混合提案是有限高斯混合，转移密度闭式（log Σ π_a N_a，log-sum-exp 数值稳定）→ 似然保持 'exact'；交付 logProb 是相对全部锚点的混合似然（可独立重算 1e-9）；配额按最大余数法确定性分配；谱系记所属锚点（#mixture#anchor=k）；同拓扑门禁；单锚点退化与单核采样逐坐标一致",
       "evidence": "plugin-sampler-ou 测试 16-17（一维双锚点手算闭式 + 配额/似然自洽/谱系/四门禁）"
     },
     {
       "index": 48,
-      "clause": "单位与能力指纹入契约（异构引擎生态的泛化地基，量纲分析最小落点）：M1 注册门禁——`PotentialRegistry.register` 即校验 `manifest.units`（energy/length/time 三元组，白名单外/维度错位显式拒绝）与 `manifest.fingerprint`（software/method 必填，version 不可得诚实降级 'unknown'），归一声明挂 `_units/_fingerprint`（不改写原 manifest）；换算只能由调用方**显式发起**（`unitConvert`，跨维度/未知单位/非有限值均拒），绝不自动进入能量比较路径（自动换算会掩盖\"两个引擎的能量本不该直接比\"的物理问题）；契约套件 §4.2 manifest 断言同步加严（新插件接入即验）；M3 能量组合门禁——筛选层参考态升级形态 `{ energyPerAtom, fingerprint?, energyUnit? }` 声明了就对账：异源/异单位进凸包前显式拒绝（不静默混源、不静默换算），纯数值形态诚实降级（声明 ≠ 强制，旧路径不追溯拦截），`referenceProvenance` 与 `providerFingerprint/providerUnits` 随交付呈现（能量来源可追溯性即消费方可核对的交付物）",
+      "clause": "单位与能力指纹（M1 + M3）：注册即校验 `manifest.units` 三元组与 `manifest.fingerprint`（version 不可得降级 'unknown'）；换算只能由调用方显式发起（`unitConvert`）；参考态升级形态声明了就对账——异源/异单位进凸包前显式拒绝，纯数值形态降级，`referenceProvenance` 与 `providerFingerprint/providerUnits` 随交付呈现",
       "evidence": "core units.test 8 项 + potential.test 3 项（M1 自检）、契约套件 §4.2 断言（四引擎 + 自检全绿）、plugin-screening 测试 19（同源/异源/异单位/降级/空壳五态）"
     },
     {
       "index": 49,
-      "clause": "M2 激活门禁（⑤）：`PotentialRegistry.activate` 热切换事件载荷携带 `fingerprintChange`（{ same, reason }）——声明而非拒绝：§8.2 失效传播照常沿 `engine:<id>` 走，差异声明让消费方知晓\"为何旧能量不再可比\"；reason 按维度归因（software/method/version 逐维对账，首个不同维即落）；首次激活无前驱 → same=true（不伪造差异，与温度声明同款诚实纪律）",
+      "clause": "M2 激活门禁：`activate` 热切换事件载荷携带 `fingerprintChange`（{ same, reason }）——按维度归因（首个不同维即落）；首次激活无前驱 → same=true",
       "evidence": "packages/core potential.test 测试 4（同源/异 software/异 method 三态）"
     },
     {
       "index": 50,
-      "clause": "跨引擎对照演示（⑥）：同一条候选链（Cu + Ag 掺杂）分别经两个指纹不同的引擎回算，四段实证异构引擎生态泛化地基——A 交付自带能量来源可追溯性（providerFingerprint/providerUnits + 参考态 provenance 声明态）；B M3 拦截（异源参考态混入凸包前显式拒绝，不静默混源）；C M2 事件（热切换携带指纹差异声明）；D 双引擎交付并排（两份能量不直接可比是诚实声明，不是缺陷——跨引擎比较须调用方显式声明换算与可比性假设）",
+      "clause": "跨引擎对照：同一候选链经两个指纹不同的引擎回算——交付自带能量来源可追溯性；异源参考态混入凸包前显式拦截；热切换携带指纹差异声明；双引擎交付并排（跨引擎比较须调用方显式声明换算与可比性假设）",
       "evidence": "demo:cross-engine 端到端（四段如实运行，packages/bridge/demo-cross-engine.mjs）"
     },
     {
       "index": 51,
-      "clause": "工具层自产参考态声明形态（⑦）：引擎 `referenceEnergy` 显式产出的参考态按定义同源——直接升级为声明形态（携带本引擎归一指纹与能量单位），凸包能量全链同源可比（M3 消费）；`referenceProvenance='declared'` 与指纹投影随交付呈现（消费方可独立核对\"这批能量从哪来、能否互比\"）；引擎未声明指纹时诚实降级不投影（不冒充可追溯）",
+      "clause": "工具层自产参考态声明形态：引擎 `referenceEnergy` 显式产出的参考态按定义同源——直接升级为声明形态（携带本引擎归一指纹与能量单位），凸包能量全链同源可比；`referenceProvenance='declared'` 与指纹投影随交付呈现；引擎未声明指纹时降级不投影",
       "evidence": "plugin-screening 测试 21（provenance 声明态 + 指纹投影断言）"
     },
     {
       "index": 52,
-      "clause": "单位换算审计通道（⑧）：参考态 `convertedFrom` 声明\"原值为该单位、调用方已显式换算到引擎单位\"——声明 ≠ 替换（不改变 energyPerAtom 的消费、不绕过单位门禁），换算因子由白名单机械重算随交付呈现（审计可复现，与温度声明同款诚实纪律）；未知单位/跨维度声明即拒（带码），换算痕迹从此不落在暗处",
-      "evidence": "plugin-screening 测试 20（因子闭式对账 + 声明≠替换 + 不绕过门禁三态）"
+      "clause": "单位换算审计通道：参考态 `convertedFrom` 声明原值单位与显式换算——声明不改消费、不绕过单位门禁，换算因子由白名单机械重算随交付呈现；未知单位/跨维度声明即拒",
+      "evidence": "plugin-screening 测试 20（因子闭式对账 + 声明不改消费 + 不绕过门禁三态）"
     },
     {
       "index": 53,
-      "clause": "指纹实测态回读（①）：声明态 ≠ 实测态，两态各自诚实——`stampFingerprint` 把归一指纹 version 从 'unknown' 升级为探测实测值（只丰富 version：software/method 是静态声明不在回读范畴；非实测值/空值/再盖 unknown 均拒，探测失败方不盖章）；三引擎探测路径按形态各异：ase 走 sidecar 握手（aseVersion）、lammps 解析 `binary -h` 横幅、mace 读 `mace.__version__`，探测失败一律 null 保持声明态；配套 version 维 unknown 通配：未探测不构成差异证据（一侧 unknown 同源放行但 reason 声明\"含未验证维\"，两侧实测不同才判异源）——实测态升级不破坏既有组合，拦截能力不丢",
+      "clause": "指纹实测态回读：`stampFingerprint` 把归一指纹 version 从 'unknown' 升级为探测实测值（只丰富 version；非实测值/空值/再盖 unknown 均拒，探测失败方不盖章）；三引擎探测路径按形态各异（ase 走 sidecar 握手、lammps 解析二进制横幅、mace 读 `__version__`）；version 维 unknown 通配（未探测不构成差异证据）",
       "evidence": "core units.test 9（通配三态）+ potential.test 5（盖章三态）；ase/lammps/mace 各自探测测试（伪桥/伪子进程）"
     },
     {
       "index": 54,
-      "clause": "可用性预检演示（②）：`demo:availability` 对四引擎逐一探测 + 实测态回读——注册 = 声明层（M1 注册即验，不可用不移除注册），可用 = 运行时层（使用时 ENGINE_UNAVAILABLE 拦，绝不静默替换）；同一份代码在装了/没装 LAMMPS/MACE 的机器上给出不同的表，两种输出都正确（环境依赖的诚实报告即预检的意义；本机实测：ase 3.28.0 / mace 0.3.16 盖章实测态，lammps 缺失保持 unknown）",
+      "clause": "可用性预检：对四引擎逐一探测 + 实测态回读——注册 = 声明层（不可用不移除注册），可用 = 运行时层（使用时 ENGINE_UNAVAILABLE 拦）；同一份代码在不同环境给出不同的表（环境依赖的报告即预检的意义）",
       "evidence": "demo:availability 端到端（四引擎三态如实运行，packages/bridge/demo-availability.mjs）"
     },
     {
       "index": 55,
-      "clause": "多锚点混合采样真实演示（③）：`demo:mixture-sampling` 三段——A 双锚点（Cu / Cu3Ag 同拓扑）按 [0.6,0.4] 最大余数法配额采样 10 个（锚点归属随谱系 #anchor=k）；B 混合似然逐一独立重算（相对全部锚点，最大偏差 0：'exact' 声明机械可验）；C 回算闭环（候选不自证：采样似然 ≠ 物理能量，候选[0] 经真实 ASE EMT 单点 oracle 裁定，生成 → 回算 → 核对谱系不断）",
+      "clause": "多锚点混合采样演示：双锚点按 [0.6,0.4] 配额采样（锚点归属随谱系 #anchor=k）；混合似然逐一独立重算（相对全部锚点，最大偏差 0：'exact' 声明机械可验）；回算闭环（候选经真实 ASE EMT 单点 oracle 裁定，生成 → 回算 → 核对谱系不断）",
       "evidence": "demo:mixture-sampling 端到端（真实 EMT 回算，packages/bridge/demo-mixture-sampling.mjs）"
     },
     {
       "index": 56,
-      "clause": "证据源注册表第二内置源（④）：理想混合熵 `mixing-entropy`——逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，与 β 无关：−β·(−TΔS) 的温度线性在 log 权重中消去）；纯元素候选按定义 0（不伪造梯度）；只消费组分与焓/凸包证据零能量信息共享，独立性声明如实含\"与凸包共享组分变量\"退化关联；接入不改筛选代码（注册表化实证：第二源 = 可扩展性本身的第二次实证）；端到端闭式：焓 [0,+1,−1] + 熵 [0, S1, S1]（S1 = 0.5623351446188083 手算），排序不变但权重位移如实呈现",
+      "clause": "证据源注册表第二内置源：理想混合熵 `mixing-entropy`——逐候选组分先验，log w = ΔS_mix/k_B = −Σ x·ln x（每点位，与 β 无关）；纯元素候选按定义 0；独立性声明如实含与凸包共享组分变量的退化关联；接入不改筛选代码；端到端闭式（焓 [0,+1,−1] + 熵 [0, S1, S1]，S1 = 0.5623351446188083 手算）",
       "evidence": "plugin-screening 测试 22（每点位熵闭式 + 双源相加闭式 + 独立性声明）"
     },
     {
       "index": 57,
-      "clause": "证据源独立性声明的机器校验升档（⑤）：可选第五要素 `variables`（依赖变量词表）；`auditEvidenceIndependence` 三态——全声明且两两不交 `independent` / 全声明但检出共享 `degenerate` / 存在未声明者 `unverifiable`（未声明者不冒充独立也不拒绝）；门禁牙齿：机械检出的共享变量必须在 `independence` 声明文本中被解释，否则 `EVIDENCE_INDEPENDENCE_UNDECLARED`（声明是人写的，交集是机器算的，对不上即拒绝）；`maskCounts`（逐源掩码计数）随交付呈现（掩码拒绝可核验）；内置源全部携带变量声明（hull [能量,组分] / mixing-entropy [组分] / 枚举 [能量] / 采样 [能量,坐标] + proposal [坐标]，共享\"坐标\"由声明文本\"给定坐标下条件独立\"解释——机械可验）",
+      "clause": "证据源独立性的机器校验：可选第五要素 `variables`（依赖变量词表）；`auditEvidenceIndependence` 三态（independent / degenerate / unverifiable）；机械检出的共享变量必须在 `independence` 声明文本中被解释，否则 `EVIDENCE_INDEPENDENCE_UNDECLARED`；`maskCounts` 随交付呈现；内置源全部携带变量声明",
       "evidence": "plugin-screening evidence 测试 9-11（三态审计 + 门禁拒绝 + 掩码计数）+ screening 测试 23（双源端到端退化关联闭环）"
     },
     {
       "index": 58,
-      "clause": "可用性预检工具化（⑥）：`engine.availability` 逐引擎如实报告——有 `probeVersion` 则探测（失败 → `unknown-or-missing`，注册表不因探测失败缩减：注册 = 声明层不因运行时不可用而回收）；`stamp` 默认 false（预检是查询不是变更——查询性工具不得携带副作用默认值）；仅 `stamp=true` 且 version 实测才走 `stampFingerprint`（实测态回读纪律复用，见本表第 53 条）；status 不区分未知与缺失（区分需真实计算，超出预检权限——诚实不区分）",
+      "clause": "可用性预检工具化：`engine.availability` 逐引擎报告——有 `probeVersion` 则探测（失败 → `unknown-or-missing`，注册表不因探测失败缩减）；`stamp` 默认 false（查询性工具不携带副作用默认值）；仅 `stamp=true` 且 version 实测才走 `stampFingerprint`",
       "evidence": "bridge availability 测试 1-2（默认只报告不盖章 + 按需盖章三态）"
     },
     {
       "index": 59,
-      "clause": "混合提案锚点库（⑦，自监督进场的数据管道第一段）：`createAnchorStore` 纯层——`add` 谱系必填（无来源声明的数据不入库：锚点来自闭环轨迹，出处必须可追溯）；`retrieve` 拓扑硬门禁（节点数一致，与 `ouSampleMixture` 同款，库里先筛一道是诚实不是冗余）+ 组分分数向量 L1 距离升序（锚点缺组分 → `distance: null` 排尾：不可考不冒充可比；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝（不伪造锚点——先让闭环积累数据再谈混合提案）、`weights` 长度必须一致（混合权重是显式声明不是静默补全）",
+      "clause": "混合提案锚点库：`createAnchorStore` 纯层——`add` 谱系必填；`retrieve` 拓扑硬门禁 + 组分分数向量 L1 距离升序（缺组分 → `distance: null` 排尾；平手按入库序，确定性）；`toMixtureTarget` 空检索 `ANCHOR_EMPTY` 拒绝、`weights` 长度必须一致",
       "evidence": "plugin-sampler-ou anchor-store 测试 1-5（入库门禁 + 检索排序三态 + 端到端接 `ouSampleMixture` 配额闭环）"
     },
     {
       "index": 60,
-      "clause": "锚点引导混合提案的工具化（⑩，锚点库接 Agent 层）：`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取；直交付无谱系即拒——谱系门禁在工具层生效，锚点本体不外泄）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案；`anchorOrigin` 声明锚点来源层，检索距离随交付呈现；空库 `ANCHOR_EMPTY` 拒伪造，拓扑门禁先于采样，权重不静默补全；两路径共用同一条纯层目标构造 `mixtureTargetFromRetrieved`——门禁不另开旁路）；会话级内存库与闭环运行同生命周期（不跨会话持久化，不伪造库外数据）；候选不自证声明随交付（回算后接 `workflow.screen` 的 `sampled` 透传，谱系在编排层不断）",
+      "clause": "锚点工具化：`sampler.anchor.add`（材料入库来源声明缺省 = 材料身份，组分从原子序机械提取；直交付无谱系即拒）与 `sampler.mixture`（会话库检索 / 内联锚点二路径 → 配额 → OU 混合提案；`anchorOrigin` 声明来源层；空库拒伪造，两路径共用同一条纯层目标构造——门禁不另开旁路）；会话级内存库与闭环运行同生命周期",
       "evidence": "plugin-sampler-ou plugin-anchor-tools 测试 1-3（谱系门禁工具层生效 + 内联配额/似然/确定性 + 会话库拓扑门禁/空库拒伪造/检索排序闭式对账）"
     },
     {
       "index": 61,
-      "clause": "锚点引导闭环端到端 + 工具链契约审查（⑫/⑬/⑭）：`demo:anchor-guided` 全程工具层四段——A 锚点入库（材料入库缺省来源声明，无谱系不入库在工具层生效）；B 会话库检索（cu3ag L1 距离 0、cu4 距离 0.5，权重按检索序映射）→ 配额 [5,3]（0.6/0.4×8 最大余数法）→ 混合提案（温度声明随交付呈现）；C 工具间只传交付（{graph, source, logProb}）接 `workflow.screen` 联合排序：8 候选真实 EMT 回算全部成功，双源证据 × 组合、Σw = 1（配分函数归一）、独立性声明如实——入库 → 检索 → 提案 → 回算 → 排序谱系不断；形态审查（⑭）：候选 `generative:` 前缀 + 可回算构造 Material（§4.5 条款的工具层延续）；裁决（⑬）：`workflow.screen` 不直收 `anchors`（见 §4.5 裁决段，两步编排即组合律）",
+      "clause": "锚点引导闭环端到端 + 工具链形态：`demo:anchor-guided` 全程工具层四段——锚点入库 → 会话库检索（cu3ag L1 距离 0、cu4 距离 0.5）→ 配额 [5,3]（0.6/0.4×8 最大余数法）→ 混合提案 → 工具间只传交付接 `workflow.screen` 联合排序：8 候选真实 EMT 回算，双源证据 × 组合、Σw = 1；候选 `generative:` 前缀 + 可回算构造 Material；`workflow.screen` 不直收锚点本体（两步编排即组合律）",
       "evidence": "demo:anchor-guided 端到端 + plugin-sampler-ou plugin-anchor-tools 测试 4（形态延续：前缀纪律 + 可回算构造）"
     },
     {
       "index": 62,
-      "clause": "闭环轨迹自动入库（⑮，自监督数据管道第二段）：弛豫收敛 + 引擎交付终态 → 弛豫后结构自动入会话锚点库（谱系自动声明 `job:<id>#engine=<name>`，能量随锚点记录，组分从终态原子序机械提取）；三道门禁否定路径同样实证：未收敛不入库（终态在场也不被诱导）、旧协议无终态交付不入库（不拿输入结构冒充）、同谱系重复事件幂等（重放安全）；引擎 `relax` 交付协议扩展 `positions`/`cell`（ase sidecar 补齐；emt-mock 原生已含；旧版按字段存在性诚实缺省）；薄事件纪律：结构体不重复落 Trajectory（只记 `relaxedStructureDelivered` 在场标记）",
+      "clause": "闭环轨迹自动入库：弛豫收敛 + 引擎交付终态 → 弛豫后结构自动入会话锚点库（谱系 `job:<id>#engine=<name>`，能量随锚点记录，组分从终态原子序机械提取）；三道门禁：未收敛不入库、无终态交付不入库、同谱系重复事件幂等；引擎 `relax` 交付协议扩展 `positions`/`cell`（旧版按字段存在性缺省）；薄事件纪律：结构体不重复落 Trajectory",
       "evidence": "bridge anchor-autoingest 测试 1-3（自动入库谱系/组分/幂等 + 未收敛门禁 + 旧协议门禁，假引擎桩验证）"
     },
     {
       "index": 63,
-      "clause": "锚点工具 Agent 层暴露 + 配额闭式对账补强（⑯/⑰）：⑯ `demo:agent` 阶段 D——`sampler.anchor.add`/`sampler.mixture` 经 dsh harness 暴露给 Agent（工具出口关卡实证：`graph: undefined` 覆盖触发 'not lossless JSON' 拒付，改显式剔除），阶段 B 弛豫收敛结构由 ⑮ 自动入库后会话库命中双锚点（自动 + 手动，同拓扑）→ 混合提案来源层 `session-store` 随交付呈现；⑰ 最大余数法配额闭式对账：配额只依赖 (n, 归一权重) 与 seed 无关（多 seed 扫描）；余数按小数降序补一、小数平手取靠前锚点（[0.5,0.5]×5 → [3,2]、[1,1,1]×10 → [4,3,3]）；未归一权重与归一形态同配额；三锚点余数顺次补一（[0.5,0.3,0.2]×9 → [4,3,2]）",
+      "clause": "锚点工具 Agent 层暴露 + 配额闭式对账：`sampler.anchor.add`/`sampler.mixture` 经 dsh harness 暴露（工具出口无损 JSON 关卡）；自动入库后会话库命中双锚点 → 混合提案来源层 `session-store`；最大余数法配额：只依赖 (n, 归一权重) 与 seed 无关；余数按小数降序补一、平手取靠前锚点（[0.5,0.5]×5 → [3,2]、[1,1,1]×10 → [4,3,3]）；未归一与归一形态同配额",
       "evidence": "demo:agent 阶段 D 端到端 + plugin-sampler-ou plugin-mixture-quota 测试 1-4（配额闭式 + 平手确定性 + 归一不变 + seed 无关扫描）"
     },
     {
       "index": 64,
-      "clause": "全自动锚点引导闭环 + 不可考组分诚实降级链（⑱/⑲/⑳）：⑲ `demo:anchor-auto` 无人工入库形态——Cu/Cu3Ag 真实弛豫（收敛 + 终态交付）→ ⑮ 自动入库（谱系 `job:<id>#engine=<name>`，全程零手动锚点操作）→ 会话库检索（距离 0/0.5）→ 配额 [5,3] → 提案 → 回算 + 联合排序（Σw = 1，谱系不断）；⑳ 组分不可考（`distance: null`）诚实降级链：缺组分锚点检索排尾（不冒充可比不编造数值）→ 混合提案不因不可考拒绝（排尾不是排除：目标构造照常、均匀配额实证参与混合不是陪跑）→ 距离声明随工具层交付如实透传；⑱ 裁决：会话锚点库不引入淘汰/上限（库与闭环同生命周期，淘汰属持久化关注点；`topK` 已是提案侧参与上限）",
+      "clause": "全自动锚点引导闭环 + 不可考组分降级链：`demo:anchor-auto` 无人工入库形态——真实弛豫（收敛 + 终态交付）→ 自动入库 → 检索（距离 0/0.5）→ 配额 [5,3] → 提案 → 回算 + 联合排序（Σw = 1，谱系不断）；组分不可考（`distance: null`）排尾但不排除（均匀配额参与混合）；会话锚点库不引入淘汰/上限（库与闭环同生命周期，`topK` 已是提案侧参与上限）",
       "evidence": "demo:anchor-auto 端到端 + plugin-sampler-ou plugin-null-distance 测试 1-2（纯层排尾 + 目标构造照常；工具层距离透传 + 配额参与实证）"
     },
     {
       "index": 65,
-      "clause": "提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型（㉑/㉒/㉓）：㉑ `sampler.mixture` 提案层谱系登记（活性上下文 §8.2）——注入推导服务时登记一层提案推导（锚点来源归一化为 `material:<id>`/`job:<id>` 输入，输出 `result:mixture-<batchId>`）；锚点失效沿推导图传播到提案（活性接通实证）；不可追溯来源不冒充输入（全不可追溯不伪登记）；未注入行为不变；㉒ 三元系端到端：{Cu,Ag,Au} 三锚点检索排序（含不可考排尾不回归）、三权重配额闭式 [0.5,0.3,0.2]×9 → [4,3,2]（余数降序顺次补一）+ 多 seed 扫描不变、同参数两次提案逐候选严格一致（确定性复现）；㉓ 持久化原型：`sampler.anchor.export`（无损 JSON 全量导出，序列化往返不丢信息）/ `sampler.anchor.import`（库层门禁复用 + 同谱系幂等跳过 + 单条拒绝不中断整批），回填锚点即刻可参与混合提案（数据燃料跨会话续供）；诚实边界：库自身仍会话级，落盘由调用方负责",
+      "clause": "提案谱系接推导登记簿 + 三元系可扩展性 + 持久化锚点库原型：`sampler.mixture` 注入推导服务时登记提案推导（锚点来源归一化 `material:<id>`/`job:<id>`，取谱系 # 前段），锚点失效沿推导图传播到提案，不可追溯来源不冒充输入，未注入行为不变；三元系 {Cu,Ag,Au} 端到端：检索排序/配额闭式 [0.5,0.3,0.2]×9 → [4,3,2]（多 seed 不变）/确定性复现；`sampler.anchor.export`/`import`（无损 JSON 全量导出 + 库层门禁复用 + 同谱系幂等 + 单条拒绝不中断整批），回填锚点即刻可参与混合提案",
       "evidence": "plugin-sampler-ou plugin-mixture-derivation 测试 1-4（登记 + 失效传播 + 不伪登记 + 未注入不变）+ plugin-ternary 测试 1-3（检索排序 + 配额闭式 + 确定性）+ plugin-anchor-persist 测试 1-3（往返无损 + 幂等 + 门禁）"
     },
     {
       "index": 66,
-      "clause": "持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露（㉔/㉕/㉖）：㉔ `sampler.anchor.save`/`load`（搬运原语的文件端）——落盘→跨会话回填逐字段一致且即刻可提案；错误路径如实：文件缺失/损坏/非载荷形态显式报错（`ANCHOR_PERSIST`，不静默冒充成功）；路径调用方显式声明；同库重载同谱系幂等；导入循环提取为共享助手（导入工具与文件回填门禁不另开旁路）；㉕ `demo:agent` 阶段 E：`save`/`load` 经 dsh harness 暴露（含全量 graph 的无损 JSON 出口关卡压测，⑯ 教训延续：新工具的宿主出口实证是必要验收环节）+ 落盘→回填→跳过重放幂等在 Agent 层实证；㉖ `workflow.screen` 直收 `proposalRef` 登记为排序层推导输入：锚点失效 → 提案失效 → 排序失效三级链全活性实证；未声明行为不变（不伪造推导输入）；非法引用登记簿显式拒绝；与 ⑬ 裁决分工：不直收的是 `anchors`（结构本体 + 采样逻辑），直收的是推导引用（编排层谱系接线），组合律不破",
+      "clause": "持久化落盘侧 + 排序层提案引用全链活性 + 持久化原语 Agent 层暴露：`sampler.anchor.save`/`load`——落盘→跨会话回填逐字段一致且即刻可提案；文件缺失/损坏/非载荷形态显式报错（`ANCHOR_PERSIST`）；路径调用方显式声明；同库重载同谱系幂等；导入走共享循环（门禁不另开旁路）；`save`/`load` 经 dsh harness 暴露（含全量 graph 的无损 JSON 出口关卡 + 落盘→回填→跳过重放幂等）；`workflow.screen` 直收 `proposalRef` 登记为排序层推导输入——锚点失效 → 提案失效 → 排序失效三级链全活性；非法引用登记簿显式拒绝",
       "evidence": "plugin-sampler-ou plugin-anchor-save-load 测试 1-3（往返 + 错误路径 + 幂等门禁）+ demo:agent 阶段 E 端到端 + bridge proposal-chain 测试 1-3（三级传播 + 未声明不变 + 非法引用拒绝）"
     },
     {
       "index": 67,
-      "clause": "跨会话恢复端到端 + 回填后活性保持 + 自监督进场条件裁决（㉗/㉘/㉙）：㉗ `demo:anchor-resume` 编排层兑现“落盘由调用方负责”的诚实边界——会话一真实弛豫（收敛 + 终态交付）→ ⑮ 自动入库 → `save` 落盘（路径调用方显式声明）→ 会话终结全部回收；会话二全新挂载（空库不伪造库外数据）→ `load` 回填 → 检索（谱系跨会话保留）→ 提案 → 回算 + 联合排序（Σw = 1）；行为级无损对账：落盘往返不改变任何采样行为（同参数逐候选结构/似然/归属/谱系严格一致）；两“会话”是同一进程内两次独立挂载，跨会话唯一通道是磁盘载荷（诚实声明入演示注释）；㉙ 回填后活性不降级：回填锚点的提案照常登记推导（㉑ 归一规则不因回填改变），锚点失效沿推导图传播到提案、再传播到排序（㉖ 全链活性跨会话不降级）；归一引用与检索来源与原会话逐条一致（不冒充、不丢、不改写）；材料会话级：跨会话引用不冒充在场（会话 B 内重新加载基体）；㉘ 裁决：对照触发条件逐项呈报后维持“不引入自监督”——管道两段 + 跨会话续供机制已备齐（触发条件第一项的基础设施全部就位），但“足够轨迹”与“探索效率瓶颈”均未出现（先见数据再谈机制，同 ⑬/⑱）；进场挂载点与不变纪律重申",
+      "clause": "跨会话恢复端到端 + 回填后活性保持：`demo:anchor-resume`——会话一真实弛豫 → 自动入库 → `save` 落盘（路径调用方显式声明）→ 会话终结全部回收；会话二全新挂载空库回填 → 检索（谱系跨会话保留）→ 提案 → 回算 + 联合排序（Σw = 1）；行为级无损：落盘往返不改变任何采样行为（同参数逐候选结构/似然/归属/谱系严格一致）；两“会话”是同一进程内两次独立挂载，跨会话唯一通道是磁盘载荷；回填锚点照常登记提案推导，锚点失效沿推导图传播到提案、再传播到排序（全链活性跨会话不降级）",
       "evidence": "demo:anchor-resume 端到端 + bridge anchor-resume 测试 1-2（跨会话闭环参与 + 行为级无损对账）+ bridge anchor-resume-liveness 测试 1-2（全链活性跨会话不降级 + 谱系登记如实）"
     },
     {
       "index": 68,
-      "clause": "恢复闭环接 Agent 层 + 落盘侧谱系可追溯声明 + 落盘载荷完整性校验（㉚/㉛/㉜）：㉚ `demo:agent` 阶段 F——自然语言“对恢复后的锚点库做混合提案” → tool_call(sampler.mixture)：回填锚点即刻参与提案（来源层/谱系跨恢复保留），回填交付的 `lineageRefs` 随阶段日志呈现（恢复闭环在 Agent 层收口，㉕ 教训延续：新编排形态的宿主出口实证）；㉛ `load` 交付附 `lineageRefs`（载荷内可追溯来源的归一化声明，与 ㉑ 归一规则同款：取 # 前段）——声明不是装饰：沿 `lineageRefs` 起点 invalidate，提案推导如实失效（谱系从“跨会话保留”升为“跨会话可撤回”，消费方不必翻库）；㉜ 完整性校验：版本门禁（仅 `saturday-anchor-store/1`，未知/缺失不静默接受）+ `size` 声明对账（声明 ≠ 实质即拒，不猜测补齐）；单条损坏不连坐（共享导入循环逐条拒绝，合法条目照常入库，与 ㉓ 同款）；三条门禁都不得污染库",
+      "clause": "恢复闭环接 Agent 层 + 落盘侧谱系声明 + 落盘载荷完整性校验：自然语言“对恢复后的锚点库做混合提案” → 回填锚点即刻参与提案（来源层/谱系跨恢复保留），`lineageRefs` 随交付呈现；`load` 交付附 `lineageRefs`（可追溯来源的归一化声明）——沿声明起点 invalidate，提案推导如实失效（跨会话可撤回）；完整性：版本门禁（仅 `saturday-anchor-store/1`，未知/缺失不接受）+ `size` 声明对账；单条损坏不连坐（共享导入循环逐条拒绝，合法条目照常入库）",
       "evidence": "demo:agent 阶段 F 端到端 + bridge anchor-lineage-refs 测试 1-2（声明与载荷一致 + 沿声明起点失效传播实证）+ plugin-sampler-ou plugin-anchor-save-load 测试 4-5（版本/无版本/size 三态拒绝 + 单条损坏不连坐）"
     },
     {
       "index": 69,
-      "clause": "条目级版本戳 + 多载荷合并回填 + 载荷血缘审计（㉝/㉞/㉟）：㉝ 载荷形态升版 `saturday-anchor-store/2`（条目附 `entryVersion: 'saturday-anchor-entry/1'`）——`load` 逐条校验版本戳：缺失/未知版本戳按条目级损坏定位到载荷原位索引拒绝（过滤后不丢定位能力），合法条目照常入库不连坐（损坏检测从“整体非载荷”下沉到条目级）；㉞ `load`/`audit` 支持 `path`（单载荷）或 `paths`（多载荷合并）二选一（不静默猜测调用方意图）；门禁先行——全部文件先过完整性检查，全过才开始回填（任一文件不过 → 整批拒绝，出错时库零污染）；同谱系幂等门禁天然兜底跨载荷重复（数据燃料多源汇聚）；逐文件明细随交付；㉟ `sampler.anchor.audit` 只读血缘三态审计（可追溯/不可追溯/损坏）：审计不回填不污染库，异常文件如实入报告不连坐——回填前的一手数据质量观测面",
+      "clause": "条目级版本戳 + 多载荷合并回填 + 载荷血缘审计：载荷形态 `saturday-anchor-store/2`（条目附 `entryVersion: 'saturday-anchor-entry/1'`）——`load` 逐条校验版本戳：缺失/未知版本戳按条目级损坏定位到原位索引拒绝，合法条目照常入库不连坐；`load`/`audit` 支持 `path`（单载荷）或 `paths`（多载荷合并）二选一；门禁先行——全部文件先过完整性检查，全过才开始回填（任一不过 → 整批拒绝，库零污染）；同谱系幂等兜底跨载荷重复；`sampler.anchor.audit` 只读血缘三态审计（可追溯/不可追溯/损坏），审计不回填不污染库，异常文件入报告不连坐",
       "evidence": "plugin-sampler-ou plugin-anchor-save-load 测试 6-8（条目版本戳定位 + 多载荷合并/门禁先行/二选一门禁 + 审计三态与库零污染）+ plugin-anchor-persist 测试 1（版本戳随导出交付）"
     },
     {
       "index": 70,
-      "clause": "审计接 Agent 层 + 多载荷合并后的活性保持 + 锚点库容量观测（㊱/㊲/㊳）：㊱ `demo:agent` 阶段 G——自然语言“先审计落盘载荷的血缘再决定回填” → tool_call(sampler.anchor.audit)：只读三态报告回流（全部可追溯、无损坏），库状态不变（观测先于行动的数据纪律在 Agent 层实证，㉕ 教训延续）；㊲ 多载荷合并后的活性保持：两份不同来源载荷经 ㉞ 合并回填后，跨载荷汇聚的谱系各自独立可撤回（沿某一来源失效 → 提案失效；失效不删数据，另一来源与库内条目照常在场）；合并后提案锚点归属与载荷谱系逐条一致（汇聚不冒充、不丢、不改写）；㊳ `sampler.anchor.stats` 只读库内容量观测（条目数 + 归一化谱系形态分布 + 组分声明覆盖）：观测不变更库，与 ㉟ 载荷审计构成“库内 + 库外”双观测面（为 ㉘ 触发条件的“足够轨迹”提供量化读数）",
+      "clause": "审计接 Agent 层 + 合并回填后的活性保持 + 锚点库容量观测：自然语言“先审计落盘载荷的血缘再决定回填” → 只读三态报告回流，库状态不变（观测先于行动）；两份不同来源载荷合并回填后谱系各自独立可撤回（沿某一来源失效 → 提案失效；失效不删数据）；合并后提案锚点归属与载荷谱系逐条一致；`sampler.anchor.stats` 只读库内容量观测（条目数 + 归一化谱系形态分布 + 组分声明覆盖），观测不变更库",
       "evidence": "demo:agent 阶段 G 端到端 + bridge anchor-merge-liveness 测试 1-2（谱系独立可撤回 + 归属逐条一致）+ plugin-sampler-ou plugin-anchor-save-load 测试 9（库容量观测如实与不变更）"
     },
     {
       "index": 71,
-      "clause": "审计驱动的合流回填决策链 + “足够轨迹”触发判据原型 + 审计修复建议通道（㊴/㊵/㊶）：㊴ `demo:agent` 阶段 H——自然语言“审计两份候选载荷，只回填达标的那份” → audit（含修复建议）→ 按报告只回填达标载荷（不达标载荷不进数据燃料；决策由 mock 脚本编码，实证的是“报告 → 行动”链路的运行时效果）；㊵ `trajectoryTriggerAssessment` 纯层判据：㊳ 读数对调用方显式声明的阈值（`minSize`/`minCompositionCoverage`）为声明式对账不是门禁，阈值不硬编码不设默认（未声明即拒），两项缺口各自独立呈报，空库覆盖率为 0（不除零崩溃）；㊶ `sampler.anchor.audit` 对非可追溯条目随报告交付修复声明（`repairHints`：原位索引 + 三态 + 建议），损坏与不可追溯区分（前者回填必拒，后者可回填但建议声明可追溯起源），仍保持只读不代改",
+      "clause": "审计驱动的合流回填决策链 + “足够轨迹”触发判据 + 审计修复建议通道：自然语言“审计两份候选载荷，只回填达标的那份” → 按报告只回填达标载荷；`trajectoryTriggerAssessment` 纯层判据：读数对调用方显式声明的阈值（`minSize`/`minCompositionCoverage`）为声明式对账不是门禁，阈值不硬编码不设默认（未声明即拒），各维缺口独立呈报，空库覆盖率为 0；审计对非可追溯条目随报告交付修复声明（`repairHints`：原位索引 + 三态 + 建议），损坏与不可追溯区分，保持只读不代改",
       "evidence": "demo:agent 阶段 H 端到端 + plugin-sampler-ou plugin-anchor-trigger 测试 1-3（达标/缺口独立呈报/未声明阈值拒绝 + 空库）+ plugin-anchor-save-load 测试 8 扩展（修复建议定位与可操作）与测试 10（统计读数直喂判据）"
     },
     {
       "index": 72,
-      "clause": "收尾判据快照 + 载荷侧修复原语 + 判据对账谱系化（㊷/㊸/㊹）：㊷ `demo:anchor-resume` 会话二收尾：`stats` 读数 → 判据对账 → 判据快照随日志呈现（`met=false`，缺口如实：条目数 2 低于 minSize 100）——“足够轨迹”裁决从人工对照升级为机器可读的判据快照（读数 → 阈值 → 结论可追溯可复算），阈值调用方显式声明（原型阈值非内置常量），维持 ㉘ 裁决；㊸ `sampler.anchor.repair` 载荷侧修复原语（观测/修复权责分离）：审计只指明出路，修复必须调用方逐条显式授权；修复写新载荷不碰原件（原件留作证据，`out` 与 `path` 相同即拒）；只修复不可追溯条目（损坏修复即伪造必拒，已可追溯修复即替调用方做决定亦拒）；修复全程不回填，审计是修复的验收面；㊹ 判据对账谱系化：对账结论可选登记为推导（输入 = 可追溯证据引用，归一化同 ㉑），证据引用失效 → 对账结论沿推导图如实失效（裁决依据可撤回）；无可追溯证据引用不伪登记；未注入推导服务行为不变",
+      "clause": "判据快照 + 载荷侧修复原语 + 判据对账谱系化：`stats` 读数 → 判据对账 → 判据快照（读数 → 阈值 → 结论可追溯可复算，阈值调用方显式声明）；`sampler.anchor.repair`：审计只指明出路，修复必须调用方逐条显式授权，写新载荷不碰原件，只修复不可追溯条目（损坏修复即伪造必拒，已可追溯修复亦拒），修复全程不回填，审计是修复的验收面；判据对账结论可选登记为推导（输入 = 可追溯证据引用），证据引用失效 → 对账结论沿推导图如实失效（裁决依据可撤回），无可追溯证据引用不伪登记",
       "evidence": "demo:anchor-resume 收尾判据快照 + plugin-sampler-ou plugin-anchor-save-load 测试 11-12（修复原语正路 + 四类门禁拒绝）+ bridge anchor-trigger-derivation 测试 1-2（结论可撤回 + 不伪登记与零依赖）"
     },
     {
       "index": 73,
-      "clause": "修复链接 Agent 层 + 判据快照跨会话续供 + 判据谱系质量维（㊺/㊻/㊼）：㊺ `demo:agent` 阶段 I——自然语言“按审计建议修复不可追溯条目并重新审计验收” → repair（逐条显式授权，写新载荷不碰原件）→ 重新审计验收（修复后载荷全可追溯、原件保持原状：审计是修复的验收面）——观测→修复→验收三步链在 Agent 层链接（修复声明由 mock 脚本编码，诚实声明）；㊻ `sampler.trigger.snapshot.save`/`load` 判据快照落盘/回填原语：对账结论整体原样落盘（读数/阈值/结论一并保留，落盘不改判）→ 回填只读校验版本戳（`saturday-trigger-snapshot/1`）与形态后原样交付（未知版本戳/形态不完整/缺批次标识均如实拒）；快照不是锚点条目（不进锚点库、不进数据燃料）——裁决依据跨会话可续供、可复算；㊼ 判据谱系质量维：可选阈值 `minTrackableRatio`（可追溯占比）由调用方显式声明——未声明行为不变，声明后读数缺谱系分布维则显式拒绝（不替调用方猜测质量读数），质量维缺口与数量/覆盖维独立呈报不合并糊化（“足够轨迹”不只够多还要够可追溯）",
+      "clause": "修复链接 Agent 层 + 判据快照落盘/回填原语 + 判据谱系质量维：自然语言“按审计建议修复不可追溯条目并重新审计验收” → 修复逐条显式授权、写新载荷不碰原件 → 重新审计验收（修复后载荷全可追溯、原件保持原状：审计是修复的验收面）；`sampler.trigger.snapshot.save`/`load`：对账结论整体原样落盘（落盘不改判）→ 回填只读校验版本戳（`saturday-trigger-snapshot/1`）与形态后原样交付；快照不进锚点库、不进数据燃料；可选阈值 `minTrackableRatio`（可追溯占比）由调用方显式声明，声明后读数缺谱系分布维显式拒绝，质量维缺口与数量/覆盖维独立呈报",
       "evidence": "demo:agent 阶段 I 端到端 + plugin-sampler-ou plugin-anchor-save-load 测试 13（快照落盘/回填原样 + 三道门禁拒绝 + 不进锚点库）+ plugin-anchor-trigger 测试 4（质量维对账如实与门禁）"
     },
     {
       "index": 74,
-      "clause": "判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账（㊽/㊾/㊿）：㊽ `demo:anchor-resume` 会话二收尾判据快照经 `snapshot.save` 落盘（会话内日志升级为磁盘证据，落盘不改判）→ 会话三全新挂载经 `snapshot.load` 回填，续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；㊾ 修复后载荷的活性闭环（观测→修复→验收→入库四环）：不可追溯载荷经修复 + 审计验收后回填，提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；㊿ 质量维观测对账：判据回呈的可追溯占比 = ㊳ 观测的库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转（结论不硬编码），观测/判据全程不变更库",
+      "clause": "判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账：判据快照落盘 → 全新挂载回填续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；不可追溯载荷经修复 + 审计验收后回填：提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；判据回呈的可追溯占比 = 库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转，观测/判据全程不变更库",
       "evidence": "demo:anchor-resume 会话三续供对账 + bridge anchor-repair-liveness 测试 1-2（修复达标数据成燃料 + 归属如实不冒充原件）+ plugin-sampler-ou plugin-anchor-save-load 测试 14（观测→判据不断链与结论随读数翻转）"
     },
     {
       "index": 75,
-      "clause": "修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告（50/51/52）：50 `demo:agent` 阶段 J——验收达标后自然语言“回填修复后载荷” → tool_call(sampler.anchor.load)：修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件），不可追溯原件全程不入库——观测→修复→验收→入库四环在 Agent 层全链接（㊾ 测试面的编排层互补实证，回填声明由 mock 脚本编码）；51 快照可选携带推导引用（`triggerRef`，来自 ㊹ 登记）：声明即原样随快照落盘/回填，回填后沿引用可查活性、证据失效沿引用如实传播（结论 ↔ 证据文件双向可追溯）；未声明不伪造（空字符串声明即拒）；52 `trajectoryTriggerReadiness` 纯层：㉘ 触发条件基础设施五面（观测/判据/快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口（缺失呈报为缺口不是错误）——呈报不是门禁，机制进场仍由裁决者决定（㉘ 先见数据再谈机制）",
+      "clause": "修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告：验收达标后自然语言“回填修复后载荷” → 修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件），不可追溯原件全程不入库——观测→修复→验收→入库四环在 Agent 层全链接；快照可选携带推导引用（`triggerRef`）：声明即原样随快照落盘/回填，回填后沿引用可查活性、证据失效沿引用如实传播（结论 ↔ 证据文件双向可追溯），未声明不伪造；`trajectoryTriggerReadiness` 纯层：触发条件基础设施五面（观测/判据/快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口——呈报不是门禁",
       "evidence": "demo:agent 阶段 J 端到端 + bridge anchor-trigger-derivation 测试 3（快照携带推导引用：双向可追溯与失效传播 + 不伪造）+ plugin-sampler-ou plugin-anchor-trigger 测试 5（就绪度报告如实与拒伪造）"
     },
     {
       "index": 76,
-      "clause": "发布前演练批次：故障演练 + 性能基线 + 发布形态预演（53/54/55）：53 验收失败形态而不是成功路径——截断载荷（中断写/断电模拟：写一半就断、尾部多写垃圾）→ 回填诚实拒绝且库零污染；截断判据快照 → 回填拒绝（损坏的裁决依据不冒充可续供）；多载荷合并一好一坏 → 整批拒绝（门禁先行，同 ㉞）；对照面完好载荷照常回填（演练不伤好数据）；54 千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案 n=64/落盘回填往返 500 条）——读数即事实不设阈值不做门禁，断言只保证读数存在且有限（为产业级验收提供第一条可复算的性能证据）；55 `scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性（漂移即违规）+ files 白名单核验（发布物不含测试/日志/临时产物，同 ⑧/⑪）+ 清单如实呈报；违规非零退出，不产生 .tgz 不触网（预演是核验不是发布）",
+      "clause": "发布前演练：故障演练 + 性能基线 + 发布形态预演——截断载荷（中断写/断电模拟）→ 回填拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案/落盘回填往返）——读数即事实不设阈值不做门禁；`scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验 + 清单如实呈报，违规非零退出，不产生 .tgz 不触网",
       "evidence": "plugin-sampler-ou failure-drill 测试 1-3（截断拒绝 + 库零污染 + 门禁先行）+ perf-baseline 测试 1-2（纯层/往返量级读数如实）+ scripts/pack-check 实跑（19 包全过）"
     }
   ]
