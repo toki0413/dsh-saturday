@@ -15,12 +15,12 @@
     "demo:concentrations": "node demo-concentrations.mjs",
     "demo:freeenergy": "node demo-free-energy.mjs",
     "demo:agent": "node demo-agent.mjs",
-        "demo:cross-engine": "node demo-cross-engine.mjs",
-        "demo:availability": "node demo-availability.mjs",
-        "demo:mixture-sampling": "node demo-mixture-sampling.mjs",
-        "demo:anchor-guided": "node demo-anchor-guided.mjs",
-        "demo:anchor-auto": "node demo-anchor-auto.mjs",
-        "demo:anchor-resume": "node demo-anchor-resume.mjs"
+    "demo:cross-engine": "node demo-cross-engine.mjs",
+    "demo:availability": "node demo-availability.mjs",
+    "demo:mixture-sampling": "node demo-mixture-sampling.mjs",
+    "demo:anchor-guided": "node demo-anchor-guided.mjs",
+    "demo:anchor-auto": "node demo-anchor-auto.mjs",
+    "demo:anchor-resume": "node demo-anchor-resume.mjs"
   },
   "dependencies": {
     "@saturday/core": "^0.3.0",
@@ -61,5 +61,12 @@
     "profiles",
     "demo*.mjs"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toki0413/dsh-saturday.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toki0413/dsh-saturday/issues"
+  }
 }

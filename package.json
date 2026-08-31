@@ -19,5 +19,12 @@
   "engines": {
     "node": ">=22"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toki0413/dsh-saturday.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toki0413/dsh-saturday/issues"
+  }
 }

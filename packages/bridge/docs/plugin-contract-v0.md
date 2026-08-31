@@ -567,7 +567,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 惰性重算预算受控 + 拓扑序）；`workflowContract` 另支持可选 `failWhen(material)`
 断言（默认“首个掺杂变体”），供同构变体工作流（如采样回算）按谱系标记选中失败变体；`potentialProviderContract` 的能力枚举含 `md`（§4.5 遍历对账时间平均侧，声明即承诺提供 `md()` 原语）；新插件在自己的测试文件里调用套件即完成接入（当前基线：
 套件自检 24 项 + bridge 51 项 + core 28 项 + 十一个插件各自套件 + 其余插件各自契约测试，
-全仓 workspace 335/335；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。发布形态（⑧/⑪）：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 本契约英文摘要版（`plugin-contract-v0.en.md`，忠实摘要而非有损全译，权威文本以中文原本与本套件为准）+ 19 包 `files` 白名单（发布物只含实现与必要数据面，测试/日志/临时产物不外泄）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）。以上文档/配置交付无测试映射故不入附录 A。映射见附录 A。
+全仓 workspace 335/335；另有摘要层脚本测试 7 项（非 workspace，由回归脚本覆盖）；回归脚本与摘要脚本均强制包内串行（--test-concurrency=1：并发各拉 sidecar + OpenBLAS 线程内存竞态实证）。发布形态（⑧/⑪）：MIT LICENSE 落盘（19 包 license 声明自此有文档实体）+ 本契约英文摘要版（`plugin-contract-v0.en.md`，忠实摘要而非有损全译，权威文本以中文原本与本套件为准）+ 19 包 `files` 白名单（发布物只含实现与必要数据面，测试/日志/临时产物不外泄）；`repository` 元数据诚实空缺（仓库无远程，不编造 URL）——后续远程仓库就位（github.com/toki0413/dsh-saturday）后 20 包 `repository`/`bugs` 元数据如实补全（不编造，只填真实地址，同批 55 预演复核）。以上文档/配置交付无测试映射故不入附录 A。映射见附录 A。
 
 ---
 
