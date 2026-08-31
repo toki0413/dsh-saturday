@@ -1,5 +1,5 @@
 // 活性上下文接真实工作流（§8.2）：势函数热替换 → 筛选候选失效传播
-// 端到端链路：saturday 核心插件（真实 sidecar EMT）+ derivation + screening 三插件同 Context。
+// 端到端链路：saturday 核心插件（当前数据面引擎：EMT / lj-js 回退档）+ derivation + screening 三插件同 Context。
 // 1. screening 完成即登记两层推导（候选能量 ← [材料, 任务, 引擎]；排序 ← [基体, 各候选]）
 // 2. activate 第二引擎 → saturday/potential/activated → bridge wiring 沿 engine:<旧引擎>
 //    传播失效：候选与排序全链置 invalid（三级传播链）
@@ -53,6 +53,8 @@ after(async () => {
 })
 
 test('1. 筛选完成即登记两层推导：引擎是推导输入，初始全 valid', () => {
+  // 数据面自适应：推导输入里的引擎名如实反映当前数据面（emt-mock / lj-js 回退档）
+  const dataPlane = handles.dataPlane
   assert.equal(screenResult.failed.length, 0)
   const rec = screenResult.derivation
   assert.ok(rec, '注入 derivation 服务后结果必须携带登记凭证')
@@ -63,7 +65,7 @@ test('1. 筛选完成即登记两层推导：引擎是推导输入，初始全 v
   assert.equal(energyDrv.inputs.length, 3)
   assert.ok(energyDrv.inputs.some(r => r.startsWith('material:')))
   assert.ok(energyDrv.inputs.some(r => r.startsWith('job:')))
-  assert.ok(energyDrv.inputs.includes('engine:emt-mock'), '引擎必须入推导输入（排序 = f(基体, 引擎)）')
+  assert.ok(energyDrv.inputs.includes(`engine:${dataPlane}`), '引擎必须入推导输入（排序 = f(基体, 引擎)）')
   // 排序层：基体 + 各候选能量
   const rankDrv = derivation.list().find(d => d.output === rec.rankRef)
   assert.ok(rankDrv.inputs.some(r => r.startsWith('material:')))
@@ -75,6 +77,7 @@ test('1. 筛选完成即登记两层推导：引擎是推导输入，初始全 v
 
 test('2. 势函数热替换：沿 engine:<旧引擎> 全链失效（候选 + 排序）', async () => {
   const rec = screenResult.derivation
+  const dataPlane = handles.dataPlane
   // 注册第二引擎（stub：manifest 合法即可，不真跑）并热切换
   handles.potential.register({
     name: 'stub-dft',
@@ -93,12 +96,12 @@ test('2. 势函数热替换：沿 engine:<旧引擎> 全链失效（候选 + 排
   for (const ref of rec.energyRefs) {
     const s = derivation.status(ref)
     assert.equal(s.status, 'invalid', `候选能量 ${ref} 必须失效`)
-    assert.equal(s.invalidatedBy.source, 'engine:emt-mock')
+    assert.equal(s.invalidatedBy.source, `engine:${dataPlane}`)
     assert.match(s.invalidatedBy.reason, /势函数热替换/)
   }
   const rank = derivation.status(rec.rankRef)
   assert.equal(rank.status, 'invalid', '排序依赖候选能量，必须级联失效')
-  assert.equal(rank.invalidatedBy.source, 'engine:emt-mock', '失效溯源到同一引擎')
+  assert.equal(rank.invalidatedBy.source, `engine:${dataPlane}`, '失效溯源到同一引擎')
 })
 
 test('3. 幂等：重复激活同一引擎不再传播', async () => {

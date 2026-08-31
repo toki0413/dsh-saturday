@@ -32,16 +32,18 @@ test('1. 收敛 + 终态交付 → 弛豫后结构自动入库（谱系自动声
   try {
     const cu = await handles.materialService.load('Cu')
     const r1 = await handles.rt.tools.call('potential.relax', { materialId: cu.id, simulatedSeconds: 0 })
-    assert.equal(r1.converged, true, 'emt-mock 弛豫收敛（前提）')
+    assert.equal(r1.converged, true, '数据面引擎弛豫收敛（前提）')
     assert.ok(Array.isArray(r1.positions), '引擎交付终态坐标（前提）')
 
     const entries = sampler.anchorStore.entries()
     assert.equal(sampler.anchorStore.size(), 1, '收敛弛豫自动入库一次')
     const e = entries[0]
-    assert.match(e.source, /^job:.+#engine=emt-mock$/, '谱系自动声明：job:<id>#engine=<name>（出处可追溯）')
+    // 数据面自适应：谱系引擎名如实反映当前数据面（emt-mock / lj-js 回退档）
+    const dataPlane = handles.dataPlane
+    assert.match(e.source, new RegExp(`^job:.+#engine=${dataPlane}$`), '谱系自动声明：job:<id>#engine=<name>（出处可追溯）')
     assert.deepEqual(e.composition, { Cu: 4 }, '组分从终态原子序机械提取')
     assert.ok(typeof e.energy === 'number' && Number.isFinite(e.energy), '闭环能量随锚点记录')
-    // 弛豫后结构 ≠ 输入结构（emt-mock 统一缩放：坐标按 scale 变化）
+    // 弛豫后结构 ≠ 输入结构（引擎统一缩放：坐标按 scale 变化）
     const scale = r1.scale ?? 1
     if (Math.abs(scale - 1) > 1e-9) {
       const pos0 = cu.graph.nodes[0].position
@@ -57,7 +59,7 @@ test('1. 收敛 + 终态交付 → 弛豫后结构自动入库（谱系自动声
         jobId: r1.jobId,
         material: { id: cu.id, formula: cu.formula },
         result: { energy: r1.energy, nSteps: r1.n_steps, converged: true },
-        engine: 'emt-mock',
+        engine: dataPlane,
         relaxedStructure: e.graph,
       },
     })

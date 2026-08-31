@@ -1,0 +1,63 @@
+# Saturday CI —— 数据面双档矩阵（环境可再生纪律）：
+#   zero-deps:     纯 Node 数据面 —— 不装任何 Python 依赖（ubuntu 自带 python3 但缺
+#                  scipy → sidecar 启动即失败 → 桥层优雅回退零依赖引擎 lj-js），
+#                  正是"开箱即用"承诺的机器复现（横幅如实、能量照常过门禁）。
+#   full-fidelity: Python + ASE + scipy —— EMT 真物理精度档（真实弛豫/参考态/互转自检）。
+# 两档跑同一份测试：套件内环境自适应（HAS_ASE/dataPlane 探测 + 显式 skip，诚实不静默）。
+# 摘要再生不做 git diff 门禁：SUMMARY 含时间戳与平台路径分隔符，属已知跨平台非确定性，
+# 以摘要层测试（scripts/summary/test）锁定解析纪律。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  zero-deps:
+    name: 纯 Node 数据面（lj-js 优雅回退）
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 全量测试（零依赖数据面）
+        run: npm test
+      - name: 摘要层测试（TAP/附录 A 解析纪律）
+        run: node --test scripts/summary/test/summary.test.mjs
+      - name: 演示冒烟（基础端到端）
+        run: npm run demo --workspace @saturday/bridge
+      - name: 发布形态核验（逐包 pack 干跑）
+        run: node scripts/pack-check.mjs
+
+  full-fidelity:
+    name: Python + ASE 精度档（EMT 真物理）
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python 数据面依赖（ASE ≥ 3.22 + scipy）
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ase scipy
+      - run: npm ci
+      - name: 全量测试（EMT 精度档）
+        run: npm test
+      - name: 摘要层测试（TAP/附录 A 解析纪律）
+        run: node --test scripts/summary/test/summary.test.mjs
+      - name: 摘要再生冒烟（生成器门禁：计数对账不一致即报错）
+        run: npm run summary
+      - name: 演示冒烟（基础端到端）
+        run: npm run demo --workspace @saturday/bridge

@@ -29,7 +29,9 @@ before(async () => {
     apply: (ctx) => screeningPlugin.apply(ctx, {}),
   })
   screenRt = screenFiber.store.saturdayScreening.rt
-  HAS_ASE = handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  // 环境自适应：零依赖数据面下 emt-mock 不注册（回退 lj-js），HAS_ASE 自然为 false → 真物理断言跳过（诚实）
+  HAS_ASE = handles.potential.providers.has('emt-mock')
+    && handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
 })
 
 after(async () => {
@@ -38,7 +40,7 @@ after(async () => {
 })
 
 test('1. OU 候选进联合排序：真实 EMT 单点回算 + 双源证据组合 + 归一权重', async t => {
-  if (!HAS_ASE) t.skip('ASE unavailable: joint ranking requires real EMT single-point oracle')
+  if (!HAS_ASE) return t.skip('ASE unavailable: joint ranking requires real EMT single-point oracle')
   const cu = await ctx.reflect.get('material').load('Cu')
   const OU_PARAMS = { n: 6, seed: 7, uEq: 0.05, gammaDt: 1.0 }
   const sampled = await ouSampler.sample({ reference: cu }, OU_PARAMS)
@@ -77,7 +79,7 @@ test('1. OU 候选进联合排序：真实 EMT 单点回算 + 双源证据组合
 })
 
 test('2. 缺似然证据的候选：覆盖子集组合，权重仍归一（诚实降级不伪造）', async t => {
-  if (!HAS_ASE) t.skip('ASE unavailable in this environment')
+  if (!HAS_ASE) return t.skip('ASE unavailable in this environment')
   const cu = await ctx.reflect.get('material').load('Cu')
   const sampled = await ouSampler.sample({ reference: cu }, { n: 3, seed: 11 })
 

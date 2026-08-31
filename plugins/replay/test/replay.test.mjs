@@ -140,8 +140,10 @@ test('5. 集成：真实筛选 → 回放 → 索引对账；回放不产生新�
 
   const formulas = out.materials.map(m => m.formula).sort()
   assert.deepEqual(formulas, ['Cu', 'Cu3Ag', 'Cu3Ni'])
+  // 数据面自适应：回放索引的引擎集合如实反映当前数据面（emt-mock / lj-js 回退档）
+  const dataPlane = coreFiber.store.saturday.dataPlane
   for (const m of out.materials) {
-    assert.deepEqual(m.engines, ['emt-mock'])
+    assert.deepEqual(m.engines, [dataPlane])
     assert.ok(Number.isFinite(m.bestEnergy))
   }
   const screenVariants = out.materials.filter(m => m.workflows.includes('screen'))

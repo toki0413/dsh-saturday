@@ -253,7 +253,7 @@ test('8. 端到端：解析引擎 → 曲线 + 锚点回环 + 事件薄载荷', 
   }
 })
 
-test('9. 集成（真实 ASE sidecar）：LJ 两点网格冒烟——曲线形状与有限量齐备', async () => {
+test('9. 集成（真实 ASE sidecar）：LJ 两点网格冒烟——曲线形状与有限量齐备', async t => {
   const { default: asePlugin } = await import('@saturday/plugin-ase')
   const ctx = new Context()
   const coreFiber = await ctx.registry.plugin({
@@ -272,10 +272,16 @@ test('9. 集成（真实 ASE sidecar）：LJ 两点网格冒烟——曲线形�
       ctx.reflect.provide('potential', new PotentialRegistry({ on() {}, emit() {} }))
     },
   })
-  const aseFiber = await ctx.registry.plugin({
-    name: 'saturday-ase',
-    apply: (ctx) => asePlugin.apply(ctx, { calculator: 'lj' }),
-  })
+  let aseFiber
+  try {
+    aseFiber = await ctx.registry.plugin({
+      name: 'saturday-ase',
+      apply: (ctx) => asePlugin.apply(ctx, { calculator: 'lj' }),
+    })
+  } catch {
+    await coreFiber.dispose()
+    return t.skip('python unavailable in this environment')
+  }
   const fiber = await ctx.registry.plugin({
     name: 'saturday-free-energy',
     apply: (ctx) => plugin.apply(ctx, {}),

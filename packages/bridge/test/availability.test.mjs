@@ -52,7 +52,14 @@ test('1. engine.availability：逐引擎如实报告（默认只报告不盖章�
   const byName = Object.fromEntries(result.engines.map(e => [e.name, e]))
   assert.equal(byName['fake-probe-ok'].status, 'available')
   assert.equal(byName['fake-probe-miss'].status, 'unknown-or-missing', '探测失败 = 未知或缺失，不区分两者（诚实）')
-  assert.equal(byName['emt-mock'].probeSupport, 'none', 'mock 引擎无探测能力：按定义不回读（身份即诚实）')
+  // 数据面自适应：零依赖回退下 emt-mock 不注册，探针改验当前数据面引擎——
+  // emt-mock 无探测能力（身份即诚实）；lj-js 是进程内引擎，版本恒可回读（无探测失败态）
+  const dataPlane = handles.dataPlane
+  if (dataPlane === 'emt-mock') {
+    assert.equal(byName['emt-mock'].probeSupport, 'none', 'mock 引擎无探测能力：按定义不回读（身份即诚实）')
+  } else {
+    assert.equal(byName['lj-js'].probeSupport, 'probeVersion', '进程内引擎：版本恒可回读（无探测失败态）')
+  }
   // 默认不盖章：指纹仍保持声明态（副作用门禁）
   assert.equal(handles.potential.get('fake-probe-ok')._fingerprint.version, 'unknown')
   assert.match(result.note, /注册表不因探测失败缩减/, '声明层完整性随交付声明')

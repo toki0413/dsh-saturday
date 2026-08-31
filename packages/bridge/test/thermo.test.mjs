@@ -28,7 +28,9 @@ before(async () => {
     apply: (ctx) => screeningPlugin.apply(ctx, {}),
   })
   screenRt = screenFiber.store.saturdayScreening.rt
-  HAS_ASE = handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  // 环境自适应：零依赖数据面下 emt-mock 不注册（回退 lj-js），HAS_ASE 自然为 false → 真物理断言跳过（诚实）
+  HAS_ASE = handles.potential.providers.has('emt-mock')
+    && handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
 })
 
 after(async () => {
@@ -37,7 +39,7 @@ after(async () => {
 })
 
 test('1. 参考态显式计算：thermo.level + 全元素零点（真实 EMT）', async t => {
-  if (!HAS_ASE) t.skip('ASE unavailable: reference_energy data-plane primitive requires real EMT')
+  if (!HAS_ASE) return t.skip('ASE unavailable: reference_energy data-plane primitive requires real EMT')
   const material = await ctx.reflect.get('material').load('Cu')
   const result = await screenRt.tools.call('workflow.screen', {
     materialId: material.id, dopants: ['Ni', 'Ag'],
@@ -51,7 +53,7 @@ test('1. 参考态显式计算：thermo.level + 全元素零点（真实 EMT）'
 })
 
 test('2. 严格形成焓：基体近零 + 掺杂变体物理方向正确（Cu-Ni/Cu-Ag 相分离）', async t => {
-  if (!HAS_ASE) t.skip('ASE unavailable in this environment')
+  if (!HAS_ASE) return t.skip('ASE unavailable in this environment')
   const material = await ctx.reflect.get('material').load('Cu')
   const result = await screenRt.tools.call('workflow.screen', {
     materialId: material.id, dopants: ['Ni', 'Ag'],
@@ -68,7 +70,7 @@ test('2. 严格形成焓：基体近零 + 掺杂变体物理方向正确（Cu-Ni
 })
 
 test('3. 多组分凸包判据：3 元素统一成分空间，端点全零 → energyAboveHull = max(0, ΔH_f)', async t => {
-  if (!HAS_ASE) t.skip('ASE unavailable in this environment')
+  if (!HAS_ASE) return t.skip('ASE unavailable in this environment')
   const material = await ctx.reflect.get('material').load('Cu')
   const result = await screenRt.tools.call('workflow.screen', {
     materialId: material.id, dopants: ['Ni', 'Ag'],

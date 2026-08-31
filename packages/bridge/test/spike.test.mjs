@@ -13,7 +13,7 @@ import { VASP_LIKE_MANIFEST } from '../src/compute/emt-provider.mjs'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory.jsonl', import.meta.url))
 
-let ctx, fiber, handles, screenFiber, screenRt, HAS_ASE = false
+let ctx, fiber, handles, screenFiber, screenRt, HAS_ASE = false, DATA_PLANE = 'emt-mock'
 
 before(async () => {
   await rm(TRAJECTORY, { force: true })
@@ -29,9 +29,13 @@ before(async () => {
     apply: (ctx) => screeningPlugin.apply(ctx, { trajectoryPath: TRAJECTORY }),
   })
   screenRt = screenFiber.store.saturdayScreening.rt
-  // sidecar 握手信息：ASE 是否可用（决定测试 9/11 断言强度）
-  const provider = handles.potential.get('emt-mock')
-  HAS_ASE = provider.bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  // 环境自适应（与演示同款纪律）：零依赖数据面下 emt-mock 不注册（回退 lj-js），
+  // 探针改走 store.dataPlane；HAS_ASE 仅在 emt-mock 在场时有意义（决定测试 9/11 断言强度）
+  DATA_PLANE = handles.dataPlane
+  if (handles.potential.providers.has('emt-mock')) {
+    const provider = handles.potential.get('emt-mock')
+    HAS_ASE = provider.bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  }
 })
 
 after(async () => {
@@ -87,7 +91,7 @@ test('5. autoRoute 评分修正：screening 选快引擎（修订 #7）', () => 
   assert.equal(reg.autoRoute({ type: 'calculate', nAtoms: 8, profile: 'validation' }).name, 'vasp')
 })
 
-test('6. potential.relax：经 Python sidecar 完成弛豫，结果合理', async () => {
+test('6. potential.relax：经当前数据面引擎完成弛豫，结果合理', async () => {
   const material = ctx.reflect.get('material')
   const ar = await material.load('Ar')   // LJ 势对 Ar 是定性合理的玩具
   const potential = ctx.reflect.get('potential')
@@ -95,8 +99,12 @@ test('6. potential.relax：经 Python sidecar 完成弛豫，结果合理', asyn
   const result = await provider.relax(ar, { simulated_seconds: 0.1 })
   assert.equal(result.converged, true)
   assert.ok(Number.isFinite(result.energy))
-  assert.ok(result.scale > 0.9 && result.scale < 1.1)
-  assert.ok(result.n_steps > 3)
+  // scale 是 sidecar 引擎的统一缩放字段；lj-js（坐标+晶胞弛豫）不声明该字段，在场才验（如实）
+  if (result.scale !== undefined) {
+    assert.ok(result.scale > 0.9 && result.scale < 1.1)
+  }
+  // 步数只验形态（有限非负整数）：Ar 原型结构与 LJ 势本就自洽，lj-js 可 0 步收敛（不假设步数下限）
+  assert.ok(Number.isInteger(result.n_steps) && result.n_steps >= 0)
 })
 
 test('7. 事件 → Trajectory：工具调用后溯源日志落盘', async () => {
@@ -114,7 +122,7 @@ test('7. 事件 → Trajectory：工具调用后溯源日志落盘', async () =>
   const entry = lines.find(l => l.type === 'material_calculation_complete')
   assert.ok(entry, 'trajectory should contain the calculation entry')
   assert.equal(entry.material.formula, 'Ar')
-  assert.equal(entry.engine, 'emt-mock')
+  assert.equal(entry.engine, DATA_PLANE, '轨迹引擎字段如实反映当前数据面')
   assert.ok(materialService)
 })
 
@@ -204,7 +212,11 @@ test('11. workflow.screen：批量掺杂筛选，排序正确且逐变体溯源�
 
 // ── 契约测试（附录 A 待补项）──────────────────────────────
 
-test('12. 契约：license 是前置门禁（修订 #10）', async () => {
+test('12. 契约：license 是前置门禁（修订 #10）', async t => {
+  if (!handles.potential.providers.has('emt-mock')) {
+    t.skip('emt-mock 不在场（零依赖数据面）：免 license 引擎的在场断言由 fallback-lj 套件覆盖')
+    return
+  }
   const rt = { on() {}, emit() {} }
   const reg = new PotentialRegistry(rt)
   reg.register({ name: VASP_LIKE_MANIFEST.name, manifest: VASP_LIKE_MANIFEST.manifest })
@@ -232,7 +244,8 @@ test('12. 契约：license 是前置门禁（修订 #10）', async () => {
 test('13. 契约：事件粒度声明——job 级引擎必须显式拒绝细粒度监听（§5.2）', () => {
   const rt = { on() {}, emit() {} }
   const reg = new PotentialRegistry(rt)
-  const emt = handles.potential.get('emt-mock')
+  // iteration 级引擎取当前数据面（emt-mock / lj-js 均声明 iteration，指纹独立但粒度同级）
+  const emt = handles.potential.get(DATA_PLANE)
 
   // iteration 级引擎：允许细粒度监听，且粒度已在 manifest 声明（握手可见）
   assert.equal(emt.manifest.eventGranularity, 'iteration')

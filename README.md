@@ -1,5 +1,7 @@
 # Saturday —— 材料计算的插件运行时
 
+[![CI](https://github.com/toki0413/dsh-saturday/actions/workflows/ci.yml/badge.svg)](https://github.com/toki0413/dsh-saturday/actions/workflows/ci.yml)
+
 **Everything is a plugin。** Saturday 不是又一套材料计算引擎，不替代 DFT / MD / FEM / CFD 的任何求解器；
 它是材料计算的**组合层**：引擎、结构源、工作流、分析工具全部以插件形态挂载到
 **DeepSeek Harness (dsh) / `@deepseek-ai/cordis` v4** 运行时上，由 Agent 在运行时自由挂载、卸载与组合。
@@ -85,6 +87,18 @@ EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。
 - Python 数据面依赖：numpy + scipy（仅升级精度时需要）
 - Windows 下默认使用 `python` 命令，可用 `bridge.python` 配置覆盖
 - pnpm
+
+## CI（数据面双档矩阵）
+
+每次推送/PR 自动跑两档（`.github/workflows/ci.yml`），与上方环境矩阵一一对应：
+
+| 档位 | 环境 | 验证目标 |
+|---|---|---|
+| zero-deps | 纯 Node（不装任何 Python 依赖） | 开箱即用承诺：数据面优雅回退 `lj-js`，全量测试 + 演示冒烟 + 发布形态核验 |
+| full-fidelity | Node + Python + ASE + scipy | EMT 真物理精度档：真实弛豫/参考态/互转自检 + 摘要再生冒烟 |
+
+两档跑同一份测试：套件内环境自适应（`HAS_ASE`/`dataPlane` 探测 + 显式 skip，诚实不静默）；
+真物理断言（晶格常数、严格形成焓、互转自检）仅在精度档执行，零依赖档如实跳过不伪造。
 
 ## 结构（npm workspaces）
 
