@@ -6,6 +6,7 @@ import { createCordisAdapter } from '@saturday/kernel'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@saturday/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@saturday/python-bridge'
+import { LjProvider } from '@saturday/plugin-lj'
 
 export default {
   name: 'saturday',
@@ -21,17 +22,34 @@ export default {
     const materialService = new MaterialService(resolver)
     const potential = new PotentialRegistry(rt)
 
+    // 数据面形态双轨（开箱即用纪律）：
+    //  - Python 可用 → emt-mock sidecar（有 ASE 时自动走真 EMT，无 ASE 走 LJ 兜底）
+    //  - Python 不可用 → 显式回退零依赖纯 JS 引擎 lj-js（横幅如实报告，
+    //    非静默降级：指纹独立为 lj-js，能量进组合路径前照常过 M1 门禁）
     const bridge = new PythonBridge(config.bridge)
-    await bridge.connect()
-    potential.register(new EmtMockProvider(bridge))
-    await potential.activate('emt-mock')
+    let dataPlane = 'emt-mock'
+    try {
+      await bridge.connect()
+      potential.register(new EmtMockProvider(bridge))
+      await potential.activate('emt-mock')
+      // sidecar 生命周期绑定到插件 fiber：卸载时断开
+      rt.effect(() => () => bridge.disconnect(), 'python-bridge')
+    } catch (err) {
+      dataPlane = 'lj-js'
+      potential.register(new LjProvider())
+      await potential.activate('lj-js')
+      if (!config.quiet) {
+        console.log(
+          `[saturday] Python 数据面不可用（${err.message.split('\n')[0]}）\n` +
+          '[saturday] 已显式回退到零依赖纯 JS 引擎 lj-js（LJ 玩具势，指纹如实声明）；' +
+          '安装 Python+ASE 可解锁 EMT 精度',
+        )
+      }
+    }
 
     // 服务注册即效果：插件卸载时自动回收（Cordis provide 语义）
     rt.provideService('material', materialService)
     rt.provideService('potential', potential)
-
-    // sidecar 生命周期绑定到插件 fiber：卸载时断开
-    rt.effect(() => () => bridge.disconnect(), 'python-bridge')
 
     // ── Agent 工具（dsh 内走 harness；裸 cordis 走本地注册表）──
     rt.registerTool({
@@ -198,7 +216,8 @@ export default {
     })
 
     // 运行时句柄外挂到 fiber.store（cordis v4：apply 只能返回 void 或 disposer，
-    // 不能返回任意对象——返回对象会被当作 effect 而拒绝）
-    ctx.fiber.store.saturday = { rt, materialService, potential }
+    // 不能返回任意对象——返回对象会被当作 effect 而拒绝）；
+    // dataPlane 如实声明当前数据面形态（'emt-mock' | 'lj-js'），演示与工具据此呈现
+    ctx.fiber.store.saturday = { rt, materialService, potential, dataPlane }
   },
 }

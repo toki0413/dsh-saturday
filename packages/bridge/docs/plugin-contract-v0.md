@@ -164,7 +164,7 @@ interface AtomGraph {
 
 ```typescript
 interface PotentialProvider {
-  readonly name: string       // 'emt-mock' | 'lammps' | 'mace' | 'vasp' …
+  readonly name: string       // 'emt-mock' | 'lj-js' | 'lammps' | 'mace' | 'vasp' …
   readonly version: string
   readonly manifest: ProviderManifest
   relax(material: Material, params?: object): Promise<RelaxResult>
@@ -235,6 +235,12 @@ interface MdResult {
   超时 / 取消语义由任务域承载，Provider 必须支持取消且不留孤儿进程；
 - **参考态辅助原语**：`provider.referenceEnergy(symbol)` 显式计算元素参考态每原子能量
   （数据面算子 `reference_energy`），供热力学判据消费（§4.3）。
+
+参考实现：`@saturday/plugin-lj`（零依赖纯 JS 引擎，指纹 `lj-js/LJ`）——
+截断+平移 LJ（Lorentz-Berthelot 混合）声明 `relax`/`calculate`/`md` 能力，
+另提供 `harmonic` 辅助原语（与 sidecar 同规格：零模/虚频如实计数）与 `referenceEnergy`
+（本引擎自洽参考态，非实验值，随交付声明）；玩具势教学档精度声明在先。
+Python 数据面缺失时由桥层显式注册为回退数据面（非静默降级，见附录 A 第 78 条）。
 
 ### 4.3 workflow —— 工作流插件
 
@@ -700,6 +706,8 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 74 | 判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账：判据快照落盘 → 全新挂载回填续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；不可追溯载荷经修复 + 审计验收后回填：提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；判据回呈的可追溯占比 = 库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转，观测/判据全程不变更库 | demo:anchor-resume 会话三续供对账 + bridge anchor-repair-liveness 测试 1-2（修复达标数据成燃料 + 归属如实不冒充原件）+ plugin-sampler-ou plugin-anchor-save-load 测试 14（观测→判据不断链与结论随读数翻转） |
 | 75 | 修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告：验收达标后回填修复后载荷——修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件），不可追溯原件全程不入库——观测→修复→验收→入库四环在 Agent 层全链接；快照可选携带推导引用（`triggerRef`）：声明即原样随快照落盘/回填，回填后沿引用可查活性、证据失效沿引用如实传播（结论 ↔ 证据文件双向可追溯），未声明不伪造；`trajectoryTriggerReadiness` 纯层：触发条件基础设施五面（观测/判据/快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口——呈报不是门禁 | demo:agent 阶段 J 全流程 + bridge anchor-trigger-derivation 测试 3（快照携带推导引用：双向可追溯与失效传播 + 不伪造）+ plugin-sampler-ou plugin-anchor-trigger 测试 5（就绪度报告如实与拒伪造） |
 | 76 | 可靠性验证：故障注入 + 性能基线 + 发布形态核验——截断载荷（中断写/断电模拟）→ 回填拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案/落盘回填往返）——读数即事实不设阈值不做门禁；`scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验 + 清单如实呈报，违规非零退出，不产生 .tgz 不触网 | plugin-sampler-ou failure-drill 测试 1-3（截断拒绝 + 库零污染 + 门禁先行）+ perf-baseline 测试 1-2（纯层/往返量级读数如实）+ scripts/pack-check 实跑（19 包全过） |
+| 77 | 零依赖引擎插件入生态：契约套件全真跑 + 闭式对账——manifest/M1 注册门禁/路由激活/指纹声明经 potentialProviderContract 套件在任何环境全量真实执行（零依赖引擎无 skip 路径）；闭式对账：力 = 能量负梯度（数值有限差分）、Langevin 恒温 MD 能量均分对账 ⟨K⟩ = 3/2 kT、谐振子配分函数闭式一致性（纯谐波势上）；谐波原语零模/虚频如实计数不静默修正；玩具势性质声明在先（LJ 为教学档精度；参考态为本引擎自洽参考，非实验值） | plugin-lj lj 测试 1-15（契约套件全真跑 + 闭式对账 + 插件形态） |
+| 78 | 数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态 | bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移） |
 
 
 ```javascript

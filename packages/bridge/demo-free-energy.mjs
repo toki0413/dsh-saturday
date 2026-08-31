@@ -1,5 +1,6 @@
 // 构型自由能曲线演示（热力学第二档）：
-// Cu 原胞 + 真实 ASE 引擎（EMT 计算器 / Langevin 恒温 MD）→ 逐温度网格点恒温 MD 得 ⟨U⟩(β)
+// Cu 原胞 + 声明 md 能力的引擎（环境自适应：有 Python+ASE 时为 EMT 计算器；
+// 纯 Node 时为零依赖 lj-js 引擎，LJ 玩具势——定性演示档）→ 逐温度网格点恒温 MD 得 ⟨U⟩(β)
 // → 沿 β 热力学积分出构型自由能曲线。
 // 锚点物理化：anchorMode='harmonic' → 引擎 harmonic 原语（弛豫+有限差分 Hessian
 // 简正模）+ 量子谐振子闭式给出 F₀；经典 TI 采样与量子锚点混合为声明的近似。
@@ -15,14 +16,20 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { rt, potential } = fiber.store.saturday
+const { rt, potential, dataPlane } = fiber.store.saturday
 
-// 真实 ASE 引擎（EMT 计算器，声明 md 能力）：自由能积分的逐网格点恒温 MD 由它提供；
-// 核心插件的 emt-mock 只声明 relax，路由自动选 ase 引擎（契约 §4.1 能力路由）
-const aseFiber = await ctx.registry.plugin({
-  name: 'saturday-ase',
-  apply: (ctx) => asePlugin.apply(ctx, { calculator: 'emt' }),
-})
+// ASE 引擎（EMT 计算器，声明 md 能力）：自由能积分的逐网格点恒温 MD 由它提供；
+// 核心插件的 emt-mock 只声明 relax，路由自动选 ase 引擎（契约 §4.1 能力路由）。
+// 纯 Node 环境 ase 挂载失败如实跳过：能力路由落到 lj-js（同样声明 md + harmonic 原语）
+let aseFiber = null
+try {
+  aseFiber = await ctx.registry.plugin({
+    name: 'saturday-ase',
+    apply: (ctx) => asePlugin.apply(ctx, { calculator: 'emt' }),
+  })
+} catch (err) {
+  console.log(`[demo] ase 引擎挂载失败（${err.message.split('\n')[0]}）——自由能工作流路由到 ${dataPlane} 引擎\n`)
+}
 
 // 工作流插件独立挂载（契约 §4.3）：与核心插件同一 Context 组合
 const feFiber = await ctx.registry.plugin({
@@ -31,8 +38,12 @@ const feFiber = await ctx.registry.plugin({
 })
 const feRt = feFiber.store.saturdayFreeEnergy.rt
 
-const provider = potential.get('emt-mock')
-console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+if (dataPlane === 'emt-mock') {
+  const provider = potential.get('emt-mock')
+  console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+} else {
+  console.log(`数据面: ${dataPlane}（零依赖纯 JS 引擎，LJ 玩具势——自由能曲线为定性演示档）\n`)
+}
 
 const cu = await rt.tools.call('material.load', { query: 'Cu' })
 console.log(`参考结构: ${cu.formula} (${cu.nAtoms} 原子, id=${cu.materialId.slice(0, 8)}…)`)
@@ -74,5 +85,5 @@ console.log(`耗时 ${((Date.now() - t0) / 1000).toFixed(1)} s`)
 console.log('分析事件已发布（saturday/analysis/complete，薄载荷）')
 
 await feFiber.dispose()
-await aseFiber.dispose()
+await aseFiber?.dispose()
 await fiber.dispose()

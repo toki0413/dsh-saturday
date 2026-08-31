@@ -1,4 +1,5 @@
-// 掺杂筛选演示：Cu 基体 + 4 种 fcc 金属掺杂 → ASE EMT 批量弛豫 → 能量排序 → 溯源
+// 掺杂筛选演示：Cu 基体 + 4 种 fcc 金属掺杂 → 批量弛豫 → 能量排序 → 溯源
+// 环境自适应：有 Python+ASE 走真实 EMT；纯 Node 走零依赖 lj-js 引擎（LJ 玩具势，定性演示档）。
 // 运行：node demo-screening.mjs
 
 import { Context } from '@deepseek-ai/cordis'
@@ -10,7 +11,7 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { rt, potential } = fiber.store.saturday
+const { rt, potential, dataPlane } = fiber.store.saturday
 
 // 工作流插件独立挂载（契约 §4.3）：与核心插件同一 Context 组合
 const screenFiber = await ctx.registry.plugin({
@@ -19,8 +20,12 @@ const screenFiber = await ctx.registry.plugin({
 })
 const screenRt = screenFiber.store.saturdayScreening.rt
 
-const provider = potential.get('emt-mock')
-console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+if (dataPlane === 'emt-mock') {
+  const provider = potential.get('emt-mock')
+  console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+} else {
+  console.log(`数据面: ${dataPlane}（零依赖纯 JS 引擎，LJ 玩具势——定性演示档）\n`)
+}
 
 const cu = await rt.tools.call('material.load', { query: 'Cu' })
 console.log(`基体: ${cu.formula} (${cu.nAtoms} 原子, id=${cu.materialId.slice(0, 8)}…)`)

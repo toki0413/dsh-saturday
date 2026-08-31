@@ -39,6 +39,15 @@ export class PythonBridge {
       this.pending.clear()
       this.proc = null
     })
+    // spawn 即时错误（如解释器不存在）：立即拒绝挂起调用，不悬挂到超时；
+    // 调用方据此决定显式失败还是显式回退（诚实降级，绝不静默卡死）
+    this.proc.on('error', err => {
+      for (const { reject } of this.pending.values()) {
+        reject(new Error(`Failed to launch Python sidecar: ${err.message}`))
+      }
+      this.pending.clear()
+      this.proc = null
+    })
     // 握手：确认 sidecar 就绪与版本
     const hello = await this.call('hello', {})
     this.sidecarInfo = hello

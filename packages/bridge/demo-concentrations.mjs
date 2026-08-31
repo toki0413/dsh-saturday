@@ -1,7 +1,8 @@
 // 浓度扫描演示：Cu 基体 + Pt/Ni 各三档浓度 + 共掺变体（统一成分空间）
 // → 同掺杂多浓度内点让凸包变密；共掺候选落在稳定相之间的成分空间内部。
-// 非退化判据的机制由筛选测试 9 闭式对账（7/75）；本演示展示真实 EMT 下的包络实证：
-// Cu2Pt2/Cu2NiPt 等负 ΔH_f 候选成为稳定相顶点，包络不再由端点弦单独主导。
+// 非退化判据的机制由筛选测试 9 闭式对账（7/75）；本演示展示当前数据面引擎下的包络实证：
+// 负 ΔH_f 候选成为稳定相顶点，包络不再由端点弦单独主导（EMT 下 Cu-Pt-Ni 共掺呈负 ΔH_f；
+// LJ 玩具势下数值与符号可不同——定性演示档，判据机制不依赖引擎精度）。
 // 运行：npm run demo:concentrations
 
 import { Context } from '@deepseek-ai/cordis'
@@ -13,7 +14,7 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { rt, potential } = fiber.store.saturday
+const { rt, potential, dataPlane } = fiber.store.saturday
 
 const screenFiber = await ctx.registry.plugin({
   name: 'saturday-screening',
@@ -21,8 +22,12 @@ const screenFiber = await ctx.registry.plugin({
 })
 const screenRt = screenFiber.store.saturdayScreening.rt
 
-const provider = potential.get('emt-mock')
-console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+if (dataPlane === 'emt-mock') {
+  const provider = potential.get('emt-mock')
+  console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+} else {
+  console.log(`数据面: ${dataPlane}（零依赖纯 JS 引擎，LJ 玩具势——定性演示档）\n`)
+}
 
 const cu = await rt.tools.call('material.load', { query: 'Cu' })
 console.log(`基体: ${cu.formula} (${cu.nAtoms} 原子)\n`)
@@ -34,7 +39,7 @@ const result = await screenRt.tools.call('workflow.screen', {
   dopants: ['Pt', 'Ni'],
   maxDopedSites: 3,
   // 共掺变体：Cu2NiPt 落在成分三角形内部——若其能量高于包络插值则产生非退化判据；
-  // EMT 下 Cu-Pt-Ni 共掺负 ΔH_f（有序化）→ 直接成为稳定相顶点（机制已由测试 9 闭式验证）
+  // 共掺负 ΔH_f（有序化）→ 直接成为稳定相顶点（机制已由测试 9 闭式验证）
   codopants: [{ elements: ['Pt', 'Ni'], sites: [0, 1] }],
 })
 

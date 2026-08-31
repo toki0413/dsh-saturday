@@ -1,6 +1,8 @@
 // 三元混掺筛选演示：Cu 基体 + 4 种掺杂（5 元素统一成分空间）
-// → 真实 ASE EMT 批量弛豫 + 全元素参考态显式计算 → 严格形成焓 + 多组分凸包判据。
-// 物理看点：Cu-Pt/Cu-Au 负形成焓（有序化倾向）候选落入包络下方成为稳定相顶点；
+// → 当前数据面引擎批量弛豫 + 全元素参考态显式计算 → 严格形成焓 + 多组分凸包判据。
+// 物理看点：形成焓的符号与凸包几何由引擎能量裁定——落入包络下方的候选成为稳定相顶点；
+// EMT 下 Cu-Pt/Cu-Au 呈负形成焓（有序化倾向），LJ 玩具势下数值与符号可不同（定性演示档），
+// 判据机制本身不依赖引擎精度。
 // 几何诚实声明：单点掺杂候选位于"基体端点→掺杂端点"连线上，该连线内包络仍由 0-0 弦主导，
 // 故判据保持 max(0, ΔH_f) 退化形；非退化判据需每掺杂多浓度内点（见浓度扫描演示）。
 // 运行：npm run demo:screening-ternary
@@ -14,7 +16,7 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { rt, potential } = fiber.store.saturday
+const { rt, potential, dataPlane } = fiber.store.saturday
 
 const screenFiber = await ctx.registry.plugin({
   name: 'saturday-screening',
@@ -22,8 +24,12 @@ const screenFiber = await ctx.registry.plugin({
 })
 const screenRt = screenFiber.store.saturdayScreening.rt
 
-const provider = potential.get('emt-mock')
-console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+if (dataPlane === 'emt-mock') {
+  const provider = potential.get('emt-mock')
+  console.log(`sidecar 后端: ${JSON.stringify(provider.bridge.sidecarInfo.calculators)}\n`)
+} else {
+  console.log(`数据面: ${dataPlane}（零依赖纯 JS 引擎，LJ 玩具势——定性演示档）\n`)
+}
 
 const cu = await rt.tools.call('material.load', { query: 'Cu' })
 console.log(`基体: ${cu.formula} (${cu.nAtoms} 原子, id=${cu.materialId.slice(0, 8)}…)`)

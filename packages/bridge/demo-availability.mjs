@@ -2,9 +2,10 @@
 // 对每个已注册引擎：可用性探测 + 运行时版本回读（实测态升级）——
 //   可用者呈实测态（指纹 version 从声明态 'unknown' 盖章升级），
 //   不可用者如实报告原因（注册 = 声明层，可用 = 运行时层，两层各自诚实）。
-// 诚实声明：本演示输出依赖运行环境——同一份代码在装了/没装 LAMMPS/MACE 的
+// 诚实声明：本演示输出依赖运行环境——同一份代码在装了/没装 LAMMPS/MACE/ASE 的
 // 机器上给出不同的表，两种输出都是正确的（这正是预检的意义）。
-// 运行：node demo-availability.mjs（ase 段依赖 Python sidecar）
+// 环境自适应：纯 Node 下 ase 段如实报缺失（或跳过挂载），数据面引擎 lj-js 报可用。
+// 运行：node demo-availability.mjs
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
@@ -17,14 +18,21 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { potential } = fiber.store.saturday
+const { potential, dataPlane } = fiber.store.saturday
 
-// ase：自带 sidecar 插件（probeVersion 走自己的 sidecar 握手）
-const aseFiber = await ctx.registry.plugin({
-  name: 'saturday-ase',
-  apply: (ctx) => asePlugin.apply(ctx, {}),
-})
-const aseProvider = aseFiber.store.saturdayAse.provider
+// ase：自带 sidecar 插件（probeVersion 走自己的 sidecar 握手）；
+// 纯 Node 环境挂载失败如实跳过（预检表如实少一行/报缺失，不阻断演示）
+let aseFiber = null
+let aseProvider = null
+try {
+  aseFiber = await ctx.registry.plugin({
+    name: 'saturday-ase',
+    apply: (ctx) => asePlugin.apply(ctx, {}),
+  })
+  aseProvider = aseFiber.store.saturdayAse.provider
+} catch (err) {
+  console.log(`[demo] ase 引擎挂载失败（${err.message.split('\n')[0]}）——预检表如实报缺失\n`)
+}
 
 // lammps/mace：批处理引擎——注册 = 声明层（M1 门禁注册即验 units/fingerprint），
 // 可用性与版本探测真实环境（不缓存：环境可能在运行中变化，与 mace 预检同款纪律）
@@ -34,16 +42,24 @@ potential.register(lammps)
 potential.register(mace)
 
 console.log('── 可用性预检 + 实测态版本回读──\n')
-const engines = [
-  { name: 'emt-mock', probe: async () => null,
-    note: 'mock 引擎：按定义不回读（身份即 LJ-mock，version 声明 unknown 本身就是诚实）' },
-  { name: 'ase', probe: () => aseProvider.probeVersion(),
-    note: '常驻 sidecar：握手回读 ase.__version__' },
+const engines = []
+if (dataPlane === 'emt-mock') {
+  engines.push({ name: 'emt-mock', probe: async () => null,
+    note: 'mock 引擎：按定义不回读（身份即 LJ-mock，version 声明 unknown 本身就是诚实）' })
+} else {
+  engines.push({ name: 'lj-js', probe: () => potential.get('lj-js').probeVersion(),
+    note: '进程内纯 JS 引擎：零外部依赖，探测即在场' })
+}
+if (aseProvider) {
+  engines.push({ name: 'ase', probe: () => aseProvider.probeVersion(),
+    note: '常驻 sidecar：握手回读 ase.__version__' })
+}
+engines.push(
   { name: 'lammps', probe: () => lammps.probeVersion(),
     note: '批处理二进制：解析 `lmp -h` 横幅' },
   { name: 'mace', probe: () => mace.probeVersion(),
     note: '一次性子进程：import mace; __version__' },
-]
+)
 
 console.log('引擎        状态     指纹（归一形态）                          探测路径')
 console.log('──────────  ───────  ──────────────────────────────────────  ──────────────────────────────')
@@ -62,5 +78,5 @@ console.log('   门禁拦下（绝不静默替换成别的引擎，契约 §4.2 
 console.log(' - 探测失败不盖章：version 保持 "unknown" 声明态（不拿未知冒充已知）')
 console.log(' - 指纹比较 version 维 unknown 通配：未探测不构成差异证据，但同源判定随附"含未验证维"声明')
 
-await aseFiber.dispose()
+await aseFiber?.dispose()
 await fiber.dispose()

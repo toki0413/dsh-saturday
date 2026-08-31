@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-31T04:54:25.225Z
+生成时间：2026-08-31T05:49:00.594Z
 
-**回归基线：335/335**（19 个包，其中 18 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：354/354**（20 个包，其中 19 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 51/51 |
+| `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 55/55 |
 | `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -18,6 +18,7 @@
 | `@saturday/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 9/9 |
 | `@saturday/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
 | `@saturday/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 12/12 |
+| `@saturday/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
 | `@saturday/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。 | 11/11 |
 | `@saturday/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@saturday/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
@@ -26,7 +27,7 @@
 | `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
 | `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，76 条）
+## 实证条款（契约文档附录 A，78 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -104,6 +105,8 @@
 - **#74** 判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账：判据快照落盘 → 全新挂载回填续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；不可追溯载荷经修复 + 审计验收后回填：提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；判据回呈的可追溯占比 = 库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转，观测/判据全程不变更库（证据：demo:anchor-resume 会话三续供对账 + bridge anchor-repair-liveness 测试 1-2（修复达标数据成燃料 + 归属如实不冒充原件）+ plugin-sampler-ou plugin-anchor-save-load 测试 14（观测→判据不断链与结论随读数翻转））
 - **#75** 修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告：验收达标后回填修复后载荷——修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件），不可追溯原件全程不入库——观测→修复→验收→入库四环在 Agent 层全链接；快照可选携带推导引用（`triggerRef`）：声明即原样随快照落盘/回填，回填后沿引用可查活性、证据失效沿引用如实传播（结论 ↔ 证据文件双向可追溯），未声明不伪造；`trajectoryTriggerReadiness` 纯层：触发条件基础设施五面（观测/判据/快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口——呈报不是门禁（证据：demo:agent 阶段 J 全流程 + bridge anchor-trigger-derivation 测试 3（快照携带推导引用：双向可追溯与失效传播 + 不伪造）+ plugin-sampler-ou plugin-anchor-trigger 测试 5（就绪度报告如实与拒伪造））
 - **#76** 可靠性验证：故障注入 + 性能基线 + 发布形态核验——截断载荷（中断写/断电模拟）→ 回填拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案/落盘回填往返）——读数即事实不设阈值不做门禁；`scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验 + 清单如实呈报，违规非零退出，不产生 .tgz 不触网（证据：plugin-sampler-ou failure-drill 测试 1-3（截断拒绝 + 库零污染 + 门禁先行）+ perf-baseline 测试 1-2（纯层/往返量级读数如实）+ scripts/pack-check 实跑（19 包全过））
+- **#77** 零依赖引擎插件入生态：契约套件全真跑 + 闭式对账——manifest/M1 注册门禁/路由激活/指纹声明经 potentialProviderContract 套件在任何环境全量真实执行（零依赖引擎无 skip 路径）；闭式对账：力 = 能量负梯度（数值有限差分）、Langevin 恒温 MD 能量均分对账 ⟨K⟩ = 3/2 kT、谐振子配分函数闭式一致性（纯谐波势上）；谐波原语零模/虚频如实计数不静默修正；玩具势性质声明在先（LJ 为教学档精度；参考态为本引擎自洽参考，非实验值）（证据：plugin-lj lj 测试 1-15（契约套件全真跑 + 闭式对账 + 插件形态））
+- **#78** 数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态（证据：bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

@@ -7,8 +7,9 @@
 // 演示边界：搬运原语 + 文件端就位后，“落盘由调用方负责”在编排层兑现——
 // 锚点库跨会话续供，谱系不断。两“会话”是同一进程内两次独立挂载（各自 Context、
 // 各自锚点库、各自全部回收），跨会话的唯一通道是磁盘载荷。
-// 无 ASE 环境下数据面显式报错，本演示如实终止。
-// 运行：node demo-anchor-resume.mjs（依赖 Python sidecar 做真实弛豫/单点）
+// 环境自适应：弛豫/单点走当前数据面引擎（有 Python 为 EMT；纯 Node 为 lj-js，
+// 回算闭环两环境均完整）；Python 在场但无 ASE 的边缘环境下数据面显式报错，本演示如实终止。
+// 运行：node demo-anchor-resume.mjs
 
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -78,8 +79,9 @@ try {
     console.log(`  检索[${i}]: ${a.source.split('#')[0]}…，组分 L1 距离 = ${a.distance}（谱系跨会话保留）`)
   }
 
-  const hasAse = s2.handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
-  if (!hasAse) {
+  const canRecalc = s2.handles.dataPlane === 'lj-js'
+    || s2.handles.potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  if (!canRecalc) {
     console.log('ASE 不可用：数据面诚实报错，本演示如实终止（不伪造回算证据）。')
   } else {
     const result = await s2.screenRt.tools.call('workflow.screen', {

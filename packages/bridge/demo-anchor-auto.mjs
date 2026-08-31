@@ -5,8 +5,9 @@
 //   C. sampler.mixture 会话库检索 → 配额 → 混合提案（检索距离随交付呈现，
 //      组分不可考锚点排尾如实呈现）
 //   D. 工具间只传交付接 `workflow.screen` 联合排序（候选不自证，引擎是唯一 oracle）
-// 诚实纪律：无 ASE 环境下数据面诚实报错，本演示如实终止不伪造证据。
-// 运行：node demo-anchor-auto.mjs（依赖 Python sidecar 做真实弛豫/单点）
+// 诚实纪律：回算证据只认真实可算的数据面——纯 Node 下 lj-js 引擎可回算，
+// 闭环完整；Python 在场但无 ASE 的边缘环境下数据面诚实报错，本演示如实终止不伪造证据。
+// 运行：node demo-anchor-auto.mjs（环境自适应：弛豫/单点走 EMT 或 lj-js）
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
@@ -15,7 +16,7 @@ import samplerOuPlugin from '@saturday/plugin-sampler-ou'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({ name: 'saturday', apply: (ctx) => plugin.apply(ctx, {}) })
-const { potential, materialService } = fiber.store.saturday
+const { potential, materialService, dataPlane } = fiber.store.saturday
 const screenFiber = await ctx.registry.plugin({ name: 'saturday-screening', apply: (ctx) => screeningPlugin.apply(ctx, {}) })
 const samplerFiber = await ctx.registry.plugin({ name: 'saturday-sampler-ou', apply: (ctx) => samplerOuPlugin.apply(ctx, {}) })
 const screenRt = screenFiber.store.saturdayScreening.rt
@@ -59,8 +60,9 @@ try {
 
   // ── D. 回算闭环 + 联合排序：候选不自证，引擎是唯一 oracle ──
   console.log('── D. 回算 + 联合排序（候选不自证；谱系在编排层不断）──')
-  const hasAse = potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
-  if (!hasAse) {
+  const canRecalc = dataPlane === 'lj-js'
+    || potential.get('emt-mock').bridge.sidecarInfo?.calculators?.['ase-emt'] === true
+  if (!canRecalc) {
     console.log('ASE 不可用：数据面诚实报错，本演示如实终止（不伪造回算证据）。')
   } else {
     const result = await screenRt.tools.call('workflow.screen', {

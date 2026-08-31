@@ -3,7 +3,8 @@
 //   A. 双锚点（Cu 基体 / Cu3Ag 掺杂，同拓扑）按 [0.6, 0.4] 配额采样（最大余数法）
 //   B. 混合似然独立重算（相对全部锚点，'exact' 不降档，可复现 1e-9）
 //   C. 回算闭环：候选不自证，引擎是唯一 oracle（采样似然 ≠ 物理能量）
-// 运行：node demo-mixture-sampling.mjs（依赖 Python sidecar 做真实单点）
+// 运行：node demo-mixture-sampling.mjs（环境自适应：有 Python 走 EMT 单点；
+// 纯 Node 走零依赖 lj-js 引擎，回算闭环两环境均完整）
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
@@ -15,7 +16,7 @@ const fiber = await ctx.registry.plugin({
   name: 'saturday',
   apply: (ctx) => plugin.apply(ctx, {}),
 })
-const { potential, materialService } = fiber.store.saturday
+const { potential, materialService, dataPlane } = fiber.store.saturday
 
 // ── A. 双锚点混合采样：Cu fcc 原胞与其单点掺杂 Cu3Ag（同拓扑：均 4 原子）──
 const cu = await materialService.load('Cu')
@@ -59,7 +60,7 @@ const candidate = await Material.create({
   modalities: { graph: pick.graph, formula: cu.formula },
   lineage: [{ operation: 'sampled-candidate', detail: { source: pick.source }, timestamp: Date.now() }],
 })
-const provider = potential.get('emt-mock')
+const provider = potential.get(dataPlane)
 const calc = await provider.calculate(candidate)
 console.log(`候选[0] 谱系: ${pick.source}`)
 console.log(`采样似然: logProb = ${pick.logProb.toFixed(6)}（提议核下的相对全部锚点混合似然）`)

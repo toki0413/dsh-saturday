@@ -49,7 +49,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 能力 | 工具 | 说明 |
 |---|---|---|
 | 材料加载 | `material.load` | 化学式 → 结构（原型库，TiO2 多晶型可选） |
-| 结构弛豫 | `potential.relax` | ASE EMT 真实物理（UnitCellFilter + BFGS），LJ 玩具势兜底 |
+| 结构弛豫 | `potential.relax` | ASE EMT 真实物理（UnitCellFilter + BFGS）；纯 Node 环境走零依赖 lj-js 引擎（LJ 玩具势） |
 | 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体溯源；注入参考态后自动升级为严格形成焓 + 多组分凸包判据；支持多浓度扫描与共掺候选；采样候选可参与联合排序（能量证据 × 提议似然 → 重要性权重），证据源可扩展（凸包距离、理想混合熵等，注册表化接入） |
 | MP 结构源 | `structure.resolve` | Materials Project 远端解析（`@saturday/plugin-mp`，需 MP_API_KEY） |
 | 轨迹回放 | `trajectory.replay` | 从 append-only 事件流重建计算索引（`@saturday/plugin-replay`） |
@@ -64,16 +64,25 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 锚点库 | `sampler.anchor.*` | 弛豫收敛结构自动入库（谱系必填）→ 检索 → 混合提案；支持落盘/回填、血缘审计、修复与触发判据对账（数据治理工具链） |
 
 引擎插件矩阵（均接入 `@saturday/contract-tests` 标准套件）：
-`emt-mock`（核心，ASE EMT / LJ）、`lammps`（批处理，粒度 job）、`mace`（ML 势，可用性预检）、`ase`（通用 ASE 计算器，自带 sidecar）。
+`emt-mock`（核心，ASE EMT / LJ）、`lj-js`（零依赖纯 JS，玩具势教学档，优雅回退数据面）、`lammps`（批处理，粒度 job）、`mace`（ML 势，可用性预检）、`ase`（通用 ASE 计算器，自带 sidecar）。
 
 EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。Cu 掺杂筛选实测：
 **Cu3Pt (-0.10) < Cu3Au (-0.02) < Cu (0) < Cu3Ni (+0.01) < Cu3Ag (+0.02) eV/atom**——
 有序化（Cu-Pt / Cu-Au）与相分离（Cu-Ni / Cu-Ag）倾向与实验冶金学一致。
 
-## 环境要求
+## 环境矩阵
+
+开箱即用：`git clone → npm install` 后，**纯 Node 环境即可跑全部 12 个演示**（无额外依赖）。
+数据面形态随环境自适应，启动横幅如实呈报（非静默降级：回退引擎是显式注册的独立引擎）。
+
+| 环境 | 数据面 / 可用引擎 | 说明 |
+|---|---|---|
+| 纯 Node（无 Python） | `lj-js`（零依赖纯 JS，LJ 玩具势） | 全部演示可跑；精度为教学档（玩具势声明在先，参考态为引擎自洽参考非实验值） |
+| + Python ≥ 3.10 + ASE ≥ 3.22 | `emt-mock`（EMT 真物理）+ `ase` | 解锁 EMT 精度；sidecar 内缺 ASE 自动回退 LJ 玩具势（如实声明） |
+| + LAMMPS / MACE | `lammps` / `mace` | 生产级引擎接入；缺失时可用性预检如实报告（`demo:availability`） |
 
 - **Node ≥ 22**（dsh 硬性要求；裸 cordis 测试可在 Node 20 运行）
-- Python ≥ 3.10 + numpy + scipy；**ASE ≥ 3.22**（EMT 真物理；缺 ASE 自动回退 LJ 玩具势）
+- Python 数据面依赖：numpy + scipy（仅升级精度时需要）
 - Windows 下默认使用 `python` 命令，可用 `bridge.python` 配置覆盖
 - pnpm
 
@@ -103,6 +112,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   lammps/                     #   @saturday/plugin-lammps —— 引擎：LAMMPS 批处理，粒度 job
   mace/                       #   @saturday/plugin-mace —— 引擎：MACE ML 势，可用性预检
   ase/                        #   @saturday/plugin-ase —— 引擎：通用 ASE 计算器，自带 sidecar
+  lennard-jones/              #   @saturday/plugin-lj —— 引擎：零依赖纯 JS LJ（优雅回退数据面，指纹 lj-js）
   replay/                     #   @saturday/plugin-replay —— 分析：Trajectory 回放与索引重建
   neb/                        #   @saturday/plugin-neb —— 分析：NEB 最小能量路径与势垒
   eos/                        #   @saturday/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合
@@ -122,12 +132,13 @@ npm test                # 全部 workspace 测试
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
 node scripts/pack-check.mjs   # 发布形态核验（逐包 pack 干跑：版本一致 + files 白名单）
 
-# 端到端演示（均无需 API Key）
+# 端到端演示（均无需 API Key，纯 Node 环境全部可跑：
+# 无 Python 时数据面自动回退零依赖 lj-js 引擎，横幅如实呈报）
 npm run demo --workspace @saturday/bridge                    # 基础端到端
-npm run demo:screening --workspace @saturday/bridge          # 掺杂筛选（ASE EMT 真物理）
+npm run demo:screening --workspace @saturday/bridge          # 掺杂筛选（环境自适应：EMT 或 lj-js）
 npm run demo:screening-ternary --workspace @saturday/bridge  # 三元混掺筛选（多组分凸包判据）
 npm run demo:concentrations --workspace @saturday/bridge     # 多浓度/共掺扫描（非退化凸包包络）
-npm run demo:freeenergy --workspace @saturday/bridge         # 构型自由能曲线（真实 Langevin MD + 谐波锚点）
+npm run demo:freeenergy --workspace @saturday/bridge         # 构型自由能曲线（恒温 Langevin MD + 谐波锚点）
 npm run demo:cross-engine --workspace @saturday/bridge       # 跨引擎对照（单位/指纹门禁）
 npm run demo:availability --workspace @saturday/bridge       # 引擎可用性预检
 npm run demo:mixture-sampling --workspace @saturday/bridge   # 多锚点混合采样（闭式似然重算 + 回算闭环）

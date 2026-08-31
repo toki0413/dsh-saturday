@@ -25,6 +25,7 @@
   "dependencies": {
     "@saturday/core": "^0.3.0",
     "@saturday/kernel": "^0.3.0",
+    "@saturday/plugin-lj": "^0.3.0",
     "@saturday/python-bridge": "^0.3.0"
   },
   "devDependencies": {

@@ -219,6 +219,8 @@ async function main() {
   // 2. 挂 Saturday 主插件（material/potential 服务 + material.load / potential.relax 工具）
   const saturdayFiber = ctx.registry.plugin(saturdayPlugin)
   await saturdayFiber
+  // 数据面形态（'emt-mock' | 'lj-js'）：阶段 C 的证据源指纹断言据此构造（环境自适应）
+  const dataPlane = saturdayFiber.store.saturday.dataPlane
   // 筛选工作流插件（阶段 C：采样候选联合排序，编排链谱系不断）
   const screeningFiber = await ctx.registry.plugin({
     name: 'saturday-screening',
@@ -345,7 +347,7 @@ async function main() {
   assert.equal(joint.entries.length, sampledCandidates.length, '全部采样候选回算成功')
   const wSum = joint.entries.reduce((a, e) => a + e.weight, 0)
   assert.ok(Math.abs(wSum - 1) < 1e-9, '联合权重归一')
-  assert.deepEqual(joint.sourceNames, ['boltzmann:emt-mock', 'proposal:sampler.ou'])
+  assert.deepEqual(joint.sourceNames, [`boltzmann:${dataPlane}`, 'proposal:sampler.ou'])
   console.log('[tool ] workflow.screen 联合排序:',
     JSON.stringify({
       n: joint.entries.length,

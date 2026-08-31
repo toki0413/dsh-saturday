@@ -1,6 +1,7 @@
 // Phase 0 Spike 端到端演示
 // 模拟 Agent 会话（无 LLM，工程链路演示）：
 //   "加载 Ar 并弛豫" → material.load → potential.relax → 事件 → Trajectory
+// 环境自适应：有 Python 走 EMT sidecar；纯 Node 走零依赖 lj-js 引擎（横幅如实声明）。
 // 运行：node demo.mjs
 
 import { readFile } from 'node:fs/promises'
@@ -30,7 +31,7 @@ const t0 = Date.now()
 const relaxed = await rt.tools.call('potential.relax', {
   materialId: loaded.materialId, simulatedSeconds: 2,
 })
-line(`  → 收敛=${relaxed.converged}  E=${relaxed.energy.toFixed(5)} eV  缩放=${relaxed.scale.toFixed(4)}  步数=${relaxed.n_steps}  (总耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s)`)
+line(`  → 收敛=${relaxed.converged}  E=${relaxed.energy.toFixed(5)} eV  缩放=${relaxed.scale?.toFixed(4) ?? '—'}  步数=${relaxed.n_steps}  引擎=${relaxed.engine}  (总耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s)`)
 
 step('Trajectory（append-only 溯源日志）：')
 await new Promise(r => setTimeout(r, 100))
