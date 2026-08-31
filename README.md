@@ -129,8 +129,9 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
 ```bash
 # 裸 cordis 验证（无需 dsh、无需 LLM/API Key）
 npm install             # workspaces：@deepseek-ai/cordis（peer）+ 全部 @saturday/* 包软链
-npm test                # 全部 workspace 测试（当前 330 项，19 个包）
+npm test                # 全部 workspace 测试（当前 335 项，19 个包）
 npm run summary         # 再生项目摘要（实跑全部包测试 + 提取契约实证表 → SUMMARY.md/.json）
+node scripts/pack-check.mjs               # 发布形态预演（逐包 pack 干跑：版本一致 + files 白名单，不产生 .tgz）
 npm run demo --workspace @saturday/bridge            # 端到端演示
 npm run demo:screening --workspace @saturday/bridge  # 掺杂筛选演示（ASE EMT 真物理）
 npm run demo:screening-ternary --workspace @saturday/bridge  # 三元混掺筛选演示（多组分凸包判据）
@@ -194,6 +195,7 @@ Agent 会话演示（无真实 API Key）：`npm run demo:agent --workspace @sat
 - **修复链接 Agent 层 + 判据快照跨会话续供 + 判据谱系质量维（㊺/㊻/㊼）**：㊺ `demo:agent` 阶段 I：自然语言“按审计建议修复不可追溯条目并重新审计验收” → 修复逐条显式授权、写新载荷不碰原件 → 重新审计验收（修复后全可追溯、原件保持原状）——观测→修复→验收三步链在 Agent 层链接（修复声明由 mock 脚本编码，诚实声明）；㊻ `sampler.trigger.snapshot.save`/`load` 判据快照落盘/回填原语：对账结论整体原样落盘（落盘不改判）→ 回填只读校验版本戳（`saturday-trigger-snapshot/1`）与形态后原样交付；快照不是锚点条目（不进锚点库、不进数据燃料）——裁决依据跨会话可续供、可复算；㊼ 判据谱系质量维：可选阈值 `minTrackableRatio`（可追溯占比）调用方显式声明——未声明行为不变，声明后读数缺谱系分布维则显式拒绝（不替调用方猜测质量读数），质量维缺口与数量/覆盖维独立呈报（“足够轨迹”不只够多还要够可追溯）。
 - **判据快照跨会话续供 + 修复后载荷活性闭环 + 质量维观测对账（㊽/㊾/㊿）**：㊽ `demo:anchor-resume` 会话二收尾判据快照经 `snapshot.save` 落盘（会话内日志升级为磁盘证据，落盘不改判）→ 会话三全新挂载经 `snapshot.load` 回填，续供对账逐字段一致（可复算不重新估算），快照不进锚点库（证据载荷与结构数据燃料正交）；㊾ 修复后载荷的活性闭环（观测→修复→验收→入库四环）：不可追溯载荷经修复 + 审计验收后回填，提案照常登记推导（谱系用修复后的来源不冒充原件），沿修复后谱系失效 → 提案如实失效（可追溯即意味着可撤回），失效不删数据；㊿ 质量维观测对账：判据回呈的可追溯占比 = 库内逐条谱系计数（不重新估算），观测读数变化 → 对账结论如实翻转（结论不硬编码）——先见数据再谈机制在质量维同样成立。
 - **修复四环接 Agent 层 + 判据证据链接线 + 触发条件就绪度报告（50/51/52）**：50 `demo:agent` 阶段 J——验收达标后自然语言“回填修复后载荷” → `sampler.anchor.load`：修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件），不可追溯原件全程不入库——观测→修复→验收→入库四环在 Agent 层全链接；51 快照可选携带推导引用（`triggerRef`，来自 ㊹ 登记）：声明即原样随快照落盘/回填，回填后沿引用可查活性、证据失效沿引用如实传播（结论 ↔ 证据文件双向可追溯），未声明不伪造；52 `trajectoryTriggerReadiness` 纯层：㉘ 触发条件基础设施五面（观测/判据/快照/修复/推导）由调用方逐项显式声明，报告如实汇总在场/缺口（缺失呈报为缺口不是错误）——呈报不是门禁，机制进场仍由裁决者决定。
+- **发布前演练批次：故障演练 + 性能基线 + 发布形态预演（53/54/55）**：53 验收失败形态而不是成功路径——截断载荷（中断写/断电模拟）→ 回填诚实拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；54 千级规模量级读数如实呈报（入库 2000 锚点 23.3 ms、检索 6.56 ms、混合提案 n=64 4.7 ms、落盘/回填往返 4.0/14.3 ms @500 条）——读数即事实不设阈值不做门禁，为产业级验收提供第一条可复算的性能证据；55 `scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验（发布物不含测试/日志/临时产物）+ 清单如实呈报，违规非零退出，不产生 .tgz 不触网（预演是核验不是发布）。
 - **Agent 编排链三段实证**：`demo:agent` 阶段 C 把采样→联合排序推到 Agent 层（OU 交付打包进工具参数，谱系在编排层不断）；dsh 工具三连坑入纪律：工作流插件需自行动态 import `defineTool`、`output.render` 必填、object 型 `items` 必须显式 `additionalProperties`；回归/摘要脚本包内串行（并发拉 sidecar + OpenBLAS 线程内存竞态实证，确定性优先于耗时）
 - **摘要层（可再生产物）**：`npm run summary` 实跑全部包测试 + 扫描 package.json + 提取契约文档附录 A 实证表 → 机械汇编 `SUMMARY.md`/`SUMMARY.json`；不手写不人工维护，任何状态变更后重跑即同步；计数对账门禁、无测试包诚实标记、失败显式呈现（诚实优先于好看）
 - **analysis seam 实证（§4.4，两例）**：plugin-neb（NEB 势垒）与 plugin-eos（EOS 拟合）把“输入/输出类型声明 + 谱系登记”两个冻结点从占位变成测试；分析结果同样落 Trajectory——势垒由独立逐点求值 oracle 对账，EOS 以双数据路 + 拟合质量诚实声明补充实证
