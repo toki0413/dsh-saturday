@@ -27,6 +27,11 @@ except ImportError:
     EMT_ELEMENTS = set()
 
 try:
+    # 探针必须真导入 rdkit 本体：adapter 函数内部才是延迟导入，
+    # 「模块导入成功 ≠ rdkit 在场」（CI 精度档只装 ase 实证：假阳性会让
+    # structureSources 谎报 true，穿过门禁后才炸 ModuleNotFoundError）
+    from rdkit import Chem  # noqa: F401
+    from rdkit.Chem import AllChem  # noqa: F401
     from adapters.rdkit_struct import (
         smiles_to_graph as rdkit_smiles,
         relax_structure as rdkit_relax,
