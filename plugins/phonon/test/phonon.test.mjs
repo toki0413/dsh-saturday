@@ -1,7 +1,7 @@
 // @saturday/plugin-phonon 测试（契约 §4.4 analysis seam，力注入式）
 // 纯函数层：解析弹簧对账（声学零频 + 光学支闭式 + 换算因子）/ ASR 残余机械断言 /
 // 虚频诚实判定 / 显式失败 / 确定性；插件层：§4.4 形态 + 谱系登记 + 工具层报错 +
-// 真实桥集成（dataPlane 环境自适应：EMT 成功路 / lj-js 无力显式失败）+ 卸载回收。
+// 真实桥集成（任意有力引擎走成功路，无力引擎显式失败）+ 卸载回收。
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -197,7 +197,7 @@ test('10. 工具层：缺 materialId 显式报错', async () => {
   }
 })
 
-test('11. 集成：真实桥 + Cu → analysis.phonon（dataPlane 环境自适应）+ 谱系落盘 + 卸载回收', async () => {
+test('11. 集成：真实桥 + Cu → analysis.phonon（任意有力引擎）+ 谱系落盘 + 卸载回收', async () => {
   const ctx = new Context()
   const dir = await mkdtemp(join(tmpdir(), 'saturday-phonon-'))
   const path = join(dir, 'trajectory.jsonl')
@@ -212,7 +212,6 @@ test('11. 集成：真实桥 + Cu → analysis.phonon（dataPlane 环境自适�
   })
   const coreRt = coreFiber.store.saturday.rt
   const phononRt = phononFiber.store.saturdayPhonon.rt
-  const dataPlane = coreFiber.store.saturday.dataPlane
 
   try {
     const loaded = await coreRt.tools.call('material.load', { query: 'Cu' })
@@ -223,20 +222,18 @@ test('11. 集成：真实桥 + Cu → analysis.phonon（dataPlane 环境自适�
     try {
       out = await phononRt.tools.call('analysis.phonon', { materialId: loaded.materialId })
     } catch (err) {
-      // 非 EMT 档（lj-js 数据面无 calculate 力）必须走到这里：显式失败而非静默降级（契约 §2）
-      assert.notEqual(dataPlane, 'emt-mock', 'EMT 档不应进失败分支')
-      assert.equal(err.code, 'PHONON_FORCE_MISSING', '无力数据面必须显式报错')
+      // 引擎无力时必须走到这里：显式失败而非静默降级（契约 §2）
+      assert.equal(err.code, 'PHONON_FORCE_MISSING', '无力引擎必须显式报错')
     }
 
     if (out) {
-      assert.equal(dataPlane, 'emt-mock')
-      // 管线与交付形态
+      // 管线与交付形态（任何提供力的引擎都成立：emt-mock / lj-js）
       assert.equal(out.nAtoms, (await coreRt.getService('material').get(loaded.materialId)).nAtoms)
       assert.equal(out.frequencies.length, 3 * out.nAtoms)
       for (const f of out.frequencies) assert.ok(Number.isFinite(f))
       assert.ok(Number.isFinite(out.forceResidualMax) && Number.isFinite(out.equilibriumForceMax))
       assert.ok(['stable', 'unstable'].includes(out.stability.verdict))
-      // EMT 真力路径：单原子原胞 ASR 后声学支精确零频（真实引擎力的端到端对账）
+      // 真力路径：单原子原胞 ASR 后声学支精确零频（投影与引擎无关，端到端对账）
       if (out.nAtoms === 1) {
         for (const f of out.frequencies) assert.equal(f, 0, '单原子原胞 Γ 声学支 = 0')
       }
