@@ -138,7 +138,7 @@ test('8. 卸载回退：dispose 后服务与工具全部回收（effect 语义�
   // finally 保证 dispose；回收断言依赖 dispose 已发生，在 finally 之后照常执行。
   try {
     assert.ok(ctx2.reflect.get('material'))
-    assert.equal(h2.rt.tools.list().length, 3, '核心插件三工具基线：material.load / potential.relax / engine.availability（workflow.screen 已迁出为独立插件）')
+    assert.equal(h2.rt.tools.list().length, 4, '核心插件四工具基线：material.load / structure.fromSmiles / potential.relax / engine.availability（workflow.screen 已迁出为独立插件）')
   } finally {
     await f2.dispose()
   }

@@ -18,11 +18,14 @@ EMT_ELEMENTS = {"Al", "Cu", "Ag", "Au", "Ni", "Pd", "Pt"}
 
 
 def _to_atoms(structure: dict) -> Atoms:
+    # pbc 透传（C 阶段：分子体系 pbc=False，cell 可为零矩阵）；缺省周期性（兼容既有调用）
+    pbc = structure.get("pbc")
+    cell = structure.get("cell")
     return Atoms(
         numbers=structure["numbers"],
         positions=np.array(structure["positions"], dtype=float),
-        cell=np.array(structure["cell"], dtype=float),
-        pbc=True,
+        cell=np.array(cell, dtype=float) if cell is not None else np.zeros((3, 3)),
+        pbc=np.array(pbc, dtype=bool) if pbc is not None else True,
     )
 
 
@@ -42,7 +45,8 @@ def roundtrip_structure(structure: dict, params: dict) -> dict[str, Any]:
 
 
 def relax_structure(structure: dict, params: dict) -> dict[str, Any]:
-    """原子位置 + 晶胞联合弛豫（BFGS on UnitCellFilter）。"""
+    """原子位置弛豫（分子，全 pbc=False：直接 BFGS）或位置+晶胞联合弛豫
+    （周期性体系：BFGS on UnitCellFilter）。"""
     t0 = time.time()
     atoms = _to_atoms(structure)
     atoms.calc = EMT()
@@ -50,7 +54,10 @@ def relax_structure(structure: dict, params: dict) -> dict[str, Any]:
     fmax = float(params.get("fmax", 0.05))
     max_steps = int(params.get("max_steps", 200))
 
-    opt = BFGS(UnitCellFilter(atoms), logfile=None)
+    if any(atoms.pbc):
+        opt = BFGS(UnitCellFilter(atoms), logfile=None)
+    else:
+        opt = BFGS(atoms, logfile=None)
     converged = opt.run(fmax=fmax, steps=max_steps)
 
     return {

@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/mcp-server",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。",
   "type": "module",
   "main": "src/index.mjs",

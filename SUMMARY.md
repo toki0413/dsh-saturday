@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-06T19:41:41.452Z
+生成时间：2026-09-06T20:31:20.853Z
 
-**回归基线：406/406**（23 个包，其中 22 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：407/407**（23 个包，其中 22 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 55/55 |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 56/56 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -30,7 +30,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，82 条）
+## 实证条款（契约文档附录 A，83 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -114,6 +114,7 @@
 - **#80** analysis seam 第三个实证（Γ 点声子，力注入式）：有限位移（每原子 × 3 笛卡尔方向 ± d，6N+1 次力调用）→ 力常数中心差分 → 声学和规则投影（平移不变性物理要求：投影前残余如实报告，投影后声学三支精确零频）→ 质量加权动力学矩阵 → Jacobi 对称特征分解（确定性）；频率换算因子从 CODATA-2018 基本常数推导（不硬编码拍脑袋）；虚频是物理结果不是错误——显著虚频（\|λ\|> 显式阈值）判 unstable、数值噪声微负 λ 单独如实报告不计入（两层虚频语义）；力对称残余与平衡点残余力随结果交付（差分可信度指标）；解析弹簧模型闭式对账（独立弹簧验证换算常数端到端、弹簧对声学零频 + 光学支闭式、负弹簧虚频体系）；原子量缺失显式报错不默认（诚实纪律）（证据：plugin-phonon 测试 1-11（换算因子/位移作业与不可变变体/独立弹簧端到端/单原子 ASR 零频/弹簧对闭式对账/虚频诚实判定/六路显式失败/确定性/§4.4 形态与谱系/工具层报错/真实桥集成 EMT 成功路 + lj-js 无力显式失败 + 卸载回收））
 - **#81** phonon 簇边界伪影修复（超胞列位移法）：力引擎普遍忽略周期性（ASE EMT 的 pbc 不生效）→ 原胞=超胞差分只测到簇内近邻（fcc conventional 每原子 12 最近邻仅 3 个在簇内）→ 声子大面积伪虚频（EMT Cu 9 支；能量二阶差分仲裁 κ=+7.505 eV/Å² 证明差分与力正确、问题在周期像缺失）；修复：N×N×N 超胞 + 列位移（原胞原子全部像同时位移，Σ_R 合成由列位移完成）+ 像平均折算，作业数仍 6N+1，代价仅单次力计算原子数增大 N³ 倍；解析对账：1D 双原子链周期力源（wrap）下声学零频 + 光学支 ω² = 2K(1/mₐ + 1/m_B) 闭式复现（隔离验证列位移折算数学）；物理修复判据：EMT fcc Cu 9 支光学全正（5.28×6 + 7.72×3，X/L 折叠简并与量级符合物理）、无显著虚频；适用前提如实声明：超胞半边长须覆盖引擎力程（证据：plugin-phonon 测试 12-14（buildSupercell 像索引与 rep 门禁/超胞 1D 链解析对账/supercellRep 门禁）+ 集成测试超胞物理判据（EMT Cu stable + 光学支全正））
 - **#82** HPC 远程执行（§4.2 执行位置增补）：传输抽象 LocalTransport/SshTransport——bridge 对传输无感知（协议不变：JSON-lines + 死亡进程快速拒绝 + EPIPE 兑底全链生效）；站点配置 ~/.saturday/clusters.json（host/user/port/python/workDir/sshOptions）由桥层解析；SshTransport 命令构造（BatchMode/端口/密钥选项）与远程 sidecar 存在性预检 verify()（缺失即报错，绝不静默本地回退）；bridge.cluster 指定远程集群时连接失败显式上抛不回退本地（远程语义是算力选择，回退 = 违背指令）；注入式假 SSH 通道（spawnImpl 替身 + Readable 形状 stub）覆盖 connect/hello/call/断连全链（证据：python-bridge 测试 6-10（命令构造与 target/远程命令/构造门禁/注入式 SSH 全链/verify 预检两分支/loadClusters 门禁与缺文件）+ 既有 5 项向后兼容回归）
+- **#83** 分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录）（证据：bridge molecule 测试（EMT 档甲醇全链：fromSmiles nAtoms=6/forcefield=MMFF → toDict pbc=false透传 → 分子弛豫收敛能量有限 → 单点能力探测；zero-deps 档显式失败不静默））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-ase",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。",
   "type": "module",
   "main": "src/index.mjs",

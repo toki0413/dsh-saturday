@@ -6,12 +6,12 @@
     "url": "https://github.com/toki0413/dsh-saturday",
     "source": "github"
   },
-  "version": "0.3.3",
+  "version": "0.3.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@toki0413/mcp-server",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "transport": {
         "type": "stdio"
       }

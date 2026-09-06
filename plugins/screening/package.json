@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-screening",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错）",
   "type": "module",
   "main": "src/index.mjs",

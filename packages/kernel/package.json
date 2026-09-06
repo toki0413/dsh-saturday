@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/kernel",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口",
   "type": "module",
   "main": "src/cordis-adapter.mjs",

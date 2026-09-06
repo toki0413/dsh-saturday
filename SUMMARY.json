@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-06T19:41:41.456Z",
-  "totalPass": 406,
+  "generatedAt": "2026-09-06T20:31:20.855Z",
+  "totalPass": 407,
   "totalFail": 0,
   "packageCount": 23,
   "testedCount": 22,
@@ -8,161 +8,161 @@
     {
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
-      "version": "0.3.3",
-      "pass": 55,
+      "version": "0.3.4",
+      "pass": 56,
       "fail": 0
     },
     {
       "dir": "packages\\contract-tests",
       "name": "@toki0413/contract-tests",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 31,
       "fail": 0
     },
     {
       "dir": "packages\\core",
       "name": "@toki0413/core",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 28,
       "fail": 0
     },
     {
       "dir": "packages\\kernel",
       "name": "@toki0413/kernel",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": null,
       "fail": null
     },
     {
       "dir": "packages\\mcp-server",
       "name": "@toki0413/mcp-server",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 7,
       "fail": 0
     },
     {
       "dir": "packages\\python-bridge",
       "name": "@toki0413/python-bridge",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 10,
       "fail": 0
     },
     {
       "dir": "plugins\\ase",
       "name": "@toki0413/plugin-ase",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\derivation",
       "name": "@toki0413/plugin-derivation",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\eos",
       "name": "@toki0413/plugin-eos",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\ergodic",
       "name": "@toki0413/plugin-ergodic",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 9,
       "fail": 0
     },
     {
       "dir": "plugins\\free-energy",
       "name": "@toki0413/plugin-free-energy",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lennard-jones",
       "name": "@toki0413/plugin-lj",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\mace",
       "name": "@toki0413/plugin-mace",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\mp-structure-source",
       "name": "@toki0413/plugin-mp",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\phonon",
       "name": "@toki0413/plugin-phonon",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\replay",
       "name": "@toki0413/plugin-replay",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-flow",
       "name": "@toki0413/plugin-sampler-flow",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 16,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-ou",
       "name": "@toki0413/plugin-sampler-ou",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 67,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-perturb",
       "name": "@toki0413/plugin-sampler-perturb",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\screening",
       "name": "@toki0413/plugin-screening",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "pass": 38,
       "fail": 0
     }
@@ -577,6 +577,11 @@
       "index": 82,
       "clause": "HPC 远程执行（§4.2 执行位置增补）：传输抽象 LocalTransport/SshTransport——bridge 对传输无感知（协议不变：JSON-lines + 死亡进程快速拒绝 + EPIPE 兑底全链生效）；站点配置 ~/.saturday/clusters.json（host/user/port/python/workDir/sshOptions）由桥层解析；SshTransport 命令构造（BatchMode/端口/密钥选项）与远程 sidecar 存在性预检 verify()（缺失即报错，绝不静默本地回退）；bridge.cluster 指定远程集群时连接失败显式上抛不回退本地（远程语义是算力选择，回退 = 违背指令）；注入式假 SSH 通道（spawnImpl 替身 + Readable 形状 stub）覆盖 connect/hello/call/断连全链",
       "evidence": "python-bridge 测试 6-10（命令构造与 target/远程命令/构造门禁/注入式 SSH 全链/verify 预检两分支/loadClusters 门禁与缺文件）+ 既有 5 项向后兼容回归"
+    },
+    {
+      "index": 83,
+      "clause": "分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录）",
+      "evidence": "bridge molecule 测试（EMT 档甲醇全链：fromSmiles nAtoms=6/forcefield=MMFF → toDict pbc=false透传 → 分子弛豫收敛能量有限 → 单点能力探测；zero-deps 档显式失败不静默）"
     }
   ]
 }

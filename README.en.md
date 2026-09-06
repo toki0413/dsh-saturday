@@ -65,7 +65,8 @@ semantics of `Material.substitute` keeps lineage traceable end to end.
 | Capability | Tool | Notes |
 |---|---|---|
 | Material loading | `material.load` | Formula → structure (prototype library, TiO2 polymorphs selectable) |
-| Structure relaxation | `potential.relax` | Real ASE EMT physics (UnitCellFilter + BFGS); pure-Node environments fall back to the zero-dependency `lj-js` engine (LJ toy potential) |
+| Molecular structure source | `structure.fromSmiles` | SMILES → 3D conformer (RDKit ETKDG + MMFF/UFF pre-relaxation) → aperiodic Material (pbc=False); explicit error when RDKit is missing, never a silent downgrade |
+| Structure relaxation | `potential.relax` | Periodic systems: real ASE EMT physics (UnitCellFilter + BFGS); molecular systems (pbc=False): RDKit MMFF/UFF force-field engine (system–engine matching, mismatches rejected explicitly); pure-Node environments fall back to the zero-dependency `lj-js` engine (LJ toy potential) |
 | Doping screening | `workflow.screen` | Batch relaxation of host + N doped variants → energy ranking → per-variant provenance; with an injected reference state it upgrades to strict formation enthalpy + multicomponent convex-hull criteria; multi-concentration scans and co-doping supported; sampled candidates join the joint ranking (energy evidence × proposal likelihood → importance weights); evidence sources are registry-extensible (hull distance, ideal mixing entropy, …) |
 | MP structure source | `structure.resolve` | Remote resolution via Materials Project (`@toki0413/plugin-mp`, needs MP_API_KEY) |
 | Trajectory replay | `trajectory.replay` | Rebuild the compute index from the append-only event stream (`@toki0413/plugin-replay`) |
@@ -83,7 +84,7 @@ semantics of `Material.substitute` keeps lineage traceable end to end.
 
 ### MCP server: any MCP host, zero code
 
-The whole tool surface (30 tools) is exposed over the Model Context Protocol via
+The whole tool surface (31 tools) is exposed over the Model Context Protocol via
 `@toki0413/mcp-server` (stdio): Claude Desktop, Cursor, Cline or any MCP host connects with no
 glue code. Parameter schemas flow straight from each tool's contract declaration; tool failures
 surface as MCP `isError` responses carrying structured error codes.
@@ -161,7 +162,7 @@ packages/
     profiles/cordis.patch.yml #   example mount line for a dsh profile
     docs/plugin-contract-v0.md#   Plugin Contract v0 (experimental)
     docs/contract-coordinates.* #  contract coordinates (saturday.contract/v0) + TUI admission self-check
-  mcp-server/                 # @toki0413/mcp-server — MCP protocol projection of the tool surface (30 tools)
+  mcp-server/                 # @toki0413/mcp-server — MCP protocol projection of the tool surface (31 tools)
 plugins/                      # plugin ecosystem (new plugins must pass the contract suite)
   screening/                  #   workflow: batch doping screening
   mp-structure-source/        #   structure source: Materials Project

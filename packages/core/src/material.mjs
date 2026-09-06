@@ -134,7 +134,8 @@ export class Material {
     )
   }
 
-  /** 序列化（跨进程/引擎传递的统一中间表示） */
+  /** 序列化（跨进程/引擎传递的统一中间表示）。pbc 随图透传（分子体系 pbc=False，
+   *  sidecar 侧据此关闭周期镜像与晶胞自由度）；未声明的图缺省周期性（向后兼容）。 */
   toDict() {
     return {
       id: this.id,
@@ -142,6 +143,8 @@ export class Material {
       positions: this._graph.nodes.map(n => n.position),
       numbers: this._graph.nodes.map(n => n.number),
       cell: this._graph.cell,
+      ...(this._graph.pbc ? { pbc: this._graph.pbc } : {}),
+      ...(this._graph.smiles ? { smiles: this._graph.smiles } : {}),
     }
   }
 }

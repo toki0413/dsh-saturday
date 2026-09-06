@@ -26,6 +26,16 @@ except ImportError:
     HAS_ASE = False
     EMT_ELEMENTS = set()
 
+try:
+    from adapters.rdkit_struct import (
+        smiles_to_graph as rdkit_smiles,
+        relax_structure as rdkit_relax,
+        calculate_properties as rdkit_calc,
+    )
+    HAS_RDKIT = True
+except ImportError:
+    HAS_RDKIT = False
+
 from adapters.emt_mock import (
     relax_structure as lj_relax,
     calculate_properties as lj_calc,
@@ -40,6 +50,18 @@ Z_TO_SYMBOL = {
 
 
 def pick_backend(structure: dict) -> str:
+    # 分子体系（pbc 显式全 False）→ 轻量分子引擎 RDKit MMFF/UFF（正统分子力场）。
+    # 不降级到 lj-mock：后者依赖周期晶胞（对零晶胞求逆 → 奇异矩阵），
+    # 金属势 EMT 也不描述分子键——两者对孤立分子都是错误物理。
+    pbc = structure.get("pbc")
+    is_molecule = pbc is not None and not any(pbc)
+    if is_molecule:
+        if not HAS_RDKIT:
+            raise RuntimeError(
+                "molecular structure (pbc=False) requires RDKit MMFF/UFF engine "
+                "(install rdkit; lj-mock/EMT are periodic/metallic and invalid for isolated molecules)"
+            )
+        return "rdkit-mmff"
     symbols = {Z_TO_SYMBOL.get(int(z), "") for z in structure["numbers"]}
     if HAS_ASE and symbols and symbols <= EMT_ELEMENTS:
         return "ase-emt"
@@ -56,8 +78,9 @@ def handle(method: str, params: dict):
             ase_version = getattr(_ase, "__version__", None)
         return {
             "sidecar": "saturday-python-bridge",
-            "version": "0.3.0",
-            "calculators": {"ase-emt": HAS_ASE, "lj-mock": True},
+            "version": "0.3.4",
+            "calculators": {"ase-emt": HAS_ASE, "lj-mock": True, "rdkit-mmff": HAS_RDKIT},
+            "structureSources": {"rdkit-struct": HAS_RDKIT},
             # 契约 §5.1：事件粒度声明（逐调用同步形态，均为迭代级）
             "eventGranularity": {"ase-emt": "iteration", "lj-mock": "iteration"},
             "aseVersion": ase_version,
@@ -75,12 +98,17 @@ def handle(method: str, params: dict):
         return ase_reference_energy(params["symbol"], params.get("params", {}))
     if method == "relax":
         backend = pick_backend(params["structure"])
-        fn = ase_relax if backend == "ase-emt" else lj_relax
+        fn = {"ase-emt": ase_relax, "lj-mock": lj_relax, "rdkit-mmff": rdkit_relax}[backend]
         return fn(params["structure"], params.get("params", {}))
     if method == "calculate":
         backend = pick_backend(params["structure"])
-        fn = ase_calc if backend == "ase-emt" else lj_calc
+        fn = {"ase-emt": ase_calc, "lj-mock": lj_calc, "rdkit-mmff": rdkit_calc}[backend]
         return fn(params["structure"], params.get("params", {}))
+    if method == "smiles_to_graph":
+        # 分子结构生成（C 阶段）：RDKit 缺失显式报错（不冒充可用）
+        if not HAS_RDKIT:
+            raise RuntimeError("smiles_to_graph requires RDKit (install rdkit or use a periodic structure source)")
+        return rdkit_smiles(params["smiles"], params.get("params", {}))
     if method == "shutdown":
         # 先应答再退出（在 main 循环里处理）
         return {"bye": True}

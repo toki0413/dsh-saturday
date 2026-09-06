@@ -27,7 +27,7 @@ function fakeSshChild(spawnLog) {
         let req
         try { req = JSON.parse(line) } catch { return }
         const result = req.method === 'hello'
-          ? { sidecar: 'fake-ssh-sidecar', version: '0.3.3', calculators: { 'fake-ssh': true } }
+          ? { sidecar: 'fake-ssh-sidecar', version: '0.3.4', calculators: { 'fake-ssh': true } }
           : { echoed: req.method, params: req.params }
         child.stdout.emit('data', JSON.stringify({ id: req.id, result }) + '\n')
       }

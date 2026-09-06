@@ -54,7 +54,8 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 能力 | 工具 | 说明 |
 |---|---|---|
 | 材料加载 | `material.load` | 化学式 → 结构（原型库，TiO2 多晶型可选） |
-| 结构弛豫 | `potential.relax` | ASE EMT 真实物理（UnitCellFilter + BFGS）；纯 Node 环境走零依赖 lj-js 引擎（LJ 玩具势） |
+| 分子结构源 | `structure.fromSmiles` | SMILES → 3D 构象（RDKit ETKDG + MMFF/UFF 预弛豫）→ 非周期 Material（pbc=False）；RDKit 缺失显式报错不降级 |
+| 结构弛豫 | `potential.relax` | 周期性体系：ASE EMT 真实物理（UnitCellFilter + BFGS）；分子体系（pbc=False）：RDKit MMFF/UFF 力场引擎（体系-引擎自动匹配，错配显式拒绝）；纯 Node 环境走零依赖 lj-js 引擎（LJ 玩具势） |
 | 掺杂筛选 | `workflow.screen` | 基体 + N 掺杂变体批量弛豫 → 能量排序 → 逐变体溯源；注入参考态后自动升级为严格形成焓 + 多组分凸包判据；支持多浓度扫描与共掺候选；采样候选可参与联合排序（能量证据 × 提议似然 → 重要性权重），证据源可扩展（凸包距离、理想混合熵等，注册表化接入） |
 | MP 结构源 | `structure.resolve` | Materials Project 远端解析（`@toki0413/plugin-mp`，需 MP_API_KEY） |
 | 轨迹回放 | `trajectory.replay` | 从 append-only 事件流重建计算索引（`@toki0413/plugin-replay`） |
@@ -72,7 +73,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（30 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（31 工具，
 stdio 传输）：Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
 

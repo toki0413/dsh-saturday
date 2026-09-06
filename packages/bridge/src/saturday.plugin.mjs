@@ -4,7 +4,7 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { loadClusters } from '@toki0413/python-bridge'
-import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@toki0413/core'
+import { PrototypeLibResolver, MaterialService, PotentialRegistry, Material, composeFormula } from '@toki0413/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
@@ -98,6 +98,48 @@ export default {
           formula: m.formula,
           nAtoms: m.nAtoms,
           structureOrigin: resolved?.detail,
+        }
+      },
+    })
+
+    rt.registerTool({
+      name: 'structure.fromSmiles',
+      description: 'SMILES → 3D 分子结构（RDKit ETKDG 嵌入 + MMFF/UFF 力场弛豫）。' +
+                   '分子体系 pbc=False（无周期边界），可走 relaxation/calculate/声子等下游工具。' +
+                   '需 sidecar Python 含 RDKit（缺失显式报错，不冒充可用）。',
+      parameters: {
+        smiles: { type: 'string', required: true, description: 'SMILES 表达式（如 "CO"、"c1ccccc1"）' },
+        seed: { type: 'integer', default: 42, description: '构象嵌入随机种子（确定性复现）' },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        // RDKit 可用性按 sidecar 握手的实测态判定（structureSources.rdkit-struct）——
+        // 缺失显式报错（不冒充可用、不静默降级到周期性源）
+        const sources = bridge.sidecarInfo?.structureSources ?? {}
+        if (!sources['rdkit-struct']) {
+          const err = new Error('structure.fromSmiles requires RDKit in the sidecar python ' +
+                                '(structureSources["rdkit-struct"] = false)')
+          err.code = 'RDKIT_UNAVAILABLE'
+          throw err
+        }
+        const result = await bridge.call('smiles_to_graph', {
+          smiles: args.smiles,
+          params: { seed: args.seed ?? 42 },
+        })
+        const graph = {
+          cell: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],   // 分子：无周期边界（pbc=False），零晶胞占位
+          pbc: result.pbc ?? [false, false, false],
+          smiles: result.smiles ?? args.smiles,       // 携 SMILES：下游分子引擎据此重建拓扑
+          nodes: result.numbers.map((z, i) => ({ number: z, position: result.positions[i] })),
+        }
+        const material = new Material({ modalities: { graph, formula: composeFormula(result.numbers) } }, graph)
+        materialService.store.set(material.id, material)
+        return {
+          materialId: material.id,
+          formula: material.formula,
+          nAtoms: material.nAtoms,
+          smiles: args.smiles,
+          forcefield: result.forcefield,
         }
       },
     })
