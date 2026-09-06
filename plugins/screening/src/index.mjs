@@ -161,6 +161,8 @@ export default {
           temperatureK: args.temperatureK,
           evidenceSources: args.evidenceSources,
           proposalRef: args.proposalRef,
+          // 变体/采样候选入 session store：下游工具（声子/自由能）凭 materialId 可达
+          materialStore: materialService.store,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
           emit: (type, event) => rt.emit(type, event),
         })

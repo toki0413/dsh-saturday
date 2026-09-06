@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-lammps",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job）",
   "type": "module",
   "main": "src/index.mjs",

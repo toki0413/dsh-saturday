@@ -55,7 +55,7 @@ const KB_EV_PER_K = 8.617333262145e-5
  *        第三方可注入自定义描述符（{ name, requires, logWeights, independenceNote }），
  *        新证据源接入不改筛选代码（注册表化实证）
  */
-export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources, evidenceSourceRegistry, proposalRef }) {
+export async function screenDopants({ material, dopants, potential, topK, engine, emit, derivation, batchId, references, thermoUnavailable, maxDopedSites, codopants, sampled, temperatureK, evidenceSources, evidenceSourceRegistry, proposalRef, materialStore }) {
   const maxSites = maxDopedSites ?? 1
   if (!Number.isInteger(maxSites) || maxSites < 1) {
     throw new Error(`maxDopedSites 必须是正整数（收到 ${maxSites}）：浓度变体数不得静默纠正`)
@@ -66,6 +66,9 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       '（全取代 = 纯掺杂端点，属参考态而非候选）',
     )
   }
+  // 变体入 session store（可选）：ranked 项携带 materialId，下游工具（声子/自由能）
+  // 经 materialService.get 可达——变体不可达 = 跨工具数据流断链（全链闭环的前置）
+  const putStore = (m) => { materialStore?.set?.(m.id, m) }
   // 变体集：基体 + 每掺杂的浓度系列（取代位点 0..k-1，k=1..maxSites）+ 共掺变体（可选）
   const variants = [{ kind: 'pristine', dopant: null, sites: 0, material }]
   for (const d of dopants) {
@@ -73,6 +76,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
       let m = material
       for (let s = 0; s < k; s++) m = m.substitute(s, d)
       variants.push({ kind: 'doped', dopant: d, sites: k, material: m })
+      putStore(m)
     }
   }
   for (const cd of codopants ?? []) {
@@ -89,6 +93,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
     let m = material
     cd.elements.forEach((el, i) => { m = m.substitute(sites[i], el) })
     variants.push({ kind: 'codoped', dopant: cd.elements.join('+'), sites: cd.elements.length, material: m })
+    putStore(m)
   }
 
   const provider = potential.resolveProvider(
@@ -357,6 +362,7 @@ export async function screenDopants({ material, dopants, potential, topK, engine
             timestamp: Date.now(),
           }],
         })
+        putStore(m)
       }
       if (!m?.graph) {
         failedSampled.push({ label, status: 'failed', error: 'candidate missing material/graph' })

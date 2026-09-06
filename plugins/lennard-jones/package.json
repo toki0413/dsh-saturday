@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-lj",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。",
   "type": "module",
   "main": "src/index.mjs",
