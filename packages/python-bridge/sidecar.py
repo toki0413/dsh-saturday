@@ -40,6 +40,10 @@ try:
     HAS_RDKIT = True
 except ImportError:
     HAS_RDKIT = False
+    # 名字必须先定义：handle() 里 `rdkit-mmff` 作为字典字面量的值会被即时求值，
+    # 未绑定则每次 relax/calculate（含周期性 EMT 路径）都抛 NameError（精度档实证）。
+    # pick_backend 保证：无 RDKit 时绝不返回 'rdkit-mmff'，下面 None 永不被调用。
+    rdkit_smiles = rdkit_relax = rdkit_calc = None
 
 from adapters.emt_mock import (
     relax_structure as lj_relax,
