@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver } from '@saturday/core'
-import { samplerContract } from '@saturday/contract-tests'
+import { samplerContract, encodeLatent } from '@saturday/contract-tests'
 import plugin, { referencePerturbationSampler } from '../src/index.mjs'
 
 // ── 契约套件（§4.5）：纯层直接接入 ──────────────────────────
@@ -133,4 +133,13 @@ test('8. 种子确定性：同种子同样本，异种子异样本', async () =>
     await fiber.dispose()
     await coreFiber.dispose()
   }
+})
+
+test('9. 未声明可逆 → encodeLatent 守卫显式拒绝（INVERTIBILITY_UNDECLARED，声明是可执行条款）', async () => {
+  const reference = await cuRef()
+  await assert.rejects(
+    () => encodeLatent(referencePerturbationSampler, reference.graph),
+    err => err.code === 'INVERTIBILITY_UNDECLARED',
+    '微扰非双射输运（invertible: false）：经执行原语调 encode 必须显式拒绝',
+  )
 })

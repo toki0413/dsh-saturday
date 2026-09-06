@@ -1,13 +1,13 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-08-31T05:49:00.594Z
+生成时间：2026-09-06T11:20:20.383Z
 
-**回归基线：354/354**（20 个包，其中 19 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：380/380**（21 个包，其中 20 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
 | `@saturday/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 55/55 |
-| `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 24/24 |
+| `@saturday/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@saturday/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@saturday/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@saturday/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 5/5 |
@@ -23,11 +23,12 @@
 | `@saturday/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@saturday/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@saturday/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
-| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 66/66 |
-| `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 9/9 |
+| `@saturday/plugin-sampler-flow` | Saturday sampler 插件（契约 §4.5 sampler seam 第三实证）：仿射耦合流采样。双射输运映射（invertible: true 首实证，encode 严格逆）+ 换元公式精确似然（likelihood: exact）、候选可回算验证。 | 16/16 |
+| `@saturday/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 67/67 |
+| `@saturday/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@saturday/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，78 条）
+## 实证条款（契约文档附录 A，79 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -107,6 +108,7 @@
 - **#76** 可靠性验证：故障注入 + 性能基线 + 发布形态核验——截断载荷（中断写/断电模拟）→ 回填拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案/落盘回填往返）——读数即事实不设阈值不做门禁；`scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验 + 清单如实呈报，违规非零退出，不产生 .tgz 不触网（证据：plugin-sampler-ou failure-drill 测试 1-3（截断拒绝 + 库零污染 + 门禁先行）+ perf-baseline 测试 1-2（纯层/往返量级读数如实）+ scripts/pack-check 实跑（19 包全过））
 - **#77** 零依赖引擎插件入生态：契约套件全真跑 + 闭式对账——manifest/M1 注册门禁/路由激活/指纹声明经 potentialProviderContract 套件在任何环境全量真实执行（零依赖引擎无 skip 路径）；闭式对账：力 = 能量负梯度（数值有限差分）、Langevin 恒温 MD 能量均分对账 ⟨K⟩ = 3/2 kT、谐振子配分函数闭式一致性（纯谐波势上）；谐波原语零模/虚频如实计数不静默修正；玩具势性质声明在先（LJ 为教学档精度；参考态为本引擎自洽参考，非实验值）（证据：plugin-lj lj 测试 1-15（契约套件全真跑 + 闭式对账 + 插件形态））
 - **#78** 数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态（证据：bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移））
+- **#79** sampler seam 可逆性升档（`invertible: true` 首实证）：仿射耦合流双射输运映射（潜变量 ↔ 位移），`encode` 是 `decode` 的严格逆（`encode∘sample ≡ id` 机械对账到浮点精度 1e-16）；换元公式精确似然 log p(d) = log N(z) − log\|det J\|（雅可比 z 空间 log cosh 稳定求值，不碰 tanh 饱和退化），`logProb` 逐候选可独立重算（1e-9）；基础分布尺度与微分同胚窗口同量级（声明即承诺）；窗口外/跨拓扑/坏形态显式拒绝（不外推冒充覆盖）；映射构造时固定，per-call seed 只重播潜变量抽样（改 sMax = 改双射，encode 无从反演即拒）；流参数由 seed 派生非训练产物（如实声明）；可逆性声明可执行——未声明者经 `encodeLatent` 执行原语抛 INVERTIBILITY_UNDECLARED（证据：plugin-sampler-flow 测试 1-10（双射往返/换元独立重算/窗口机械界/encode 四门禁/未绑定拒绝/构造门禁 + 插件层挂载回收/缺依赖/端到端 encode 工具往返/确定性）+ `samplerContract` 可逆性条款（套件自检 mock-invertible + perturb 未声明拒绝））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

@@ -334,7 +334,7 @@ interface StructureSampler {
    * code === 'SAMPLER_UNAVAILABLE'；按判据产不出候选抛 'SAMPLE_NOT_FOUND'。
    */
   sample(target: SampleTarget, opts?: { n?: number, seed?: number }): Promise<SampledStructure[]>
-  /** 仅 manifest.invertible === true 必须提供（双射输运映射的反向）；未声明者调用必须抛 INVERTIBILITY_UNDECLARED */
+  /** 仅 manifest.invertible === true 必须提供（双射输运映射的反向）；未声明者调用必须抛 INVERTIBILITY_UNDECLARED（消费方经 contract-tests 的 encodeLatent 执行原语调用，不绕过 manifest 直接探测 encode） */
   encode?(structure: AtomGraph): Promise<unknown>
 }
 
@@ -377,9 +377,12 @@ interface SampledStructure {
 - **交付即谱系**：交付按 `ResolvedStructure` 兼容形态（§4.1）转换，`source` 以 `generative:`
   前缀写入谱系；不可变与 fork 语义继承 §6。
 
-参考实现两个层级：微扰采样器（`@saturday/plugin-sampler-perturb`，`likelihood: 'none'`）
-与 OU 采样器（`@saturday/plugin-sampler-ou`，闭式转移核 + 精确提议似然 `likelihood: 'exact'`，
-逐候选附可独立重算的 `logProb`；OU 单峰定位为局部采样器，跨盆地探索由多锚点混合提案承担）。
+参考实现三个层级：微扰采样器（`@saturday/plugin-sampler-perturb`，`likelihood: 'none'`、
+`invertible: false`）、OU 采样器（`@saturday/plugin-sampler-ou`，闭式转移核 + 精确提议似然
+`likelihood: 'exact'`，逐候选附可独立重算的 `logProb`；OU 单峰定位为局部采样器，跨盆地探索由
+多锚点混合提案承担）与仿射耦合流采样器（`@saturday/plugin-sampler-flow`，双射输运映射
+`invertible: true` 首实证 + 换元公式精确似然 `likelihood: 'exact'`；`encode` 是 `decode` 的严格逆，
+`encode∘sample ≡ id` 机械对账到浮点精度；流参数由 seed 派生——非训练产物，如实声明）。
 
 #### 4.5.1 锚点库与混合提案（工具层）
 
@@ -615,11 +618,11 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 `failWhen(material)` 断言供同构变体工作流选中失败变体）、`samplerContract`（§4.5）、
 `derivationContract`（§4.6）。新插件在自己的测试文件里调用套件即完成接入。
 
-当前基线：全仓 workspace 回归 335/335（19 包），另有摘要层脚本测试 7 项
+当前基线：全仓 workspace 回归 380/380（21 包），另有摘要层脚本测试 7 项
 （非 workspace，由回归脚本覆盖）；回归与摘要脚本强制包内串行
 （`--test-concurrency=1`：并发各拉 sidecar + OpenBLAS 线程会内存竞态）。
 
-发布形态：19 包 `files` 白名单（发布物只含实现与必要数据面，
+发布形态：21 包 `files` 白名单（发布物只含实现与必要数据面，
 测试/日志/临时产物不外泄，`scripts/pack-check.mjs` 机械核验）；
 `repository` / `bugs` 元数据指向真实仓库（github.com/toki0413/dsh-saturday）；
 本契约英文摘要版（`plugin-contract-v0.en.md`，权威文本以中文原本与本套件为准）。
@@ -708,6 +711,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 76 | 可靠性验证：故障注入 + 性能基线 + 发布形态核验——截断载荷（中断写/断电模拟）→ 回填拒绝且库零污染；截断判据快照 → 回填拒绝；多载荷合并一好一坏 → 整批拒绝（门禁先行）；对照面完好载荷照常回填；千级规模量级读数如实呈报（入库 2000 锚点/检索/混合提案/落盘回填往返）——读数即事实不设阈值不做门禁；`scripts/pack-check.mjs` 逐包 `npm pack --dry-run` 干跑：版本一致性 + files 白名单核验 + 清单如实呈报，违规非零退出，不产生 .tgz 不触网 | plugin-sampler-ou failure-drill 测试 1-3（截断拒绝 + 库零污染 + 门禁先行）+ perf-baseline 测试 1-2（纯层/往返量级读数如实）+ scripts/pack-check 实跑（19 包全过） |
 | 77 | 零依赖引擎插件入生态：契约套件全真跑 + 闭式对账——manifest/M1 注册门禁/路由激活/指纹声明经 potentialProviderContract 套件在任何环境全量真实执行（零依赖引擎无 skip 路径）；闭式对账：力 = 能量负梯度（数值有限差分）、Langevin 恒温 MD 能量均分对账 ⟨K⟩ = 3/2 kT、谐振子配分函数闭式一致性（纯谐波势上）；谐波原语零模/虚频如实计数不静默修正；玩具势性质声明在先（LJ 为教学档精度；参考态为本引擎自洽参考，非实验值） | plugin-lj lj 测试 1-15（契约套件全真跑 + 闭式对账 + 插件形态） |
 | 78 | 数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态 | bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移） |
+| 79 | sampler seam 可逆性升档（`invertible: true` 首实证）：仿射耦合流双射输运映射（潜变量 ↔ 位移），`encode` 是 `decode` 的严格逆（`encode∘sample ≡ id` 机械对账到浮点精度 1e-16）；换元公式精确似然 log p(d) = log N(z) − log\|det J\|（雅可比 z 空间 log cosh 稳定求值，不碰 tanh 饱和退化），`logProb` 逐候选可独立重算（1e-9）；基础分布尺度与微分同胚窗口同量级（声明即承诺）；窗口外/跨拓扑/坏形态显式拒绝（不外推冒充覆盖）；映射构造时固定，per-call seed 只重播潜变量抽样（改 sMax = 改双射，encode 无从反演即拒）；流参数由 seed 派生非训练产物（如实声明）；可逆性声明可执行——未声明者经 `encodeLatent` 执行原语抛 INVERTIBILITY_UNDECLARED | plugin-sampler-flow 测试 1-10（双射往返/换元独立重算/窗口机械界/encode 四门禁/未绑定拒绝/构造门禁 + 插件层挂载回收/缺依赖/端到端 encode 工具往返/确定性）+ `samplerContract` 可逆性条款（套件自检 mock-invertible + perturb 未声明拒绝） |
 
 
 ```javascript

@@ -59,6 +59,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合（`@saturday/plugin-eos`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样（`@saturday/plugin-sampler-perturb`） |
 | OU 候选采样 | `sampler.ou` | Ornstein-Uhlenbeck 参考结构采样：闭式转移核 + 精确提议似然；多锚点混合提案支持跨盆地探索（`@saturday/plugin-sampler-ou`） |
+| 流采样 | `sampler.flow` | 仿射耦合流采样：双射输运映射 `invertible:true` + 换元公式精确似然，`encode` 反演回潜空间（`@saturday/plugin-sampler-flow`） |
 | 采样回算闭环 | `workflow.explore` | 候选逐送入引擎回算验证后按能量排序（引擎是唯一 oracle，`@saturday/plugin-explore`） |
 | 遍历对账 | `workflow.ergodic` | 采样系综平均 对 恒温 MD 时间平均；判定强度随采样器似然声明分级（`@saturday/plugin-ergodic`） |
 | 构型自由能 | `workflow.freeEnergy` | 温度网格逐点恒温 MD + 热力学积分出构型自由能曲线；自由能零点（锚点）显式注入，支持谐波近似物理化（`@saturday/plugin-free-energy`） |
@@ -132,6 +133,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   eos/                        #   @saturday/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合
   sampler-perturb/            #   @saturday/plugin-sampler-perturb —— 采样：参考结构微扰
   sampler-ou/                 #   @saturday/plugin-sampler-ou —— 采样：OU 受控扩散 + 混合提案 + 锚点工具链
+  sampler-flow/               #   @saturday/plugin-sampler-flow —— 采样：仿射耦合流（可逆输运 + 换元精确似然）
   explore/                    #   @saturday/plugin-explore —— 工作流：采样 → 回算闭环
   ergodic/                    #   @saturday/plugin-ergodic —— 工作流：遍历对账
   free-energy/                #   @saturday/plugin-free-energy —— 工作流：构型自由能曲线（热力学积分）

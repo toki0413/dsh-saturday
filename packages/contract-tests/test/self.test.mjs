@@ -1,7 +1,7 @@
 // 套件自检：用完全满足契约的内存 mock 跑一遍五条套件。
 // 若套件断言本身有缺陷（漏检/误检），这里先行暴露。
 
-import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract, derivationContract } from '../src/index.mjs'
+import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract, derivationContract, encodeLatent } from '../src/index.mjs'
 import { Material, PrototypeLibResolver } from '@saturday/core'
 
 // ── 合规 mock：structure-resolver（§4.1）──
@@ -157,6 +157,91 @@ const mockSampler = {
 samplerContract({
   subject: 'mock-sampler',
   createSampler: () => mockSampler,
+  createReference: () => Material.create(
+    { modalities: { formula: 'Cu' } }, new PrototypeLibResolver(),
+  ),
+})
+
+// ── 合规 mock：可逆 sampler（§4.5，invertible: true 分支自检）──
+// 最薄双射：逐坐标 d = sMax·tanh(z)，逆 z = arctanh(d/sMax)，log|det J| 恒 0（构造性选择）。
+// 单例形态：createSampler 忽略 reference 参数；位移空间相对最近一次 sample 的参考定义。
+const SM_MAX = 0.1
+const mockInvertibleSampler = {
+  name: 'mock-invertible-sampler',
+  manifest: {
+    semantics: 'sampling',
+    likelihood: 'exact',
+    invertible: true,          // 声明可逆 → 必须提供 encode（套件 manifest 自洽断言）
+    supportedTargets: ['reference'],
+  },
+  // 位移空间相对最近一次 sample 的参考定义（mock 单例记忆参考；真实实现用构造时绑定，见 plugin-sampler-flow）
+  _refPositions: null,
+  async sample(target, opts = {}) {
+    if (!target?.reference?.graph) {
+      const err = new Error('mock invertible sampler requires a reference structure')
+      err.code = 'SAMPLER_UNAVAILABLE'
+      throw err
+    }
+    const n = opts.n ?? 4
+    if (!Number.isInteger(n) || n <= 0) {
+      const err = new Error('mock invertible sampler cannot produce ' + n + ' candidates')
+      err.code = 'SAMPLE_NOT_FOUND'
+      throw err
+    }
+    this._refPositions = target.reference.graph.nodes.map(node => node.position.slice())
+    const rng = mockPrng(opts.seed ?? 1)
+    const base = target.reference.graph
+    return Array.from({ length: n }, () => {
+      const graph = {
+        ...base,
+        nodes: base.nodes.map(node => ({ ...node, position: node.position.slice() })),
+      }
+      let sumSq = 0
+      graph.nodes.forEach((node) => {
+        node.position = node.position.map((x) => {
+          const z = (rng() - 0.5) * 2                       // 有界潜变量（arctanh 往返对账用）
+          sumSq += z * z
+          return x + SM_MAX * Math.tanh(z)                   // 双射正向：位移在窗口内
+        })
+      })
+      const dims = graph.nodes.length * 3
+      return {
+        source: 'generative:mock-invertible-sampler#seed=' + (opts.seed ?? 1),
+        graph,
+        logProb: -0.5 * sumSq - 0.5 * dims * Math.log(2 * Math.PI),   // log|det J| = 0（构造性选择）
+      }
+    })
+  },
+  async encode(structure) {
+    if (!structure?.nodes?.length) {
+      const err = new Error('encode requires a non-empty graph')
+      err.code = 'SAMPLER_UNAVAILABLE'
+      throw err
+    }
+    if (!this._refPositions || this._refPositions.length !== structure.nodes.length) {
+      const err = new Error('encode requires a reference bound by a prior sample (displacement space undefined)')
+      err.code = 'SAMPLER_UNAVAILABLE'
+      throw err
+    }
+    const latent = []
+    structure.nodes.forEach((node, i) => {
+      node.position.forEach((x, k) => {
+        const u = (x - this._refPositions[i][k]) / SM_MAX   // 位移相对参考（非绝对位置）
+        if (Math.abs(u) >= 1) {
+          const err = new Error('structure outside diffeomorphism window')
+          err.code = 'SAMPLER_UNAVAILABLE'
+          throw err
+        }
+        latent.push(Math.atanh(u))
+      })
+    })
+    return { latent, logDet: 0 }
+  },
+}
+
+samplerContract({
+  subject: 'mock-invertible-sampler',
+  createSampler: () => mockInvertibleSampler,
   createReference: () => Material.create(
     { modalities: { formula: 'Cu' } }, new PrototypeLibResolver(),
   ),

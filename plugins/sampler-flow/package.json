@@ -1,0 +1,39 @@
+{
+  "name": "@saturday/plugin-sampler-flow",
+  "version": "0.3.0",
+  "description": "Saturday sampler 插件（契约 §4.5 sampler seam 第三实证）：仿射耦合流采样。双射输运映射（invertible: true 首实证，encode 严格逆）+ 换元公式精确似然（likelihood: exact）、候选可回算验证。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@saturday/kernel": "^0.3.0"
+  },
+  "devDependencies": {
+    "@saturday/contract-tests": "^0.3.0",
+    "@saturday/core": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh.bundle": {
+    "plugins": [
+      "./src/index.mjs"
+    ]
+  },
+  "files": [
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toki0413/dsh-saturday.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toki0413/dsh-saturday/issues"
+  }
+}

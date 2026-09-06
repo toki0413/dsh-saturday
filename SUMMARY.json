@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-31T05:49:00.597Z",
-  "totalPass": 354,
+  "generatedAt": "2026-09-06T11:20:20.387Z",
+  "totalPass": 380,
   "totalFail": 0,
-  "packageCount": 20,
-  "testedCount": 19,
+  "packageCount": 21,
+  "testedCount": 20,
   "packages": [
     {
       "dir": "packages\\bridge",
@@ -16,7 +16,7 @@
       "dir": "packages\\contract-tests",
       "name": "@saturday/contract-tests",
       "version": "0.3.0",
-      "pass": 24,
+      "pass": 31,
       "fail": 0
     },
     {
@@ -125,17 +125,24 @@
       "fail": 0
     },
     {
+      "dir": "plugins\\sampler-flow",
+      "name": "@saturday/plugin-sampler-flow",
+      "version": "0.3.0",
+      "pass": 16,
+      "fail": 0
+    },
+    {
       "dir": "plugins\\sampler-ou",
       "name": "@saturday/plugin-sampler-ou",
       "version": "0.3.0",
-      "pass": 66,
+      "pass": 67,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-perturb",
       "name": "@saturday/plugin-sampler-perturb",
       "version": "0.3.0",
-      "pass": 9,
+      "pass": 11,
       "fail": 0
     },
     {
@@ -536,6 +543,11 @@
       "index": 78,
       "clause": "数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态",
       "evidence": "bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移）"
+    },
+    {
+      "index": 79,
+      "clause": "sampler seam 可逆性升档（`invertible: true` 首实证）：仿射耦合流双射输运映射（潜变量 ↔ 位移），`encode` 是 `decode` 的严格逆（`encode∘sample ≡ id` 机械对账到浮点精度 1e-16）；换元公式精确似然 log p(d) = log N(z) − log\\|det J\\|（雅可比 z 空间 log cosh 稳定求值，不碰 tanh 饱和退化），`logProb` 逐候选可独立重算（1e-9）；基础分布尺度与微分同胚窗口同量级（声明即承诺）；窗口外/跨拓扑/坏形态显式拒绝（不外推冒充覆盖）；映射构造时固定，per-call seed 只重播潜变量抽样（改 sMax = 改双射，encode 无从反演即拒）；流参数由 seed 派生非训练产物（如实声明）；可逆性声明可执行——未声明者经 `encodeLatent` 执行原语抛 INVERTIBILITY_UNDECLARED",
+      "evidence": "plugin-sampler-flow 测试 1-10（双射往返/换元独立重算/窗口机械界/encode 四门禁/未绑定拒绝/构造门禁 + 插件层挂载回收/缺依赖/端到端 encode 工具往返/确定性）+ `samplerContract` 可逆性条款（套件自检 mock-invertible + perturb 未声明拒绝）"
     }
   ]
 }

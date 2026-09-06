@@ -261,9 +261,25 @@ export function workflowContract({ subject, runTest, formula, dopants, missingDe
 // ────────────────────────────────────────────────────────────
 
 /**
+ * §4.5 可逆性声明的执行原语：未声明 invertible 的采样器调用 encode 必须抛
+ * INVERTIBILITY_UNDECLARED（声明是可执行条款，不是文档修辞）。
+ * 消费方经此原语调 encode，不得绕过 manifest 直接探测 sampler.encode。
+ */
+export async function encodeLatent(sampler, structure) {
+  if (sampler?.manifest?.invertible !== true) {
+    const e = new Error(
+      `${sampler?.name ?? 'sampler'} 未声明 invertible（manifest.invertible !== true）：` +
+      '输运映射不可逆或未声明，encode 不可调用（声明即承诺，未声明即拒绝） (INVERTIBILITY_UNDECLARED)')
+    e.code = 'INVERTIBILITY_UNDECLARED'
+    throw e
+  }
+  return sampler.encode(structure)
+}
+
+/**
  * @param {Object}   opts
  * @param {string}   opts.subject         被测 sampler 标识（测试名前缀）
- * @param {Function} opts.createSampler   () => StructureSampler（可 async）
+ * @param {Function} opts.createSampler   (reference?) => StructureSampler（可 async；reference 供可逆采样器绑定位移空间）
  * @param {Function} opts.createReference () => Material（supportedTargets 含 reference 时的参考结构）
  */
 export function samplerContract({ subject, createSampler, createReference }) {
@@ -340,6 +356,27 @@ export function samplerContract({ subject, createSampler, createReference }) {
     const [s] = await sampler.sample({ reference }, { n: 1, seed: 3 })
     const material = await Material.create({ modalities: { graph: s.graph } })
     assert.equal(material.nAtoms, s.graph.nodes.length)
+  })
+
+  test(`[contract:${subject}] §4.5 可逆性声明可执行：未声明即 encode 拒（INVERTIBILITY_UNDECLARED），声明者透传且确定性`, async () => {
+    const sampler = await createSampler()
+    const reference = await createReference()
+    if (sampler.manifest.invertible !== true) {
+      // 未声明可逆：执行原语必须显式拒绝（不静默返回 undefined，不探测私有 encode）
+      await assert.rejects(
+        () => encodeLatent(sampler, reference.graph),
+        err => err.code === 'INVERTIBILITY_UNDECLARED',
+        '未声明 invertible 的采样器调用 encode 必须抛 INVERTIBILITY_UNDECLARED',
+      )
+      return
+    }
+    // 声明可逆：用参考绑定的实例走执行原语（encode 的位移空间相对参考定义），
+    // 交付必须确定性（同一结构两次编码逐坐标一致）
+    const bound = await createSampler(reference)
+    const [s] = await bound.sample({ reference }, { n: 1, seed: 9 })
+    const a = await encodeLatent(bound, s.graph)
+    const b = await encodeLatent(bound, s.graph)
+    assert.deepEqual(b, a, 'encode 必须确定性（双射是逐点映射，不含随机源）')
   })
 }
 
