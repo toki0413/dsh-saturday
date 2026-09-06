@@ -57,6 +57,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 轨迹回放 | `trajectory.replay` | 从 append-only 事件流重建计算索引（`@saturday/plugin-replay`） |
 | 势垒分析 | `analysis.neb` | NEB 最小能量路径与过渡态势垒（`@saturday/plugin-neb`） |
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合（`@saturday/plugin-eos`） |
+| 声子分析 | `analysis.phonon` | Γ 点声子：力注入式有限位移 + 声学和规则，频率/虚频/显式阈值稳定性判定（`@saturday/plugin-phonon`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样（`@saturday/plugin-sampler-perturb`） |
 | OU 候选采样 | `sampler.ou` | Ornstein-Uhlenbeck 参考结构采样：闭式转移核 + 精确提议似然；多锚点混合提案支持跨盆地探索（`@saturday/plugin-sampler-ou`） |
 | 流采样 | `sampler.flow` | 仿射耦合流采样：双射输运映射 `invertible:true` + 换元公式精确似然，`encode` 反演回潜空间（`@saturday/plugin-sampler-flow`） |
@@ -131,6 +132,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   replay/                     #   @saturday/plugin-replay —— 分析：Trajectory 回放与索引重建
   neb/                        #   @saturday/plugin-neb —— 分析：NEB 最小能量路径与势垒
   eos/                        #   @saturday/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合
+  phonon/                     #   @saturday/plugin-phonon —— 分析：Γ 点声子（虚频与稳定性判定）
   sampler-perturb/            #   @saturday/plugin-sampler-perturb —— 采样：参考结构微扰
   sampler-ou/                 #   @saturday/plugin-sampler-ou —— 采样：OU 受控扩散 + 混合提案 + 锚点工具链
   sampler-flow/               #   @saturday/plugin-sampler-flow —— 采样：仿射耦合流（可逆输运 + 换元精确似然）

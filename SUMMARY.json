@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06T11:20:20.387Z",
-  "totalPass": 380,
+  "generatedAt": "2026-09-06T12:36:51.657Z",
+  "totalPass": 391,
   "totalFail": 0,
-  "packageCount": 21,
-  "testedCount": 20,
+  "packageCount": 22,
+  "testedCount": 21,
   "packages": [
     {
       "dir": "packages\\bridge",
@@ -115,6 +115,13 @@
       "name": "@saturday/plugin-neb",
       "version": "0.3.0",
       "pass": 8,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\phonon",
+      "name": "@saturday/plugin-phonon",
+      "version": "0.3.0",
+      "pass": 11,
       "fail": 0
     },
     {
@@ -548,6 +555,11 @@
       "index": 79,
       "clause": "sampler seam 可逆性升档（`invertible: true` 首实证）：仿射耦合流双射输运映射（潜变量 ↔ 位移），`encode` 是 `decode` 的严格逆（`encode∘sample ≡ id` 机械对账到浮点精度 1e-16）；换元公式精确似然 log p(d) = log N(z) − log\\|det J\\|（雅可比 z 空间 log cosh 稳定求值，不碰 tanh 饱和退化），`logProb` 逐候选可独立重算（1e-9）；基础分布尺度与微分同胚窗口同量级（声明即承诺）；窗口外/跨拓扑/坏形态显式拒绝（不外推冒充覆盖）；映射构造时固定，per-call seed 只重播潜变量抽样（改 sMax = 改双射，encode 无从反演即拒）；流参数由 seed 派生非训练产物（如实声明）；可逆性声明可执行——未声明者经 `encodeLatent` 执行原语抛 INVERTIBILITY_UNDECLARED",
       "evidence": "plugin-sampler-flow 测试 1-10（双射往返/换元独立重算/窗口机械界/encode 四门禁/未绑定拒绝/构造门禁 + 插件层挂载回收/缺依赖/端到端 encode 工具往返/确定性）+ `samplerContract` 可逆性条款（套件自检 mock-invertible + perturb 未声明拒绝）"
+    },
+    {
+      "index": 80,
+      "clause": "analysis seam 第三个实证（Γ 点声子，力注入式）：有限位移（每原子 × 3 笛卡尔方向 ± d，6N+1 次力调用）→ 力常数中心差分 → 声学和规则投影（平移不变性物理要求：投影前残余如实报告，投影后声学三支精确零频）→ 质量加权动力学矩阵 → Jacobi 对称特征分解（确定性）；频率换算因子从 CODATA-2018 基本常数推导（不硬编码拍脑袋）；虚频是物理结果不是错误——显著虚频（\\|λ\\|> 显式阈值）判 unstable、数值噪声微负 λ 单独如实报告不计入（两层虚频语义）；力对称残余与平衡点残余力随结果交付（差分可信度指标）；解析弹簧模型闭式对账（独立弹簧验证换算常数端到端、弹簧对声学零频 + 光学支闭式、负弹簧虚频体系）；原子量缺失显式报错不默认（诚实纪律）",
+      "evidence": "plugin-phonon 测试 1-11（换算因子/位移作业与不可变变体/独立弹簧端到端/单原子 ASR 零频/弹簧对闭式对账/虚频诚实判定/六路显式失败/确定性/§4.4 形态与谱系/工具层报错/真实桥集成 EMT 成功路 + lj-js 无力显式失败 + 卸载回收）"
     }
   ]
 }

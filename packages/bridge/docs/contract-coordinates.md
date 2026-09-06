@@ -43,8 +43,8 @@ ecosystem-spec 的 conformance-claim schema
 不单独占坐标，经 potential-provider 握手与筛选层生效。
 
 证据级别的含义：`Tested` 表示该 seam 的标准断言集在
-`@saturday/contract-tests` 中可执行，且当前基线（全仓回归 380/380，
-21 包）全绿；`Declared` 表示契约条款在册但套件未含专项断言。
+`@saturday/contract-tests` 中可执行，且当前基线（全仓回归 391/391，
+22 包）全绿；`Declared` 表示契约条款在册但套件未含专项断言。
 Saturday 的证据级别只会向上走：Analysis seam 补套件断言后升 Tested，
 无需变更坐标本身。
 
@@ -72,7 +72,7 @@ Saturday 的证据级别只会向上走：Analysis seam 补套件断言后升 Te
 | TUI-HOST-001 Host descriptor | not-applicable | 宿主侧义务；Saturday 是插件集合，不作宿主 |
 | TUI-RUN-001 Remote determinism | partial | 无 GUI 假定，headless 端到端已实证；remote attach 场景未验证 |
 | TUI-OBS-001 Ownership and cleanup | partial | effect 生命周期由 cordis 可逆效应承载；未做 deactivate 残留系统审计 |
-| TUI-DEP-001 Dependency closure | partial | pack-check 机械核验 21 包 artifact + CI 双档；dsh-std revision 项不适用 |
+| TUI-DEP-001 Dependency closure | partial | pack-check 机械核验 22 包 artifact + CI 双档；dsh-std revision 项不适用 |
 | TUI-TRUST-001 Trust disclosure | partial | 同进程信任模型适用且有诚实声明纪律；无面向终端用户的披露面 |
 
 七条无一完全满足，这不是疏漏而是立场：**坐标化解决"可被引用"，

@@ -38,7 +38,7 @@
       "contractSection": "§4.4",
       "contractTests": [],
       "evidenceLevel": "Declared",
-      "notes": "契约条款在册；五 seam 套件未含 analysis 专项断言，分析插件（eos/neb）以包内测试覆盖"
+      "notes": "契约条款在册；五 seam 套件未含 analysis 专项断言，分析插件（eos/neb/phonon）以包内测试覆盖"
     },
     {
       "name": "sampler",
@@ -100,7 +100,7 @@
         "id": "TUI-DEP-001",
         "title": "Dependency closure",
         "status": "partial",
-        "evidence": "scripts/pack-check.mjs 机械核验 21 包实际安装 artifact（版本一致性 + files 白名单无夹带）；CI 双档（zero-deps + full-fidelity）覆盖依赖闭包两极；规范要求的固定 dsh-std revision 一项不适用（Saturday 不依赖 dsh-std）"
+        "evidence": "scripts/pack-check.mjs 机械核验 22 包实际安装 artifact（版本一致性 + files 白名单无夹带）；CI 双档（zero-deps + full-fidelity）覆盖依赖闭包两极；规范要求的固定 dsh-std revision 一项不适用（Saturday 不依赖 dsh-std）"
       },
       {
         "id": "TUI-TRUST-001",
