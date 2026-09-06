@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-explore",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。",
   "type": "module",
   "main": "src/index.mjs",

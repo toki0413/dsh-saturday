@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-mp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现）",
   "type": "module",
   "main": "src/index.mjs",

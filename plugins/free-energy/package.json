@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-free-energy",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。",
   "type": "module",
   "main": "src/index.mjs",

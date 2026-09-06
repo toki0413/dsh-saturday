@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-replay",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。",
   "type": "module",
   "main": "src/index.mjs",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T17:20:36.112Z",
+  "generatedAt": "2026-09-06T17:32:16.228Z",
   "totalPass": 398,
   "totalFail": 0,
   "packageCount": 23,
@@ -8,161 +8,161 @@
     {
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 55,
       "fail": 0
     },
     {
       "dir": "packages\\contract-tests",
       "name": "@toki0413/contract-tests",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 31,
       "fail": 0
     },
     {
       "dir": "packages\\core",
       "name": "@toki0413/core",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 28,
       "fail": 0
     },
     {
       "dir": "packages\\kernel",
       "name": "@toki0413/kernel",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": null,
       "fail": null
     },
     {
       "dir": "packages\\mcp-server",
       "name": "@toki0413/mcp-server",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 7,
       "fail": 0
     },
     {
       "dir": "packages\\python-bridge",
       "name": "@toki0413/python-bridge",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\ase",
       "name": "@toki0413/plugin-ase",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\derivation",
       "name": "@toki0413/plugin-derivation",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\eos",
       "name": "@toki0413/plugin-eos",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\ergodic",
       "name": "@toki0413/plugin-ergodic",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 9,
       "fail": 0
     },
     {
       "dir": "plugins\\free-energy",
       "name": "@toki0413/plugin-free-energy",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lennard-jones",
       "name": "@toki0413/plugin-lj",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\mace",
       "name": "@toki0413/plugin-mace",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\mp-structure-source",
       "name": "@toki0413/plugin-mp",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\phonon",
       "name": "@toki0413/plugin-phonon",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\replay",
       "name": "@toki0413/plugin-replay",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-flow",
       "name": "@toki0413/plugin-sampler-flow",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 16,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-ou",
       "name": "@toki0413/plugin-sampler-ou",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 67,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-perturb",
       "name": "@toki0413/plugin-sampler-perturb",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\screening",
       "name": "@toki0413/plugin-screening",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "pass": 38,
       "fail": 0
     }
