@@ -1,6 +1,9 @@
 # Saturday —— 材料计算的插件运行时
 
 [![CI](https://github.com/toki0413/dsh-saturday/actions/workflows/ci.yml/badge.svg)](https://github.com/toki0413/dsh-saturday/actions/workflows/ci.yml)
+[![Install on Smithery](https://smithery.ai/badge/toki0413/saturday-materials)](https://smithery.ai/servers/toki0413/saturday-materials)
+
+简体中文 | [English](./README.en.md)
 
 **Everything is a plugin。** Saturday 不是又一套材料计算引擎，不替代 DFT / MD / FEM / CFD 的任何求解器；
 它是材料计算的**组合层**：引擎、结构源、工作流、分析工具全部以插件形态挂载到

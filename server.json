@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.toki0413/saturday-materials",
+  "description": "Materials computing tools for AI agents: structures, engines, phonons, EOS, NEB, sampling, lineage.",
+  "repository": {
+    "url": "https://github.com/toki0413/dsh-saturday",
+    "source": "github"
+  },
+  "version": "0.3.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@toki0413/mcp-server",
+      "version": "0.3.3",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
