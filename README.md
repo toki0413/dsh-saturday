@@ -101,6 +101,7 @@ EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。
 | 纯 Node（无 Python） | `lj-js`（零依赖纯 JS，LJ 玩具势） | 全部演示可跑；精度为教学档（玩具势声明在先，参考态为引擎自洽参考非实验值） |
 | + Python ≥ 3.10 + ASE ≥ 3.22 | `emt-mock`（EMT 真物理）+ `ase` | 解锁 EMT 精度；sidecar 内缺 ASE 自动回退 LJ 玩具势（如实声明） |
 | + LAMMPS / MACE | `lammps` / `mace` | 生产级引擎接入；缺失时可用性预检如实报告（`demo:availability`） |
+| + 远程集群（SSH） | sidecar 在远程执行 | 站点配置 `~/.saturday/clusters.json` + `bridge.cluster` 指定；连接失败显式上抛不回退本地（远程语义是算力选择） |
 
 - **Node ≥ 22**（dsh 硬性要求；裸 cordis 测试可在 Node 20 运行）
 - Python 数据面依赖：numpy + scipy（仅升级精度时需要）

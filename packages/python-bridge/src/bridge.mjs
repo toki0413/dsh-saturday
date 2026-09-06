@@ -1,27 +1,28 @@
 // PythonBridge —— TS 控制面 ↔ Python 数据面
-// MVP 传输：子进程 stdio + 换行分隔 JSON（无第三方依赖）。
-// 生产路径可换 ZeroMQ 等传输；接口不变，传输层可替换——这正是桥接层存在的意义。
+// 传输抽象：LocalTransport（本地子进程，缺省）或 SshTransport（远程 SSH，站点配置）。
+// 协议不变：换行分隔 JSON（无第三方依赖）。传输层可替换——这正是桥接层存在的意义。
 
-import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { randomUUID } from 'node:crypto'
 import { platform } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { LocalTransport } from './transport.mjs'
 
 export class PythonBridge {
   constructor(options = {}) {
-    // Windows 通常只有 python（无 python3），按平台选默认命令；可用 bridge.python 覆盖
-    this.python = options.python ?? (platform() === 'win32' ? 'python' : 'python3')
-    this.sidecar = options.sidecar ?? fileURLToPath(new URL('../../python-bridge/sidecar.py', import.meta.url))
+    // 传输注入：options.transport 优先（SshTransport 等远程通道）；
+    // 缺省本地子进程（Windows 通常只有 python，按平台选默认命令；bridge.python 覆盖）
+    this.transport = options.transport ?? new LocalTransport({
+      python: options.python ?? (platform() === 'win32' ? 'python' : 'python3'),
+      sidecar: options.sidecar ?? fileURLToPath(new URL('../../python-bridge/sidecar.py', import.meta.url)),
+    })
     this.proc = null
     this.pending = new Map()
   }
 
   async connect() {
     if (this.proc) return
-    this.proc = spawn(this.python, [this.sidecar], {
-      stdio: ['pipe', 'pipe', 'inherit'],
-    })
+    this.proc = this.transport.launch()
     const rl = createInterface({ input: this.proc.stdout })
     rl.on('line', line => {
       let msg

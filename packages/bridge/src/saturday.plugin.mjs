@@ -3,6 +3,7 @@
 // 在 dsh 中：作为 profile 组合的一行挂载；在裸 cordis 中：ctx.registry.plugin() 挂载（开发/CI）。
 
 import { createCordisAdapter } from '@toki0413/kernel'
+import { loadClusters } from '@toki0413/python-bridge'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@toki0413/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
@@ -23,10 +24,24 @@ export default {
     const potential = new PotentialRegistry(rt)
 
     // 数据面形态双轨（开箱即用纪律）：
-    //  - Python 可用 → emt-mock sidecar（有 ASE 时自动走真 EMT，无 ASE 走 LJ 兜底）
+    //  - Python 可用 → emt-mock sidecar（有 ASE 时自动走真 EMT，无 ASE 走 LJ 兑底）
     //  - Python 不可用 → 显式回退零依赖纯 JS 引擎 lj-js（横幅如实报告，
     //    非静默降级：指纹独立为 lj-js，能量进组合路径前照常过 M1 门禁）
-    const bridge = new PythonBridge(config.bridge)
+    // 远程例外：config.bridge.cluster 指向站点配置（~/.saturday/clusters.json）时，
+    // sidecar 经 SSH 在远程执行——远程连接失败直接抛出，绝不静默回退本地
+    //（远程语义是算力选择：用户指定 cluster 就是要求在哪算，回退本地 = 违背指令）
+    const bridgeOpts = { ...config.bridge }
+    if (bridgeOpts.cluster) {
+      const clusters = loadClusters(bridgeOpts.clustersPath)
+      if (!clusters[bridgeOpts.cluster]) {
+        throw new Error(
+          `cluster "${bridgeOpts.cluster}" not in site config ` +
+          `(known: ${Object.keys(clusters).join(', ') || 'none'})`,
+        )
+      }
+      bridgeOpts.transport = clusters[bridgeOpts.cluster]
+    }
+    const bridge = new PythonBridge(bridgeOpts)
     let dataPlane = 'emt-mock'
     try {
       await bridge.connect()
@@ -35,6 +50,13 @@ export default {
       // sidecar 生命周期绑定到插件 fiber：卸载时断开
       rt.effect(() => () => bridge.disconnect(), 'python-bridge')
     } catch (err) {
+      if (config.bridge?.cluster) {
+        // 远程集群语义：用户指定在哪算就在哪算——失败显式上抛，不回退本地
+        throw new Error(
+          `remote cluster "${config.bridge.cluster}" unreachable: ${err.message.split('\n')[0]}；` +
+          '远程语义是算力选择，不回退本地（如需本机运行请移除 cluster 配置）',
+        )
+      }
       dataPlane = 'lj-js'
       potential.register(new LjProvider())
       await potential.activate('lj-js')
