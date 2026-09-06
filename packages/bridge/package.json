@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/bridge",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥",
   "type": "module",
   "main": "src/saturday.plugin.mjs",

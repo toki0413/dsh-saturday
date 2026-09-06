@@ -9,18 +9,20 @@
 import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
 import {
-  runPhononAnalysis, displacedGraph, displacementJobs,
+  runPhononAnalysis, displacedGraph, displacementJobs, buildSupercell,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU,
   phononError,
 } from './phonon.mjs'
 
 export {
-  runPhononAnalysis, displacedGraph, displacementJobs,
+  runPhononAnalysis, displacedGraph, displacementJobs, buildSupercell,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU,
   phononError,
 } from './phonon.mjs'
 
 export const DEFAULT_DISPLACEMENT = 0.01
+/** 工具层默认超胞重复数：力引擎普遍忽略周期性（如 ASE EMT），3×3×3 对短程势充分 */
+export const DEFAULT_SUPERCELL_REP = [3, 3, 3]
 
 /**
  * 位移变体 Material（不可变 fork 语义，§6）：原子 atomIndex 沿笛卡尔 direction
@@ -67,14 +69,14 @@ export const phononAnalysis = {
       },
     }
   },
-  async run({ graph, forceProvider, displacement, applyAsr, stableTolOmegaSq } = {}, rt) {
+  async run({ graph, forceProvider, displacement, applyAsr, stableTolOmegaSq, supercellRep } = {}, rt) {
     if (!graph || typeof forceProvider !== 'function') {
       throw phononError('ANALYSIS_INPUT_MISSING',
         'analysis.phonon requires graph and forceProvider (engine-forces input)')
     }
     const t0 = Date.now()
     const result = await runPhononAnalysis(graph, forceProvider, {
-      displacement, applyAsr, stableTolOmegaSq,
+      displacement, applyAsr, stableTolOmegaSq, supercellRep,
     })
     // 谱系登记：分析结果也是事实，落 append-only Trajectory（§4.4 冻结点）
     if (rt?.appendTrajectory) {
@@ -127,6 +129,12 @@ export default {
         displacement: { type: 'number', default: DEFAULT_DISPLACEMENT, description: '位移步长（Å）' },
         applyAsr: { type: 'boolean', default: true, description: '声学和规则投影' },
         stableTolOmegaSq: { type: 'number', default: 1e-4, description: '稳定性 ω² 阈值' },
+        supercellRep: {
+          type: 'array',
+          items: { type: 'integer' },
+          default: DEFAULT_SUPERCELL_REP,
+          description: '超胞重复数 [nx,ny,nz]；力引擎忽略周期性时必须用超胞（默认 3×3×3）',
+        },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -170,6 +178,7 @@ export default {
           displacement: args.displacement,
           applyAsr: args.applyAsr,
           stableTolOmegaSq: args.stableTolOmegaSq,
+          supercellRep: args.supercellRep ?? DEFAULT_SUPERCELL_REP,
         }, rt)
       },
     })

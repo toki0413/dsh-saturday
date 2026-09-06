@@ -12,6 +12,7 @@ import { Context } from '@deepseek-ai/cordis'
 import bridgePlugin from '@toki0413/bridge'
 import plugin, {
   phononAnalysis, runPhononAnalysis, displacedGraph, displacementJobs,
+  buildSupercell,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU, displacedVariant,
 } from '../src/index.mjs'
 
@@ -233,9 +234,16 @@ test('11. 集成：真实桥 + Cu → analysis.phonon（任意有力引擎）+ �
       for (const f of out.frequencies) assert.ok(Number.isFinite(f))
       assert.ok(Number.isFinite(out.forceResidualMax) && Number.isFinite(out.equilibriumForceMax))
       assert.ok(['stable', 'unstable'].includes(out.stability.verdict))
-      // 真力路径：单原子原胞 ASR 后声学支精确零频（投影与引擎无关，端到端对账）
-      if (out.nAtoms === 1) {
-        for (const f of out.frequencies) assert.equal(f, 0, '单原子原胞 Γ 声学支 = 0')
+      // 超胞列位移（工具默认 3×3×3）：簇边界伪影修复的物理判据——
+      // EMT 真力下 fcc Cu 的 9 支光学声子必须全为正（修复前为 9 支伪虚频）
+      if (out.calculator === 'emt-mock') {
+        assert.equal(out.supercell.mode, 'column-displacement')
+        assert.equal(out.stability.verdict, 'stable',
+          `EMT Cu 光学支应全正（虚频支数 ${out.imaginary.count}，maxOmegaSq ${out.imaginary.maxOmegaSq}）`)
+        assert.ok(out.frequencies[0] > -1e-6 && out.frequencies[0] < 1e-6, '声学三支零频')
+        const optical = out.frequencies.filter(f => f > 1e-6)
+        assert.equal(optical.length, 3 * out.nAtoms - 3)
+        assert.ok(optical.every(f => f > 1 && f < 15), `光学支量级 1–15 THz（got ${optical.map(f => f.toFixed(2)).join(',')}）`)
       }
 
       // 谱系登记落盘
@@ -251,4 +259,73 @@ test('11. 集成：真实桥 + Cu → analysis.phonon（任意有力引擎）+ �
     await coreFiber.dispose()
     await rm(dir, { recursive: true, force: true })
   }
+})
+
+// ── 超胞列位移法的解析对账 ──────────────────────────────
+
+const chain1DForces = (K, spacing, superLength) => async (graph) => {
+  const xs = graph.nodes.map(n => n.position[0])
+  const n = xs.length
+  const forces = xs.map((_, i) => {
+    const pair = (j) => {
+      let dx = xs[j] - xs[i]
+      if (dx > superLength / 2) dx -= superLength
+      if (dx < -superLength / 2) dx += superLength
+      return dx
+    }
+    const iPrev = (i - 1 + n) % n
+    const iNext = (i + 1) % n
+    // 理想周期链：与左右最近邻的弹簧（dx 已 wrap 到 ±superLength/2 内）
+    const fx = K * (pair(iPrev) + spacing) + K * (pair(iNext) - spacing)
+    return [fx, 0, 0]
+  })
+  return { forces, calculator: 'analytic-chain' }
+}
+
+test('12. buildSupercell：原子数、cell 缩放、像索引正确', async () => {
+  const graph = { cell: cubeCell(3.6), nodes: [atom(29, 0, 0, 0), atom(47, 1.8, 1.8, 1.8)] }
+  const sc = buildSupercell(graph, [2, 1, 1])
+  assert.equal(sc.graph.nodes.length, 4)
+  assert.equal(sc.cellIndex.filter(i => i === 0).length, 2)
+  assert.equal(sc.cellIndex.filter(i => i === 1).length, 2)
+  assert.equal(sc.graph.cell[0][0], 7.2)
+  assert.deepEqual(sc.graph.nodes[3].position, [1.8 + 3.6, 1.8, 1.8], '原子 1 的 A0 像 = 原位 + A0')
+  assert.throws(() => buildSupercell(graph, [0, 1, 1]), err => err.code === 'PHONON_BAD_SUPERCELL')
+  await assert.rejects(() => runPhononAnalysis(graph, independentSpring(1, [[0, 0, 0]]), { supercellRep: [3, 3] }),
+    err => err.code === 'PHONON_BAD_SUPERCELL')
+})
+
+test('13. 超胞列位移 + 1D 双原子链：声学零频 + 光学支闭式对账（理想周期力源）', async () => {
+  // 原胞 2 原子（Cu/Ag 沿 x 交替），cell x 向 a=3.615，y/z 无相互作用；
+  // 超胞 3×1×1 = 6 原子链，力源自身周期化（wrap）——隔离验证列位移折算数学
+  const K = 0.5
+  const a = 3.615
+  const graph = {
+    cell: [[a, 0, 0], [0, 9, 0], [0, 0, 9]],
+    nodes: [atom(29, 0, 0, 0), atom(47, a / 2, 0, 0)],
+  }
+  const out = await runPhononAnalysis(graph, chain1DForces(K, a / 2, 3 * a), { supercellRep: [3, 1, 1] })
+  assert.equal(out.supercell.mode, 'column-displacement')
+  assert.equal(out.frequencies.length, 6)
+  // 1D 双原子链 Γ 点：声学 0；光学 ω² = 2K(1/mA+1/mB)；y/z 解耦全零
+  const truth = freqFromOmegaSq(2 * K * (1 / MASS_AMU[29] + 1 / MASS_AMU[47]))
+  for (let i = 0; i < 5; i++) {
+    assert.ok(Math.abs(out.frequencies[i]) < 1e-6, `非光学支 ${i}: ${out.frequencies[i]} 应为零`)
+  }
+  assert.ok(Math.abs(out.frequencies[5] - truth) / truth < 1e-6,
+    `光学支 ${out.frequencies[5]} vs 解析 ${truth}`)
+  assert.equal(out.stability.verdict, 'stable')
+})
+
+test('14. supercellRep 门禁：非法值显式报错；[1,1,1] 保持原胞模式标记', async () => {
+  const k = 1.0
+  const graph = { cell: cubeCell(3.6), nodes: [atom(29, 0, 0, 0)] }
+  const out = await runPhononAnalysis(graph, independentSpring(k, [[0, 0, 0]]), { applyAsr: false })
+  assert.equal(out.supercell.mode, 'primitive')
+  await assert.rejects(
+    () => runPhononAnalysis(graph, independentSpring(k, [[0, 0, 0]]), { supercellRep: [1, 1] }),
+    err => err.code === 'PHONON_BAD_SUPERCELL')
+  await assert.rejects(
+    () => runPhononAnalysis(graph, independentSpring(k, [[0, 0, 0]]), { supercellRep: [1, 0, 1] }),
+    err => err.code === 'PHONON_BAD_SUPERCELL')
 })

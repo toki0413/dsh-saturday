@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-06T17:32:16.226Z
+生成时间：2026-09-06T18:02:49.824Z
 
-**回归基线：398/398**（23 个包，其中 22 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：401/401**（23 个包，其中 22 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -23,14 +23,14 @@
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。 | 11/11 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
 | `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
-| `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 11/11 |
+| `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 14/14 |
 | `@toki0413/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@toki0413/plugin-sampler-flow` | Saturday sampler 插件（契约 §4.5 sampler seam 第三实证）：仿射耦合流采样。双射输运映射（invertible: true 首实证，encode 严格逆）+ 换元公式精确似然（likelihood: exact）、候选可回算验证。 | 16/16 |
 | `@toki0413/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 67/67 |
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，80 条）
+## 实证条款（契约文档附录 A，81 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -112,6 +112,7 @@
 - **#78** 数据面优雅回退（开箱即用核心机关）：Python 缺失时显式注册零依赖纯 JS 引擎 lj-js 切换数据面（非静默降级：指纹 lj-js 独立，能量进组合路径前照常过 M1 门禁），横幅如实报告数据面形态与升级路径；回退后 material.load → potential.relax 工具链完整可用（交付引擎指纹如实）；Python 可用时数据面保持 emt-mock 不变（零漂移回归守护）；store.saturday.dataPlane 如实声明当前数据面形态（证据：bridge fallback-lj 测试 1-4（回退注册 + 工具链可用 + 横幅如实 + Python 在场不漂移））
 - **#79** sampler seam 可逆性升档（`invertible: true` 首实证）：仿射耦合流双射输运映射（潜变量 ↔ 位移），`encode` 是 `decode` 的严格逆（`encode∘sample ≡ id` 机械对账到浮点精度 1e-16）；换元公式精确似然 log p(d) = log N(z) − log\|det J\|（雅可比 z 空间 log cosh 稳定求值，不碰 tanh 饱和退化），`logProb` 逐候选可独立重算（1e-9）；基础分布尺度与微分同胚窗口同量级（声明即承诺）；窗口外/跨拓扑/坏形态显式拒绝（不外推冒充覆盖）；映射构造时固定，per-call seed 只重播潜变量抽样（改 sMax = 改双射，encode 无从反演即拒）；流参数由 seed 派生非训练产物（如实声明）；可逆性声明可执行——未声明者经 `encodeLatent` 执行原语抛 INVERTIBILITY_UNDECLARED（证据：plugin-sampler-flow 测试 1-10（双射往返/换元独立重算/窗口机械界/encode 四门禁/未绑定拒绝/构造门禁 + 插件层挂载回收/缺依赖/端到端 encode 工具往返/确定性）+ `samplerContract` 可逆性条款（套件自检 mock-invertible + perturb 未声明拒绝））
 - **#80** analysis seam 第三个实证（Γ 点声子，力注入式）：有限位移（每原子 × 3 笛卡尔方向 ± d，6N+1 次力调用）→ 力常数中心差分 → 声学和规则投影（平移不变性物理要求：投影前残余如实报告，投影后声学三支精确零频）→ 质量加权动力学矩阵 → Jacobi 对称特征分解（确定性）；频率换算因子从 CODATA-2018 基本常数推导（不硬编码拍脑袋）；虚频是物理结果不是错误——显著虚频（\|λ\|> 显式阈值）判 unstable、数值噪声微负 λ 单独如实报告不计入（两层虚频语义）；力对称残余与平衡点残余力随结果交付（差分可信度指标）；解析弹簧模型闭式对账（独立弹簧验证换算常数端到端、弹簧对声学零频 + 光学支闭式、负弹簧虚频体系）；原子量缺失显式报错不默认（诚实纪律）（证据：plugin-phonon 测试 1-11（换算因子/位移作业与不可变变体/独立弹簧端到端/单原子 ASR 零频/弹簧对闭式对账/虚频诚实判定/六路显式失败/确定性/§4.4 形态与谱系/工具层报错/真实桥集成 EMT 成功路 + lj-js 无力显式失败 + 卸载回收））
+- **#81** phonon 簇边界伪影修复（超胞列位移法）：力引擎普遍忽略周期性（ASE EMT 的 pbc 不生效）→ 原胞=超胞差分只测到簇内近邻（fcc conventional 每原子 12 最近邻仅 3 个在簇内）→ 声子大面积伪虚频（EMT Cu 9 支；能量二阶差分仲裁 κ=+7.505 eV/Å² 证明差分与力正确、问题在周期像缺失）；修复：N×N×N 超胞 + 列位移（原胞原子全部像同时位移，Σ_R 合成由列位移完成）+ 像平均折算，作业数仍 6N+1，代价仅单次力计算原子数增大 N³ 倍；解析对账：1D 双原子链周期力源（wrap）下声学零频 + 光学支 ω² = 2K(1/mₐ + 1/m_B) 闭式复现（隔离验证列位移折算数学）；物理修复判据：EMT fcc Cu 9 支光学全正（5.28×6 + 7.72×3，X/L 折叠简并与量级符合物理）、无显著虚频；适用前提如实声明：超胞半边长须覆盖引擎力程（证据：plugin-phonon 测试 12-14（buildSupercell 像索引与 rep 门禁/超胞 1D 链解析对账/supercellRep 门禁）+ 集成测试超胞物理判据（EMT Cu stable + 光学支全正））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

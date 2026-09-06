@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-phonon",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。",
   "type": "module",
   "main": "src/index.mjs",

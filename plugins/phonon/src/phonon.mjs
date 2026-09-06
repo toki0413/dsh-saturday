@@ -52,6 +52,74 @@ export function displacementJobs(nAtoms) {
   return jobs
 }
 
+// ── 超胞列位移法（簇边界伪影修复）────────────────────────────
+// 背景：部分引擎（如 ASE EMT）忽略周期性——"原胞=超胞"差分只测到原胞内
+// 近邻（fcc conventional 每原子 12 最近邻仅 3 个在簇内），声子大面积伪虚频。
+// 方法：构建 N×N×N 超胞，把原胞原子 j 的全部超胞像同时位移（"列位移"），
+// 力差分直接给出 Γ 点力常数列（Σ_R 合成已由列位移完成）；对原胞原子 i
+// 取其全部像的响应平均（边界缺失像的贡献由对称平均降噪）。
+// 作业数仍为 6N+1，代价只是单次力计算的原子数变大 N³ 倍。
+// 适用前提：超胞半边长覆盖引擎力程（rep=3 时 cubic 金属充分；短程势安全）。
+
+/**
+ * 构建超胞。
+ * @returns {{ graph: object, cellIndex: number[] }}
+ *   cellIndex[k] = 超胞第 k 个原子对应的原胞原子下标（0..nAtoms-1）
+ */
+export function buildSupercell(graph, rep) {
+  const [nx, ny, nz] = rep
+  const cell = graph.cell
+  if (!Array.isArray(rep) || rep.length !== 3 || [nx, ny, nz].some(r => !Number.isInteger(r) || r < 1)) {
+    throw phononError('PHONON_BAD_SUPERCELL',
+      `rep must be three positive integers; got ${JSON.stringify(rep)}`)
+  }
+  if (!Array.isArray(cell) || cell.length !== 3) {
+    throw phononError('PHONON_BAD_GRAPH', 'graph.cell must be a 3×3 matrix')
+  }
+  const nodes = graph.nodes
+  const cellIndex = []
+  const positions = []
+  for (let ix = 0; ix < nx; ix++) {
+    for (let iy = 0; iy < ny; iy++) {
+      for (let iz = 0; iz < nz; iz++) {
+        // 平移矢量 L = ix·A0 + iy·A1 + iz·A2（行矢量组合）
+        const L = [0, 1, 2].map(a => ix * cell[0][a] + iy * cell[1][a] + iz * cell[2][a])
+        for (let k = 0; k < nodes.length; k++) {
+          const p = nodes[k].position
+          positions.push([p[0] + L[0], p[1] + L[1], p[2] + L[2]])
+          cellIndex.push(k)
+        }
+      }
+    }
+  }
+  const superCell = [
+    cell[0].map(x => x * nx),
+    cell[1].map(x => x * ny),
+    cell[2].map(x => x * nz),
+  ]
+  return {
+    graph: {
+      cell: superCell,
+      nodes: positions.map((p, k) => ({ number: nodes[cellIndex[k]].number, position: p })),
+    },
+    cellIndex,
+  }
+}
+
+/**
+ * Γ 点声子分析主入口。
+ * @param {object} graph Saturday AtomGraph（cell 3×3、nodes[].number / position）
+ * @param {async (variantGraph) => { forces: number[][], calculator?: string }} forceProvider
+ *   力注入：接收位移变体 graph，返回每原子 [fx, fy, fz]（eV/Å）。
+ *   原胞模式 6N+1 次；超胞模式同样 6N+1 次（每次原子数 N³ 倍）。
+ * @param {{ displacement?: number, applyAsr?: boolean, stableTolOmegaSq?: number,
+ *           supercellRep?: [number, number, number] }} options
+ *   displacement 有限位移步长（Å，默认 0.01）；applyAsr 声学和规则投影（默认 true）；
+ *   stableTolOmegaSq 稳定性判定的 ω² 阈值（eV/Å²/amu，默认 1e-4 ≈ 0.16 THz）；
+ *   supercellRep 超胞重复数（缺省 [1,1,1] = 原胞直接差分；力引擎忽略周期性时
+ *   必须用 ≥[2,2,2]，推荐 [3,3,3]）
+ */
+
 /** 位移变体 graph（纯函数）：原子 atomIndex 沿笛卡尔 direction 移动 sign·displacement */
 export function displacedGraph(graph, job, displacement) {
   const g = structuredClone(graph)
@@ -132,6 +200,7 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
     displacement = 0.01,
     applyAsr = true,
     stableTolOmegaSq = 1e-4,
+    supercellRep = [1, 1, 1],
   } = options
 
   if (typeof forceProvider !== 'function') {
@@ -159,13 +228,56 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
     return m
   })
 
+  // 工作体系：原胞（直接差分）或超胞（列位移，簇边界伪影修复）
+  if (!Array.isArray(supercellRep) || supercellRep.length !== 3
+    || supercellRep.some(r => !Number.isInteger(r) || r < 1)) {
+    throw phononError('PHONON_BAD_SUPERCELL',
+      `supercellRep must be three positive integers; got ${JSON.stringify(supercellRep)}`)
+  }
+  const useSupercell = supercellRep.some(r => r > 1)
+  let workGraph = graph
+  let cellIndex = null
+  if (useSupercell) {
+    const sc = buildSupercell(graph, supercellRep)
+    workGraph = sc.graph
+    cellIndex = sc.cellIndex
+  }
+
+  // 列位移：原胞模式位移单原子；超胞模式位移原胞原子 j 的全部超胞像
+  const displace = (job, sign) => {
+    if (!cellIndex) return displacedGraph(graph, job, displacement)
+    const g = structuredClone(workGraph)
+    for (let k = 0; k < cellIndex.length; k++) {
+      if (cellIndex[k] === job.atomIndex) {
+        g.nodes[k].position[job.direction] += sign * displacement
+      }
+    }
+    return g
+  }
+  // 响应折算：原胞模式逐行直通；超胞模式按原胞指标取全部像平均
+  const fold = (rows) => {
+    if (!cellIndex) return rows
+    const out = Array.from({ length: nAtoms }, () => [0, 0, 0])
+    const counts = new Array(nAtoms).fill(0)
+    for (let k = 0; k < cellIndex.length; k++) {
+      const i = cellIndex[k]
+      for (let a = 0; a < 3; a++) out[i][a] += rows[k][a]
+      counts[i]++
+    }
+    for (let i = 0; i < nAtoms; i++) {
+      if (counts[i] === 0) throw phononError('PHONON_BAD_SUPERCELL', `supercell missing images of atom ${i}`)
+      for (let a = 0; a < 3; a++) out[i][a] /= counts[i]
+    }
+    return out
+  }
+
   // 零位移力：平衡点残余，随结果交付（差分可信度指标）
-  const eq = await forceProvider(graph)
+  const eq = await forceProvider(workGraph)
   const eqForces = eq?.forces
   let equilibriumForceMax = 0
-  if (!Array.isArray(eqForces) || eqForces.length !== nAtoms) {
+  if (!Array.isArray(eqForces) || eqForces.length !== workGraph.nodes.length) {
     throw phononError('PHONON_BAD_FORCE',
-      `forceProvider returned forces with wrong shape at equilibrium (expected ${nAtoms} rows)`)
+      `forceProvider returned forces with wrong shape at equilibrium (expected ${workGraph.nodes.length} rows)`)
   }
   for (const f of eqForces) {
     if (!Array.isArray(f) || f.length !== 3 || f.some(v => !Number.isFinite(v))) {
@@ -175,6 +287,7 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
   }
 
   // 有限位移差分：Φ[i][j*3+β] 块由原子 j 沿 β 的 ±位移力差给出
+  // （超胞模式下 j 的整列像同时位移，力折算为原胞指标像平均）
   const dim = 3 * nAtoms
   const phi = Array.from({ length: dim }, () => new Array(dim).fill(0))
   let forceResidualMax = 0
@@ -182,14 +295,15 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
   for (let j = 0; j < nAtoms; j++) {
     for (let beta = 0; beta < 3; beta++) {
       const col = j * 3 + beta
-      const mk = (sign) => displacedGraph(graph, { atomIndex: j, direction: beta, sign }, displacement)
-      const plus = await forceProvider(mk(1))
-      const minus = await forceProvider(mk(-1))
-      const fp = plus?.forces, fm = minus?.forces
-      if (!Array.isArray(fp) || fp.length !== nAtoms || !Array.isArray(fm) || fm.length !== nAtoms) {
+      const plus = await forceProvider(displace({ atomIndex: j, direction: beta, sign: 1 }, 1))
+      const minus = await forceProvider(displace({ atomIndex: j, direction: beta, sign: -1 }, -1))
+      const fpRaw = plus?.forces, fmRaw = minus?.forces
+      if (!Array.isArray(fpRaw) || fpRaw.length !== workGraph.nodes.length
+        || !Array.isArray(fmRaw) || fmRaw.length !== workGraph.nodes.length) {
         throw phononError('PHONON_BAD_FORCE',
           `forceProvider returned forces with wrong shape at job (atom ${j}, dir ${beta})`)
       }
+      const fp = fold(fpRaw), fm = fold(fmRaw)
       for (let i = 0; i < nAtoms; i++) {
         for (let alpha = 0; alpha < 3; alpha++) {
           const a = fp[i][alpha], b = fm[i][alpha]
@@ -257,6 +371,7 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
     nAtoms,
     displacement,
     calculator,
+    supercell: { rep: supercellRep, mode: useSupercell ? 'column-displacement' : 'primitive' },
     frequencies: freqs,
     imaginary: {
       count: significantNeg.length,
