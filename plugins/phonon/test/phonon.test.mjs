@@ -223,7 +223,8 @@ test('11. 集成：真实桥 + Cu → analysis.phonon（dataPlane 环境自适�
     try {
       out = await phononRt.tools.call('analysis.phonon', { materialId: loaded.materialId })
     } catch (err) {
-      assert.equal(dataPlane, 'emt-mock', `dataPlane ${dataPlane} 应走 EMT 成功路`)
+      // 非 EMT 档（lj-js 数据面无 calculate 力）必须走到这里：显式失败而非静默降级（契约 §2）
+      assert.notEqual(dataPlane, 'emt-mock', 'EMT 档不应进失败分支')
       assert.equal(err.code, 'PHONON_FORCE_MISSING', '无力数据面必须显式报错')
     }
 
