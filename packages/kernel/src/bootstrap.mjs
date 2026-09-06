@@ -57,14 +57,24 @@ function aggregateTools(rts) {
 /**
  * 按序挂载插件。
  * @param {Array<{ name: string, apply: (ctx, config) => any, config?: object }>} plugins
- * @returns {{ fibers: any[], tools: Object, dispose: () => Promise<void> }}
+ * @param {{ onMountError?: (pluginName: string, err: Error) => void }} options
+ *   onMountError：宽容挂载——插件 apply 抛错（如环境不可用）时报告并继续挂其余插件，
+ *   工具面相应缺少该插件的能力（显式降级，绝不静默）；缺省则抛错中断（严格模式）。
+ * @returns {{ fibers: any[], tools: Object, skipped: Array, dispose: () => Promise<void> }}
  *   tools 为聚合全量工具面：describe()（含 parameters schema）/ call(name, args)
  */
-export async function bootstrapPlugins(plugins) {
+export async function bootstrapPlugins(plugins, options = {}) {
   const ctx = new Context()
   const fibers = []
+  const skipped = []
   for (const p of plugins) {
-    fibers.push(await ctx.registry.plugin({ name: p.name, apply: (ctx) => p.apply(ctx, p.config ?? {}) }))
+    try {
+      fibers.push(await ctx.registry.plugin({ name: p.name, apply: (ctx) => p.apply(ctx, p.config ?? {}) }))
+    } catch (err) {
+      if (!options.onMountError) throw err
+      options.onMountError(p.name, err)
+      skipped.push({ name: p.name, error: err })
+    }
   }
   const rts = collectRts(fibers)
   if (rts.length === 0) {
@@ -73,6 +83,7 @@ export async function bootstrapPlugins(plugins) {
   return {
     fibers,
     tools: aggregateTools(rts),
+    skipped,
     async dispose() {
       // 与挂载顺序相反的方向卸载（先挂的后卸，消费方先于提供方消失）
       for (const f of [...fibers].reverse()) await f.dispose()

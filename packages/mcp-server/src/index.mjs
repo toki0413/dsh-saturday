@@ -100,11 +100,12 @@ export function jsonToZodShape(parameters) {
  */
 export async function createSaturdayMcpServer(options = {}) {
   const plugins = options.plugins ?? PLUGIN_MANIFEST
-  const boot = await bootstrapPlugins(plugins.map(p => ({
-    name: p.name,
-    apply: p.apply,
-    config: { trajectoryPath: options.trajectoryPath },
-  })))
+  const boot = await bootstrapPlugins(
+    plugins.map(p => ({ name: p.name, apply: p.apply, config: { trajectoryPath: options.trajectoryPath } })),
+    // 宽容挂载：环境不可用的插件（如无 ASE 时 plugin-ase 挂载即校验失败）显式
+    // 报告并跳过，工具面相应收缩——server 整体可用性优先于单插件强求
+    { onMountError: (name, err) => process.stderr.write(`[saturday-mcp] plugin "${name}" not mounted: ${err.message}\n`) },
+  )
 
   const mcp = new McpServer(SERVER_INFO)
   const toolNames = []
