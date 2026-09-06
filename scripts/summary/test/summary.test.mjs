@@ -106,8 +106,8 @@ test('3. parseMilestoneTable（真实契约文档）：80 条且摘要层条款�
 })
 
 const ws = [
-  { dir: 'plugins\\a', name: '@saturday/plugin-a', version: '0.3.0', description: '甲', hasTests: true },
-  { dir: 'plugins\\b', name: '@saturday/plugin-b', version: '0.3.0', description: '乙', hasTests: true },
+  { dir: 'plugins\\a', name: '@toki0413/plugin-a', version: '0.3.0', description: '甲', hasTests: true },
+  { dir: 'plugins\\b', name: '@toki0413/plugin-b', version: '0.3.0', description: '乙', hasTests: true },
 ]
 const milestones = [{ index: 1, clause: '条款甲', evidence: '测试 1' }]
 
@@ -121,8 +121,8 @@ test('4. buildSummary：聚合正确，markdown 含全部包名/总数/实证清
   assert.equal(json.totalPass, 8)
   assert.equal(json.totalFail, 0)
   assert.equal(json.packageCount, 2)
-  assert.ok(markdown.includes('@saturday/plugin-a'))
-  assert.ok(markdown.includes('@saturday/plugin-b'))
+  assert.ok(markdown.includes('@toki0413/plugin-a'))
+  assert.ok(markdown.includes('@toki0413/plugin-b'))
   assert.ok(markdown.includes('8/8'), '总数必须呈现')
   assert.ok(markdown.includes('条款甲'))
   assert.ok(markdown.includes('2026-08-29T00:00:00Z'))
@@ -142,7 +142,7 @@ test('5. buildSummary 门禁：有测试但缺结果显式报错；失败用例�
   assert.ok(markdown.includes('FAIL 1'), '失败必须显式标记')
   // 无独立测试的包（如防腐层）：显式标记且不计数，不静默也不报错
   const withKernel = buildSummary({
-    workspaces: [...ws, { dir: 'packages\\kernel', name: '@saturday/kernel', version: '0.3.0', description: '防腐层', hasTests: false }],
+    workspaces: [...ws, { dir: 'packages\\kernel', name: '@toki0413/kernel', version: '0.3.0', description: '防腐层', hasTests: false }],
     testResults: { 'plugins\\a': { pass: 5, fail: 0 }, 'plugins\\b': { pass: 3, fail: 0 } },
     milestones,
     generatedAt: 't',

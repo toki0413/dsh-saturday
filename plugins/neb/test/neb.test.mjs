@@ -1,4 +1,4 @@
-// @saturday/plugin-neb 测试（契约 §4.4 analysis seam 首个实证）
+// @toki0413/plugin-neb 测试（契约 §4.4 analysis seam 首个实证）
 // 纯函数层：玩具体系理智检查（对称 / 鞍点 / 解析梯度）/ quench /
 // NEB 鞍点定位与势垒独立 oracle 对账 / 幂等；
 // 契约层：§4.4 两个冻结点（输入输出类型声明 + 谱系登记）+ 显式失败；

@@ -9,7 +9,7 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import samplerOuPlugin from '@saturday/plugin-sampler-ou'
+import samplerOuPlugin from '@toki0413/plugin-sampler-ou'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory-anchor-autoingest.jsonl', import.meta.url))
 

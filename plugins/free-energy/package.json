@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-free-energy",
+  "name": "@toki0413/plugin-free-energy",
   "version": "0.3.0",
   "description": "Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。",
   "type": "module",
@@ -11,12 +11,12 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/kernel": "^0.3.0",
-    "@saturday/core": "^0.3.0"
+    "@toki0413/kernel": "^0.3.0",
+    "@toki0413/core": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/plugin-ase": "^0.3.0",
-    "@saturday/python-bridge": "^0.3.0"
+    "@toki0413/plugin-ase": "^0.3.0",
+    "@toki0413/python-bridge": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

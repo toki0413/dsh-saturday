@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-neb",
+  "name": "@toki0413/plugin-neb",
   "version": "0.3.0",
   "description": "Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。",
   "type": "module",
@@ -11,7 +11,7 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/kernel": "^0.3.0"
+    "@toki0413/kernel": "^0.3.0"
   },
   "files": [
     "src"

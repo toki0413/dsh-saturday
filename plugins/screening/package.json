@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-screening",
+  "name": "@toki0413/plugin-screening",
   "version": "0.3.0",
   "description": "Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错）",
   "type": "module",
@@ -12,11 +12,11 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/core": "^0.3.0",
-    "@saturday/kernel": "^0.3.0"
+    "@toki0413/core": "^0.3.0",
+    "@toki0413/kernel": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/contract-tests": "^0.3.0"
+    "@toki0413/contract-tests": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

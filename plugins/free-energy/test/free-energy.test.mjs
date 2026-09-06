@@ -1,11 +1,11 @@
-// @saturday/plugin-free-energy 测试（热力学第二档：构型自由能热力学积分）
+// @toki0413/plugin-free-energy 测试（热力学第二档：构型自由能热力学积分）
 // 纯层：输入门禁（锚点纪律延续）+ 谐波解析对账（梯形积分对闭式 ΔF）；
 // 插件层：工具挂载与回收、缺服务显式报错、端到端（事件 + 锚点回环）+ 真实 ASE 冒烟。
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import plugin, { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, KB_EV_PER_K, H_EV_S } from '../src/index.mjs'
 
 // ── 纯层：输入门禁（第一档纪律延续：零点不得静默假设）────────
@@ -254,7 +254,7 @@ test('8. 端到端：解析引擎 → 曲线 + 锚点回环 + 事件薄载荷', 
 })
 
 test('9. 集成（真实 ASE sidecar）：LJ 两点网格冒烟——曲线形状与有限量齐备', async t => {
-  const { default: asePlugin } = await import('@saturday/plugin-ase')
+  const { default: asePlugin } = await import('@toki0413/plugin-ase')
   const ctx = new Context()
   const coreFiber = await ctx.registry.plugin({
     name: 'stub-core-fe-ase',

@@ -1,4 +1,4 @@
-// @saturday/plugin-phonon 测试（契约 §4.4 analysis seam，力注入式）
+// @toki0413/plugin-phonon 测试（契约 §4.4 analysis seam，力注入式）
 // 纯函数层：解析弹簧对账（声学零频 + 光学支闭式 + 换算因子）/ ASR 残余机械断言 /
 // 虚频诚实判定 / 显式失败 / 确定性；插件层：§4.4 形态 + 谱系登记 + 工具层报错 +
 // 真实桥集成（任意有力引擎走成功路，无力引擎显式失败）+ 卸载回收。
@@ -9,7 +9,7 @@ import { readFile, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import bridgePlugin from '@saturday/bridge'
+import bridgePlugin from '@toki0413/bridge'
 import plugin, {
   phononAnalysis, runPhononAnalysis, displacedGraph, displacementJobs,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU, displacedVariant,

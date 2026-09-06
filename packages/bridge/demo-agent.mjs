@@ -31,7 +31,7 @@
 //   阶段 J：自然语言“回填验收达标的修复后载荷” → load：修复四环在 Agent 层全链接——
 //           修复达标数据即刻成为数据燃料（谱系用修复后来源不冒充原件）。
 //
-// 运行：npm run demo:agent --workspace @saturday/bridge
+// 运行：npm run demo:agent --workspace @toki0413/bridge
 
 import assert from 'node:assert'
 import { tmpdir } from 'node:os'
@@ -46,8 +46,8 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import LlmRuntime, { LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { startMockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
 import saturdayPlugin from './src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin, { ouSampler } from '@saturday/plugin-sampler-ou'
+import screeningPlugin from '@toki0413/plugin-screening'
+import samplerOuPlugin, { ouSampler } from '@toki0413/plugin-sampler-ou'
 
 // ── 最小 OpenAI 兼容适配器：fetch + SSE → dsh StreamChunk 协议 ────────
 class MockAdapter extends LlmAdapter {

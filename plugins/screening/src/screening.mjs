@@ -18,7 +18,7 @@ import {
   compositionFromNumbers,
   Material,
   fingerprintEqual, assertSameUnits, unitConvert,
-} from '@saturday/core'
+} from '@toki0413/core'
 import { combineEvidence, essFraction, evidenceError } from './evidence.mjs'
 import { builtinEvidenceSources, resolveEvidenceSources } from './evidence-sources.mjs'
 

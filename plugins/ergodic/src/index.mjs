@@ -1,4 +1,4 @@
-// @saturday/plugin-ergodic —— 遍历对账工作流插件（契约 §4.5 oracle 条款）
+// @toki0413/plugin-ergodic —— 遍历对账工作流插件（契约 §4.5 oracle 条款）
 // 给定参考结构 + 采样器 + 能量函数（引擎）：
 //   系综侧 = 采样候选在同一能量函数下的逐点单点；
 //   时间平均侧 = 同一能量函数、同一参考结构起点的恒温 MD；
@@ -7,7 +7,7 @@
 //     （log w = −βU − log q）后的均值对 MD 时间平均，构成对 Boltzmann 声明的直接检验。
 // 对账工具落在工作流层，不进采样器本体（§4.5）。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { checkErgodic } from './ergodic.mjs'
 
 export { checkErgodic, compareEnsembleToMD, ergodicVerdict, ergodicError, reweightToBoltzmann, KB_EV_PER_K } from './ergodic.mjs'

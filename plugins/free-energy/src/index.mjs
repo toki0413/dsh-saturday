@@ -1,11 +1,11 @@
-// @saturday/plugin-free-energy —— 热力学第二档：构型自由能曲线（契约 §9 演进）
+// @toki0413/plugin-free-energy —— 热力学第二档：构型自由能曲线（契约 §9 演进）
 // 给定参考结构 + 能量函数（引擎）+ 温度网格：逐网格点恒温 MD（复用 `md` 原语）
 // 得 ⟨U⟩(β)，沿 β 热力学积分出构型自由能曲线。
 // 锚点显式注入（第一档纪律延续：自由能零点不得静默假设为零）。
 // 曲线型工作流（非变体型），不接 `workflowContract`——强套会扭曲契约形态，
 // 诚实声明记录在契约文档附录 A。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, thermoError } from './free-energy.mjs'
 
 export { freeEnergyByIntegration, harmonicVibrationalFreeEnergy, thermoError, KB_EV_PER_K, H_EV_S } from './free-energy.mjs'

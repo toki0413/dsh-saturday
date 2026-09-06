@@ -1,4 +1,4 @@
-// @saturday/plugin-screening 契约测试（契约 §4.3）
+// @toki0413/plugin-screening 契约测试（契约 §4.3）
 // 不依赖 Python sidecar：material/potential 服务由 stub 插件提供，
 // 验证的是"工作流插件形态"本身：服务依赖显式解析、逐变体事件、不吞错。
 
@@ -7,8 +7,8 @@ import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import plugin, { screenDopants } from '../src/index.mjs'
 import { builtinEvidenceSources, resolveEvidenceSources, hullEvidenceSource, mixingEntropyEvidenceSource } from '../src/evidence-sources.mjs'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { workflowContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { workflowContract } from '@toki0413/contract-tests'
 
 // ── stub 核心插件：只提供 material / potential 两个服务 ──────────
 // 注：before() 钩子晚于模块体执行，relaxImpl 必须延迟捕获，不能直接闭包模块级变量

@@ -1,4 +1,4 @@
-// @saturday/kernel —— 防腐层（Anti-Corruption Layer）
+// @toki0413/kernel —— 防腐层（Anti-Corruption Layer）
 // Saturday 领域代码只依赖本模块暴露的 SaturdayRuntime 接口。
 // 全仓库唯一允许 import '@deepseek-ai/cordis' 的文件。
 // DSH 上游 API 变更时，只改这一个文件。

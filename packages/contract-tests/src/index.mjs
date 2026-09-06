@@ -1,9 +1,9 @@
-// @saturday/contract-tests —— 契约测试套件（契约 §8.3）
+// @toki0413/contract-tests —— 契约测试套件（契约 §8.3）
 // 兼容性由测试而非文档承诺：新插件进入生态，必须在自己的测试文件里
 // 调用对应套件。套件用 node:test 注册用例，调用方只需提供工厂函数与夹具。
 //
 // 用法示例：
-//   import { structureResolverContract } from '@saturday/contract-tests'
+//   import { structureResolverContract } from '@toki0413/contract-tests'
 //   structureResolverContract({
 //     subject: 'materials-project',
 //     createResolver: () => new MaterialsProjectResolver({ apiKey, fetchImpl: stub }),
@@ -12,7 +12,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { Material, PrototypeLibResolver, PotentialRegistry, validateEngineUnits, validateEngineFingerprint } from '@saturday/core'
+import { Material, PrototypeLibResolver, PotentialRegistry, validateEngineUnits, validateEngineFingerprint } from '@toki0413/core'
 
 const dummyRt = { on() {}, emit() {} }
 

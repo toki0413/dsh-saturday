@@ -19,7 +19,7 @@ Community Consensus v0.15 基线）。Saturday 的六个 seam 本身就是显式
   也不承诺对齐 dsh-std 的 manifest 生命周期。申报与否是独立的产品决策，
   门前条件见 §4 自检。
 - **不引入 dsh-std 依赖。** 坐标只是格式约定；Saturday 插件的依赖卫生
-  纪律（仅依赖 `@saturday/kernel`，禁止 import cordis/dsh）不变。
+  纪律（仅依赖 `@toki0413/kernel`，禁止 import cordis/dsh）不变。
   引入 `@dsh-std/*` 运行时依赖需另行评估，本声明不构成该承诺。
 - **权威文本仍在契约文档。** 坐标条目的语义以契约文档对应章节与
   契约测试套件为准；坐标是索引，不是第二套规范。
@@ -43,7 +43,7 @@ ecosystem-spec 的 conformance-claim schema
 不单独占坐标，经 potential-provider 握手与筛选层生效。
 
 证据级别的含义：`Tested` 表示该 seam 的标准断言集在
-`@saturday/contract-tests` 中可执行，且当前基线（全仓回归 391/391，
+`@toki0413/contract-tests` 中可执行，且当前基线（全仓回归 391/391，
 22 包）全绿；`Declared` 表示契约条款在册但套件未含专项断言。
 Saturday 的证据级别只会向上走：Analysis seam 补套件断言后升 Tested，
 无需变更坐标本身。

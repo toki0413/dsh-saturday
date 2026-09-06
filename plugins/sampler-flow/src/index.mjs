@@ -1,11 +1,11 @@
-// @saturday/plugin-sampler-flow —— 仿射耦合流采样器
+// @toki0413/plugin-sampler-flow —— 仿射耦合流采样器
 // 契约 §4.5 sampler seam 第三实证：invertible: true 首实证——
 // 双射输运映射（潜变量 ↔ 位移向量）+ 换元公式精确似然（likelihood: 'exact'），
 // encode 是 decode 的严格逆（可逆性声明是可执行条款，不是文档修辞）。
 // 采样语义而非求逆；候选必须连同非唯一性一起呈现，且可回算验证
 // （生成 → 弛豫 → 核对闭环由工作流层编排，§4.5 oracle 条款）。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { affineFlowSampler, createFlowSampler, samplerError } from './sampler.mjs'
 
 export {

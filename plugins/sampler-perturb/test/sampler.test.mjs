@@ -1,12 +1,12 @@
-// @saturday/plugin-sampler-perturb 测试（契约 §4.5 sampler seam 首个实证）
+// @toki0413/plugin-sampler-perturb 测试（契约 §4.5 sampler seam 首个实证）
 // 纯层：经契约套件验证（采样语义/诚实声明/谱系前缀/确定性/显式失败/可回算）；
 // 插件层：工具挂载与回收、缺依赖显式报错、端到端采样、种子确定性。
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver } from '@saturday/core'
-import { samplerContract, encodeLatent } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
+import { samplerContract, encodeLatent } from '@toki0413/contract-tests'
 import plugin, { referencePerturbationSampler } from '../src/index.mjs'
 
 // ── 契约套件（§4.5）：纯层直接接入 ──────────────────────────

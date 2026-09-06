@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-lammps",
+  "name": "@toki0413/plugin-lammps",
   "version": "0.3.0",
   "description": "Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job）",
   "type": "module",
@@ -12,11 +12,11 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/core": "^0.3.0",
-    "@saturday/kernel": "^0.3.0"
+    "@toki0413/core": "^0.3.0",
+    "@toki0413/kernel": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/contract-tests": "^0.3.0"
+    "@toki0413/contract-tests": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

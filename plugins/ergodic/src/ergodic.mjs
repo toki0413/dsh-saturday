@@ -14,7 +14,7 @@
 //    不夸大统计功效。
 
 // 编排层需 Material（候选 graph → 可回算对象）
-import { Material } from '@saturday/core'
+import { Material } from '@toki0413/core'
 
 /** 玻尔兹曼常数（eV/K） */
 export const KB_EV_PER_K = 8.617333262145e-5

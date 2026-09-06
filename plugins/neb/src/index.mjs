@@ -1,10 +1,10 @@
-// @saturday/plugin-neb —— 分析插件（契约 §4.4 analysis seam 首个实证）
+// @toki0413/plugin-neb —— 分析插件（契约 §4.4 analysis seam 首个实证）
 // NEB 最小能量路径与势垒。编排逻辑保持纯函数（./neb.mjs），能量/梯度注入；
 // 工具层提供内置玩具体系 lj-double-well：端点先 quench 到两侧极小再拉带。
 // §4.4 两个冻结点：输入/输出类型声明（nebAnalysis.inputs/outputs）+
 // 谱系登记（结果落 Trajectory，同时广播 saturday/analysis/complete）。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { neb, quench, ljDoubleWell, analysisError } from './neb.mjs'
 
 export { neb, quench, ljDoubleWell, analysisError } from './neb.mjs'

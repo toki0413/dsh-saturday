@@ -1,13 +1,13 @@
-// @saturday/plugin-explore 测试（契约 §4.5 oracle 条款首个实证：采样 → 回算闭环）
+// @toki0413/plugin-explore 测试（契约 §4.5 oracle 条款首个实证：采样 → 回算闭环）
 // 纯层：经契约套件验证（形状与排序 / 逐变体事件 / 不吞错 / 缺依赖显式错）；
 // 插件层：工具挂载与回收、缺服务显式报错、端到端闭环（排序非透传 / 谱系 / 确定性）。
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { workflowContract } from '@saturday/contract-tests'
-import { referencePerturbationSampler } from '@saturday/plugin-sampler-perturb'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { workflowContract } from '@toki0413/contract-tests'
+import { referencePerturbationSampler } from '@toki0413/plugin-sampler-perturb'
 import plugin, { exploreCandidates } from '../src/index.mjs'
 
 // ── stub 核心插件：material / potential / sampler 三个服务 ──────────

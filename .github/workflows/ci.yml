@@ -31,7 +31,7 @@ jobs:
       - name: 摘要层测试（TAP/附录 A 解析纪律）
         run: node --test scripts/summary/test/summary.test.mjs
       - name: 演示冒烟（基础端到端）
-        run: npm run demo --workspace @saturday/bridge
+        run: npm run demo --workspace @toki0413/bridge
       - name: 发布形态核验（逐包 pack 干跑）
         run: node scripts/pack-check.mjs
       - name: 失败诊断（逐包隔离重跑 + 注释输出）
@@ -70,4 +70,4 @@ jobs:
       - name: 摘要再生冒烟（生成器门禁：计数对账不一致即报错）
         run: npm run summary
       - name: 演示冒烟（基础端到端）
-        run: npm run demo --workspace @saturday/bridge
+        run: npm run demo --workspace @toki0413/bridge

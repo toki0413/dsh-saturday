@@ -1,10 +1,10 @@
-// @saturday/plugin-ase —— 通用 ASE 计算器引擎插件（契约 §4.2）
+// @toki0413/plugin-ase —— 通用 ASE 计算器引擎插件（契约 §4.2）
 // 数据面自带：插件携带自己的 Python sidecar（python-sidecar/ase_calc.py），
-// 经 @saturday/python-bridge 通用客户端挂接——薄插件自带数据平面的样板。
+// 经 @toki0413/python-bridge 通用客户端挂接——薄插件自带数据平面的样板。
 
 import { fileURLToPath } from 'node:url'
-import { createCordisAdapter } from '@saturday/kernel'
-import { PythonBridge } from '@saturday/python-bridge'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { PythonBridge } from '@toki0413/python-bridge'
 import { AseProvider, EngineUnavailableError } from './ase-provider.mjs'
 
 export { AseProvider, EngineUnavailableError } from './ase-provider.mjs'

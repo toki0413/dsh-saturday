@@ -11,8 +11,8 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin from '@saturday/plugin-sampler-ou'
+import screeningPlugin from '@toki0413/plugin-screening'
+import samplerOuPlugin from '@toki0413/plugin-sampler-ou'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({ name: 'saturday', apply: (ctx) => plugin.apply(ctx, {}) })

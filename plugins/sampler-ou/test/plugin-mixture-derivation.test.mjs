@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import samplerPlugin from '../src/index.mjs'
-import derivationPlugin from '@saturday/plugin-derivation'
+import derivationPlugin from '@toki0413/plugin-derivation'
 
 const graph4 = {
   nodes: Array.from({ length: 4 }, (_, i) => ({ number: 29, position: [i * 1.8, 0, 0] })),

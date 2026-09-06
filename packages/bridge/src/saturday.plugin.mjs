@@ -1,12 +1,12 @@
-// @saturday/dsh-bridge —— Saturday 的 cordis 插件入口
+// @toki0413/dsh-bridge —— Saturday 的 cordis 插件入口
 // 形态符合 dsh 插件规范：导出 { name, apply(ctx) }。
 // 在 dsh 中：作为 profile 组合的一行挂载；在裸 cordis 中：ctx.registry.plugin() 挂载（开发/CI）。
 
-import { createCordisAdapter } from '@saturday/kernel'
-import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@saturday/core'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { PrototypeLibResolver, MaterialService, PotentialRegistry } from '@toki0413/core'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
-import { PythonBridge } from '@saturday/python-bridge'
-import { LjProvider } from '@saturday/plugin-lj'
+import { PythonBridge } from '@toki0413/python-bridge'
+import { LjProvider } from '@toki0413/plugin-lj'
 
 export default {
   name: 'saturday',
@@ -137,7 +137,7 @@ export default {
       },
     })
 
-    // workflow.screen 已迁出为独立插件 @saturday/plugin-screening（契约 §4.3：工作流不进核心）
+    // workflow.screen 已迁出为独立插件 @toki0413/plugin-screening（契约 §4.3：工作流不进核心）
 
     // 可用性预检：把声明态→实测态回读暴露给 Agent 层——
     // 逐已注册引擎探测运行时版本（探测失败不报错：诚实降级保持声明态），

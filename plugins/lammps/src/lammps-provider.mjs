@@ -10,7 +10,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { SYMBOL } from '@saturday/core/elements'
+import { SYMBOL } from '@toki0413/core/elements'
 
 export class EngineUnavailableError extends Error {
   constructor(binary, cause) {

@@ -1,9 +1,9 @@
-// @saturday/plugin-explore —— 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）
+// @toki0413/plugin-explore —— 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）
 // 编排：sampler 在参考结构邻域产候选 → 逐候选构造 Material 送入引擎回算 →
 // 按 energyPerAtom 排序 → 逐变体事件落 Trajectory（含 generative: 谱系引用）。
 // 编排逻辑保持纯函数（./explore.mjs），插件层只做工具注册与服务依赖解析。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { exploreCandidates } from './explore.mjs'
 
 export { exploreCandidates }

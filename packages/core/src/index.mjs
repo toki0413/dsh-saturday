@@ -1,4 +1,4 @@
-// @saturday/core —— 领域核心统一出口（零运行时依赖）
+// @toki0413/core —— 领域核心统一出口（零运行时依赖）
 export { Material, MaterialService } from './material.mjs'
 export {
   PotentialRegistry,

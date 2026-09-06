@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-sampler-ou",
+  "name": "@toki0413/plugin-sampler-ou",
   "version": "0.3.0",
   "description": "Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。",
   "type": "module",
@@ -11,12 +11,12 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/kernel": "^0.3.0",
-    "@saturday/core": "^0.3.0"
+    "@toki0413/kernel": "^0.3.0",
+    "@toki0413/core": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/contract-tests": "^0.3.0",
-    "@saturday/plugin-derivation": "^0.3.0"
+    "@toki0413/contract-tests": "^0.3.0",
+    "@toki0413/plugin-derivation": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

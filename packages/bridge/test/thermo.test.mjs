@@ -9,7 +9,7 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
+import screeningPlugin from '@toki0413/plugin-screening'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory-thermo.jsonl', import.meta.url))
 
@@ -93,8 +93,8 @@ test('3. 多组分凸包判据：3 元素统一成分空间，端点全零 → e
 
 test('4. 诚实降级：引擎无参考态原语时记录原因，不伪造严格量', async () => {
   // 纯层直验：不注入 references 且给出不可得原因 → 结果保留"近似"声明 + unavailable 记录
-  const { screenDopants } = await import('@saturday/plugin-screening/screening')
-  const { Material, PrototypeLibResolver, PotentialRegistry } = await import('@saturday/core')
+  const { screenDopants } = await import('@toki0413/plugin-screening/screening')
+  const { Material, PrototypeLibResolver, PotentialRegistry } = await import('@toki0413/core')
   const material = await Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
   const potential = new PotentialRegistry({ on() {}, emit() {} })
   potential.register({

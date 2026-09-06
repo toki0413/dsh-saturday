@@ -1,4 +1,4 @@
-// @saturday/plugin-lammps 契约测试（契约 §4.2 / §5.2）
+// @toki0413/plugin-lammps 契约测试（契约 §4.2 / §5.2）
 // 本机无需安装 LAMMPS：执行器注入伪二进制，
 // 验证批处理引擎的契约形状：事件粒度门禁、显式失败、注册即 effect。
 
@@ -8,8 +8,8 @@ import { EventEmitter } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { LammpsProvider, toLammpsData, parseFinalEnergy } from '../src/lammps-provider.mjs'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { potentialProviderContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { potentialProviderContract } from '@toki0413/contract-tests'
 
 /** 伪子进程：可控地发 stdout / error / close */
 function fakeChild({ stdout = '', exitCode = 0, spawnError = null } = {}) {

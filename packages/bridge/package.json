@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/bridge",
+  "name": "@toki0413/bridge",
   "version": "0.3.0",
   "description": "Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥",
   "type": "module",
@@ -23,10 +23,10 @@
     "demo:anchor-resume": "node demo-anchor-resume.mjs"
   },
   "dependencies": {
-    "@saturday/core": "^0.3.0",
-    "@saturday/kernel": "^0.3.0",
-    "@saturday/plugin-lj": "^0.3.0",
-    "@saturday/python-bridge": "^0.3.0"
+    "@toki0413/core": "^0.3.0",
+    "@toki0413/kernel": "^0.3.0",
+    "@toki0413/plugin-lj": "^0.3.0",
+    "@toki0413/python-bridge": "^0.3.0"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-agent": "^0.1.1-rc.2",
@@ -40,13 +40,13 @@
     "@deepseek-ai/dsh-settings": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
-    "@saturday/plugin-ase": "^0.3.0",
-    "@saturday/plugin-derivation": "^0.3.0",
-    "@saturday/plugin-free-energy": "^0.3.0",
-    "@saturday/plugin-lammps": "^0.3.0",
-    "@saturday/plugin-mace": "^0.3.0",
-    "@saturday/plugin-sampler-ou": "^0.3.0",
-    "@saturday/plugin-screening": "^0.3.0"
+    "@toki0413/plugin-ase": "^0.3.0",
+    "@toki0413/plugin-derivation": "^0.3.0",
+    "@toki0413/plugin-free-energy": "^0.3.0",
+    "@toki0413/plugin-lammps": "^0.3.0",
+    "@toki0413/plugin-mace": "^0.3.0",
+    "@toki0413/plugin-sampler-ou": "^0.3.0",
+    "@toki0413/plugin-screening": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

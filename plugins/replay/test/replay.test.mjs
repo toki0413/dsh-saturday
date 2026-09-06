@@ -1,4 +1,4 @@
-// @saturday/plugin-replay 测试
+// @toki0413/plugin-replay 测试
 // 纯函数层：解析容错 / 索引重建；插件层：工具回放真实轨迹文件；
 // 集成层：跑真实筛选 → 回放 → 索引与计算对账（含防回灌验证）。
 
@@ -8,7 +8,7 @@ import { writeFile, readFile, rm, mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import bridgePlugin from '@saturday/bridge'
+import bridgePlugin from '@toki0413/bridge'
 import plugin, { parseTrajectory, rebuildIndex, indexToSummary } from '../src/index.mjs'
 
 // ── 真实形状的轨迹记录（对齐 packages/bridge 的落盘格式）──
@@ -114,7 +114,7 @@ test('5. 集成：真实筛选 → 回放 → 索引对账；回放不产生新�
   const screenFiber = await ctx.registry.plugin({
     name: 'saturday-screening',
     apply: async (ctx) => {
-      const { default: screeningPlugin } = await import('@saturday/plugin-screening')
+      const { default: screeningPlugin } = await import('@toki0413/plugin-screening')
       return screeningPlugin.apply(ctx, { trajectoryPath: path })
     },
   })

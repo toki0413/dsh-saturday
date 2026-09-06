@@ -20,7 +20,7 @@ the "constitution" of the ecosystem, taking precedence over any single feature.
 
 | Discipline | Content |
 |---|---|
-| **Dependency hygiene (anti-corruption layer)** | Plugins depend only on the `SaturdayRuntime` interface exposed by `@saturday/kernel`; importing cordis/dsh is forbidden. Upstream breaking changes are confined to a single adapter file. |
+| **Dependency hygiene (anti-corruption layer)** | Plugins depend only on the `SaturdayRuntime` interface exposed by `@toki0413/kernel`; importing cordis/dsh is forbidden. Upstream breaking changes are confined to a single adapter file. |
 | **Contract is the constitution** | This document + the contract test suite form the compatibility commitment; when doc and tests conflict, tests prevail. |
 | **Lean core** | Everything is a plugin by default; entering the core requires proof (cross-plugin consistency / performance / security, pick one). |
 
@@ -97,9 +97,9 @@ normalizing flows, crystal diffusion models all mount here). Core clauses:
   truthful — no pseudo-likelihoods; `invertible: false` must not provide `encode`
   (callers get an explicit error). `invertible: true` must provide `encode` — the
   inverse transport map back to latent space (consumers call it via the
-  `encodeLatent` primitive in `@saturday/contract-tests`; undeclared samplers
+  `encodeLatent` primitive in `@toki0413/contract-tests`; undeclared samplers
   raise `INVERTIBILITY_UNDECLARED`). Reference implementation:
-  `@saturday/plugin-sampler-flow` (affine coupling flow, exact change-of-variables
+  `@toki0413/plugin-sampler-flow` (affine coupling flow, exact change-of-variables
   likelihood, `encode∘sample ≡ id` reconciled to float precision).
 - **Ergodic reconciliation (oracle clause)**: given `energyModel`, ensemble statistics
   must reconcile against MD time averages of the same energy function; the reconciliation
@@ -207,7 +207,7 @@ and ideal mixing entropy (`mixing-entropy`, per-candidate composition prior −�
 ## 8. Compatibility and version governance
 
 Semver within v0 allows breaking changes; the contract test suite
-(`@saturday/contract-tests`) is the executable compatibility promise across five seams
+(`@toki0413/contract-tests`) is the executable compatibility promise across five seams
 (structure-resolver / potential-provider / workflow / sampler / derivation). New plugins
 pass the constitution by running `npm test`.
 

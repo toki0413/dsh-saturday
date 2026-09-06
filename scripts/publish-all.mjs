@@ -36,10 +36,7 @@ try {
   process.exit(1)
 }
 console.log(`══ 发布（${dryRun ? 'dry-run 核验' : '真实发布'}）：登录身份 ${user}，根包版本 ${root.version} ══`)
-// 作用域提示：@saturday/* 要求 npm 用户名为 saturday 或拥有同名组织，否则注册表会以 403 拒绝
-if (user !== 'saturday') {
-  console.log(`[提示] 当前登录 ${user} ≠ 作用域 saturday——若你不是 @saturday 组织的成员，发布将被注册表拒绝（403）。`)
-}
+// 作用域提示：@toki0413/* 是个人 scope，要求登录账户即 scope owner（toki0413），否则注册表拒绝
 
 const failures = []
 const published = []

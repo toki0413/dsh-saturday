@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto'
 import {
   Material, PrototypeLibResolver, PotentialRegistry,
   makeCalculationRecord,
-} from '@saturday/core'
+} from '@toki0413/core'
 import { EmtMockProvider } from '../src/compute/emt-provider.mjs'
 
 async function loadSi() {

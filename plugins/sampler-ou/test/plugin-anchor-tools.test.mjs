@@ -8,7 +8,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material } from '@saturday/core'
+import { Material } from '@toki0413/core'
 import plugin from '../src/index.mjs'
 
 // 轻量材料服务桩：只提供 sampler.anchor.add 材料入库路径所需的 get（不拉真引擎）

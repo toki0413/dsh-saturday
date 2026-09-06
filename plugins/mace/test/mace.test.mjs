@@ -1,4 +1,4 @@
-// @saturday/plugin-mace 契约测试（契约 §4.2 / §5.2）
+// @toki0413/plugin-mace 契约测试（契约 §4.2 / §5.2）
 // 本机无需安装 mace-torch/torch：探测与执行器全部注入伪实现，
 // 验证 ML 势引擎的契约形状：可用性预检、显式失败、注册即 effect、画像路由。
 
@@ -8,9 +8,9 @@ import { EventEmitter } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { MaceProvider } from '../src/mace-provider.mjs'
-import { LammpsProvider } from '@saturday/plugin-lammps'
-import { PotentialRegistry } from '@saturday/core'
-import { potentialProviderContract } from '@saturday/contract-tests'
+import { LammpsProvider } from '@toki0413/plugin-lammps'
+import { PotentialRegistry } from '@toki0413/core'
+import { potentialProviderContract } from '@toki0413/contract-tests'
 
 /** 伪子进程：可控地发 stdout / close / error（版本回读路径需 stdout） */
 function fakeChild({ stdout = '', exitCode = 0, spawnError = null } = {}) {

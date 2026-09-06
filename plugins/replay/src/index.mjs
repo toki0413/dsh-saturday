@@ -1,4 +1,4 @@
-// @saturday/plugin-replay —— Trajectory 回放插件（时间维可组合性的读侧）
+// @toki0413/plugin-replay —— Trajectory 回放插件（时间维可组合性的读侧）
 // 瀑布事件流不可改、但可回放：把 append-only 轨迹读回来，
 // 重建材料计算索引（谁算过什么、哪个引擎、最优能量）。
 // 回放绝不重算物理——可逆的是研究决策，不是物理。
@@ -7,7 +7,7 @@
 // （只监听 'saturday/simulation/converged'）不会把回放当新计算。
 
 import { readFile } from 'node:fs/promises'
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { parseTrajectory, rebuildIndex, indexToSummary } from './replay.mjs'
 
 export { parseTrajectory, rebuildIndex, indexToSummary } from './replay.mjs'

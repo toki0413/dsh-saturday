@@ -1,4 +1,4 @@
-// @saturday/plugin-phonon —— 分析插件（契约 §4.4 analysis seam，力注入式）
+// @toki0413/plugin-phonon —— 分析插件（契约 §4.4 analysis seam，力注入式）
 // Γ 点声子：有限位移 → 力常数 → 声学和规则 → 质量加权动力学矩阵 → 频率/虚频/稳定性。
 // 纯函数逻辑在 ./phonon.mjs（不触碰引擎）；力经 potential-provider 的 calculate
 // 取（静态单点返回 forces）。§4.4 两个冻结点：inputs/outputs 类型声明 +
@@ -6,8 +6,8 @@
 // 物理诚实：虚频是物理结果不是错误——stability 按显式阈值判定并随阈值交付；
 // 引擎报错（如 EMT 元素外）显式上抛，绝不静默换引擎（§4.2 门禁在 provider 层）。
 
-import { createCordisAdapter } from '@saturday/kernel'
-import { Material } from '@saturday/core'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { Material } from '@toki0413/core'
 import {
   runPhononAnalysis, displacedGraph, displacementJobs,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU,

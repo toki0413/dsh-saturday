@@ -1,4 +1,4 @@
-// @saturday/plugin-eos 测试（契约 §4.4 analysis seam 第二个实证）
+// @toki0413/plugin-eos 测试（契约 §4.4 analysis seam 第二个实证）
 // 纯函数层：BM 闭式自洽 / 无噪声参数恢复 / 噪声鲁棒性 / 显式失败；
 // 领域层：缩放变体体积按 s³ 缩放 + 谱系登记 + 原对象不可变；
 // 契约层：§4.4 两个冻结点；插件层：显式序列路、真实桥集成（EMT/LJ 全链）、卸载回收。
@@ -9,7 +9,7 @@ import { readFile, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import bridgePlugin from '@saturday/bridge'
+import bridgePlugin from '@toki0413/bridge'
 import plugin, {
   eosAnalysis, fitBirchMurnaghan, birchMurnaghan, cellVolume,
   scaledVariant, DEFAULT_SCALES,
@@ -70,7 +70,7 @@ test('4. 显式失败：点数不足 / 体积非正 / 能量非有限都带 code
 })
 
 test('5. 缩放变体：体积按 s³ 缩放、谱系登记、原对象不可变', async () => {
-  const { Material, PrototypeLibResolver } = await import('@saturday/core')
+  const { Material, PrototypeLibResolver } = await import('@toki0413/core')
   const cu = await Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
   const v0 = cellVolume(cu.cell)
   const s = 1.03

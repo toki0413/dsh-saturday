@@ -6,7 +6,7 @@
 // 谱系：候选 Material 带 'sampled-candidate' 谱系标记（source / referenceId / index），
 // 事件薄载荷携带 source 引用，全程可从 Trajectory 批量溯源。
 
-import { Material } from '@saturday/core'
+import { Material } from '@toki0413/core'
 
 /**
  * @param {Object}   opts

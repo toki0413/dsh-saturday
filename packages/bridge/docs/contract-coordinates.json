@@ -5,7 +5,7 @@
     "repository": "https://github.com/toki0413/dsh-saturday",
     "contractDocument": "packages/bridge/docs/plugin-contract-v0.md",
     "contractVersion": "v0",
-    "contractTests": "@saturday/contract-tests",
+    "contractTests": "@toki0413/contract-tests",
     "releaseVersion": "0.3.0"
   },
   "definitions": [
@@ -76,7 +76,7 @@
         "id": "TUI-PKG-002",
         "title": "Declaration closure",
         "status": "partial",
-        "evidence": "依赖卫生纪律与声明闭包精神一致（插件仅依赖 @saturday/kernel 的 SaturdayRuntime 接口、禁止 import cordis/dsh；21 包 files 白名单静态声明发布物）；未提供 dsh-std requires/optional+fallback 形状的静态声明"
+        "evidence": "依赖卫生纪律与声明闭包精神一致（插件仅依赖 @toki0413/kernel 的 SaturdayRuntime 接口、禁止 import cordis/dsh；21 包 files 白名单静态声明发布物）；未提供 dsh-std requires/optional+fallback 形状的静态声明"
       },
       {
         "id": "TUI-HOST-001",

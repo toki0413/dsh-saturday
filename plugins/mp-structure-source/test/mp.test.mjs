@@ -1,4 +1,4 @@
-// @saturday/plugin-mp 契约测试（契约 §4.1）
+// @toki0413/plugin-mp 契约测试（契约 §4.1）
 // HTTP 传输注入 stub，无需真实 API Key：验证 seam 形状与谱系写入（修订 #8）。
 
 import { test } from 'node:test'
@@ -6,8 +6,8 @@ import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { MaterialsProjectResolver } from '../src/mp-resolver.mjs'
-import { Material } from '@saturday/core'
-import { structureResolverContract } from '@saturday/contract-tests'
+import { Material } from '@toki0413/core'
+import { structureResolverContract } from '@toki0413/contract-tests'
 
 // ── MP 风格响应夹具（真实 API 的 JSON 结构，裁剪到契约所需字段）──
 const MP_FIXTURES = {

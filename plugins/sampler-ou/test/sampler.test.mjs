@@ -1,4 +1,4 @@
-// @saturday/plugin-sampler-ou 测试（契约 §4.5 sampler seam 第二实证）
+// @toki0413/plugin-sampler-ou 测试（契约 §4.5 sampler seam 第二实证）
 // 纯层：经契约套件验证（采样语义/诚实声明/谱系前缀/确定性/显式失败/可回算）；
 // 升档实证专属：精确似然自洽、平稳幅度闭式统计验证、均值回归语义、有效性窗口门禁；
 // 插件层：工具挂载与回收、缺依赖显式报错、端到端采样、种子确定性。
@@ -6,8 +6,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver } from '@saturday/core'
-import { samplerContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
+import { samplerContract } from '@toki0413/contract-tests'
 import plugin, {
   ouSampler, ouStd, ouLogProb, uEqFromHarmonicTemperature, KB_EV_PER_K,
   ouMixtureLogProb, ouSampleMixture,

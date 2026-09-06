@@ -1,8 +1,8 @@
-// @saturday/plugin-mp —— Materials Project 结构源插件（契约 §4.1）
+// @toki0413/plugin-mp —— Materials Project 结构源插件（契约 §4.1）
 // 挂载 resolver 服务 + structure.resolve 工具。与核心插件解耦：
 // 材料服务若存在则工具可直接产出 Material，否则只返回候选结构。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { MaterialsProjectResolver } from './mp-resolver.mjs'
 
 export { MaterialsProjectResolver, MpApiKeyMissingError } from './mp-resolver.mjs'

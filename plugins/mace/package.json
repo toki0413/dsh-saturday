@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-mace",
+  "name": "@toki0413/plugin-mace",
   "version": "0.3.0",
   "description": "Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。",
   "type": "module",
@@ -11,12 +11,12 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/core": "^0.3.0",
-    "@saturday/kernel": "^0.3.0"
+    "@toki0413/core": "^0.3.0",
+    "@toki0413/kernel": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/contract-tests": "^0.3.0",
-    "@saturday/plugin-lammps": "^0.3.0"
+    "@toki0413/contract-tests": "^0.3.0",
+    "@toki0413/plugin-lammps": "^0.3.0"
   },
   "files": [
     "src"

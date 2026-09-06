@@ -9,8 +9,8 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
-import { ouSampler, ouLogProb } from '@saturday/plugin-sampler-ou'
+import screeningPlugin from '@toki0413/plugin-screening'
+import { ouSampler, ouLogProb } from '@toki0413/plugin-sampler-ou'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory-sampled-screen.jsonl', import.meta.url))
 

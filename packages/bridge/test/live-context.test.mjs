@@ -11,8 +11,8 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
-import derivationPlugin from '@saturday/plugin-derivation'
+import screeningPlugin from '@toki0413/plugin-screening'
+import derivationPlugin from '@toki0413/plugin-derivation'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory-live-context.jsonl', import.meta.url))
 

@@ -9,9 +9,9 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import asePlugin from '@saturday/plugin-ase'
-import { LammpsProvider } from '@saturday/plugin-lammps'
-import { MaceProvider } from '@saturday/plugin-mace'
+import asePlugin from '@toki0413/plugin-ase'
+import { LammpsProvider } from '@toki0413/plugin-lammps'
+import { MaceProvider } from '@toki0413/plugin-mace'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({

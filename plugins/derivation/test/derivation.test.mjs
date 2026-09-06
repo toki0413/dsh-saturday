@@ -1,4 +1,4 @@
-// @saturday/plugin-derivation 测试（契约 §8.2 首个实证：活性上下文地基）
+// @toki0413/plugin-derivation 测试（契约 §8.2 首个实证：活性上下文地基）
 // 纯层：登记/状态、传递失效与幂等、冻结语义、显式错、预算与拓扑重算；
 // 插件层：挂载/卸载回收、工具端到端（失效事件薄载荷）、
 //         不可变 fork 非失效源的语义固化；
@@ -7,8 +7,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver } from '@saturday/core'
-import { derivationContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
+import { derivationContract } from '@toki0413/contract-tests'
 import plugin, { createDerivationRegistry } from '../src/index.mjs'
 
 // ── 纯层：登记簿语义 ────────────────────────────────────────

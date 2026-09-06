@@ -1,11 +1,11 @@
-// @saturday/plugin-sampler-ou —— OU（Ornstein-Uhlenbeck）参考结构采样器
+// @toki0413/plugin-sampler-ou —— OU（Ornstein-Uhlenbeck）参考结构采样器
 // 契约 §4.5 sampler seam 第二实证：似然声明从 'none'（微扰）升档到 'exact'
 // （OU 转移密度是闭式高斯，逐点精确可求值）。
 // 采样语义而非求逆；候选必须连同非唯一性一起呈现，且可回算验证
 // （生成 → 弛豫 → 核对闭环由工作流层编排，§4.5 oracle 条款）。
 
-import { createCordisAdapter } from '@saturday/kernel'
-import { compositionFromNumbers } from '@saturday/core'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { compositionFromNumbers } from '@toki0413/core'
 import { randomUUID } from 'node:crypto'
 import { writeFileSync, readFileSync } from 'node:fs'
 import { ouSampler, samplerError, ouSampleMixture } from './sampler.mjs'

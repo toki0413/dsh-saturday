@@ -7,7 +7,7 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import { PythonBridge } from '@saturday/python-bridge'
+import { PythonBridge } from '@toki0413/python-bridge'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/fallback-trajectory.jsonl', import.meta.url))
 // 指向不存在的解释器：模拟纯 Node 环境（无 Python）

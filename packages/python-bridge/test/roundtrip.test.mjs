@@ -1,4 +1,4 @@
-// @saturday/python-bridge 互转精度测试（路线 Week 9 验收：ASE 互转精度）
+// @toki0413/python-bridge 互转精度测试（路线 Week 9 验收：ASE 互转精度）
 //
 // 验证 Saturday graph ↔ ASE Atoms 往返无损：
 //   Material.toDict() → sidecar roundtrip（dict → ase.Atoms → dict）→ 逐分量比对。
@@ -11,7 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PythonBridge } from '../src/index.mjs'
-import { Material, PrototypeLibResolver } from '@saturday/core'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
 
 /** 2D 数组逐元素最大绝对差 */
 function maxDiff(a, b) {

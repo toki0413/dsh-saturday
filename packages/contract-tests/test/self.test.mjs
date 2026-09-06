@@ -2,7 +2,7 @@
 // 若套件断言本身有缺陷（漏检/误检），这里先行暴露。
 
 import { workflowContract, samplerContract, structureResolverContract, potentialProviderContract, derivationContract, encodeLatent } from '../src/index.mjs'
-import { Material, PrototypeLibResolver } from '@saturday/core'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
 
 // ── 合规 mock：structure-resolver（§4.1）──
 const mockResolver = {

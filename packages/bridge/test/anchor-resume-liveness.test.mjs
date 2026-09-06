@@ -12,9 +12,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/saturday.plugin.mjs'
-import derivationPlugin from '@saturday/plugin-derivation'
-import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin from '@saturday/plugin-sampler-ou'
+import derivationPlugin from '@toki0413/plugin-derivation'
+import screeningPlugin from '@toki0413/plugin-screening'
+import samplerOuPlugin from '@toki0413/plugin-sampler-ou'
 
 const TRAJECTORY = fileURLToPath(new URL('../data/trajectory-resume-liveness.jsonl', import.meta.url))
 

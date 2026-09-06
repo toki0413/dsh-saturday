@@ -1,12 +1,12 @@
-// @saturday/plugin-eos —— 分析插件（契约 §4.4 analysis seam 第二个实证）
+// @toki0413/plugin-eos —— 分析插件（契约 §4.4 analysis seam 第二个实证）
 // Birch-Murnaghan 状态方程拟合。拟合逻辑保持纯函数（./eos.mjs）；
 // 数据面两条路：显式 (V, E) 序列，或经 material/potential 服务按缩放体积
 // 做静态单点（calculate，非弛豫——E(V) 曲线的标准取数法）自产序列。
 // §4.4 两个冻结点：输入/输出类型声明（eosAnalysis.inputs/outputs）+
 // 谱系登记（结果落 Trajectory，同时广播 saturday/analysis/complete）。
 
-import { createCordisAdapter } from '@saturday/kernel'
-import { Material } from '@saturday/core'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { Material } from '@toki0413/core'
 import { fitBirchMurnaghan, cellVolume, analysisError } from './eos.mjs'
 
 export { fitBirchMurnaghan, birchMurnaghan, cellVolume, analysisError, EV_PER_A3_TO_GPA } from './eos.mjs'

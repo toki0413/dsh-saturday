@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/core",
+  "name": "@toki0413/core",
   "version": "0.3.0",
   "description": "Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖）",
   "type": "module",

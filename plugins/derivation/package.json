@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-derivation",
+  "name": "@toki0413/plugin-derivation",
   "version": "0.3.0",
   "description": "Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。",
   "type": "module",
@@ -11,11 +11,11 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/kernel": "^0.3.0"
+    "@toki0413/kernel": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/core": "^0.3.0",
-    "@saturday/contract-tests": "^0.3.0"
+    "@toki0413/core": "^0.3.0",
+    "@toki0413/contract-tests": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

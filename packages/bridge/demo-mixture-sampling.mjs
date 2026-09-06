@@ -8,8 +8,8 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import { ouSampleMixture, ouMixtureLogProb } from '@saturday/plugin-sampler-ou'
-import { Material } from '@saturday/core'
+import { ouSampleMixture, ouMixtureLogProb } from '@toki0413/plugin-sampler-ou'
+import { Material } from '@toki0413/core'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({

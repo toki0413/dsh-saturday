@@ -1,4 +1,4 @@
-// @saturday/plugin-ase 契约测试（契约 §4.2）
+// @toki0413/plugin-ase 契约测试（契约 §4.2）
 // 伪桥驱动契约套件（不启动子进程）；真实 sidecar 集成单独一项（LJ），
 // 缺 python 或 ASE 环境自动跳过。
 
@@ -8,9 +8,9 @@ import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { AseProvider } from '../src/ase-provider.mjs'
-import { PythonBridge } from '@saturday/python-bridge'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { potentialProviderContract } from '@saturday/contract-tests'
+import { PythonBridge } from '@toki0413/python-bridge'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { potentialProviderContract } from '@toki0413/contract-tests'
 
 const SIDECAR = fileURLToPath(new URL('../python-sidecar/ase_calc.py', import.meta.url))
 

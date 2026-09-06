@@ -1,4 +1,4 @@
-// @saturday/plugin-lj 契约测试 + 闭式对账（契约 §4.2）
+// @toki0413/plugin-lj 契约测试 + 闭式对账（契约 §4.2）
 // 零依赖引擎：本包测试在任何环境全量真实执行（无 skip 路径）——
 // 这正是"开箱即用"引擎应有的测试形态。
 
@@ -10,8 +10,8 @@ import {
   ljCalculate, ljMd, ljHarmonic, ljReferenceEnergy,
   KB_EV_PER_K,
 } from '../src/lj-engine.mjs'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { potentialProviderContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { potentialProviderContract } from '@toki0413/contract-tests'
 
 // ── 套件 1：契约 §4.2（potentialProviderContract，runnable 全真跑）──
 potentialProviderContract({

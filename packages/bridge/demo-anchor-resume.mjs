@@ -16,8 +16,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
-import samplerOuPlugin, { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from '@saturday/plugin-sampler-ou'
+import screeningPlugin from '@toki0413/plugin-screening'
+import samplerOuPlugin, { trajectoryTriggerAssessment, trajectoryTriggerReadiness } from '@toki0413/plugin-sampler-ou'
 
 async function mountSession() {
   const ctx = new Context()

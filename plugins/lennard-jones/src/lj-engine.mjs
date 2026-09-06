@@ -1,4 +1,4 @@
-// @saturday/plugin-lj 纯数值层 —— 零外部依赖的 Lennard-Jones 引擎
+// @toki0413/plugin-lj 纯数值层 —— 零外部依赖的 Lennard-Jones 引擎
 //
 // 定位：开箱即用的数据面。物理档位是玩具势（声明在先，不为精度辩护）——
 // 价值在于"任何装了 Node 的机器都能跑出真实数值结果"，让插件运行时

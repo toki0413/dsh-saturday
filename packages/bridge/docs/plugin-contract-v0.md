@@ -12,7 +12,7 @@ Saturday 是材料计算的**插件运行时**：引擎、结构源、工作流�
 而是同一内核（Cordis v4）的开发/CI 运行模式。
 本文档定义插件与运行时之间的接口规范（seam 契约）——它是生态的"宪法"，优先于任何单一功能。
 
-**适用对象**：所有第一方与第三方插件作者、`@saturday/kernel` 维护者。
+**适用对象**：所有第一方与第三方插件作者、`@toki0413/kernel` 维护者。
 
 **不适用**：宿主自身的实现细节（cordis API 只在防腐层内出现，插件作者无需了解）。
 
@@ -20,7 +20,7 @@ Saturday 是材料计算的**插件运行时**：引擎、结构源、工作流�
 
 | 纪律 | 内容 |
 |---|---|
-| **依赖卫生（防腐层）** | 插件只依赖 `@saturday/kernel` 暴露的 `SaturdayRuntime` 接口，禁止 import cordis / dsh；上游破坏性变更的影响面收敛到适配层一个文件 |
+| **依赖卫生（防腐层）** | 插件只依赖 `@toki0413/kernel` 暴露的 `SaturdayRuntime` 接口，禁止 import cordis / dsh；上游破坏性变更的影响面收敛到适配层一个文件 |
 | **契约即宪法** | 本文档 + 契约测试套件共同构成兼容性承诺；文档与测试冲突时以测试为准 |
 | **核心瘦削** | 默认一切是插件；功能进核心需要举证（跨插件一致性 / 性能 / 安全三选一） |
 
@@ -67,10 +67,10 @@ export default {
 
 ### 2.3 获取运行时
 
-插件通过 `@saturday/kernel` 创建运行时适配器，而非直接触碰 ctx：
+插件通过 `@toki0413/kernel` 创建运行时适配器，而非直接触碰 ctx：
 
 ```javascript
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 const rt = createCordisAdapter(ctx, config)   // config 含 trajectoryPath / bridge 等
 ```
 
@@ -78,7 +78,7 @@ const rt = createCordisAdapter(ctx, config)   // config 含 trajectoryPath / bri
 
 ## 3. SaturdayRuntime —— kernel 契约
 
-插件唯一依赖的运行时接口（实现：`@saturday/kernel`，即 `packages/kernel/src/cordis-adapter.mjs`）：
+插件唯一依赖的运行时接口（实现：`@toki0413/kernel`，即 `packages/kernel/src/cordis-adapter.mjs`）：
 
 ```typescript
 interface SaturdayRuntime {
@@ -236,7 +236,7 @@ interface MdResult {
 - **参考态辅助原语**：`provider.referenceEnergy(symbol)` 显式计算元素参考态每原子能量
   （数据面算子 `reference_energy`），供热力学判据消费（§4.3）。
 
-参考实现：`@saturday/plugin-lj`（零依赖纯 JS 引擎，指纹 `lj-js/LJ`）——
+参考实现：`@toki0413/plugin-lj`（零依赖纯 JS 引擎，指纹 `lj-js/LJ`）——
 截断+平移 LJ（Lorentz-Berthelot 混合）声明 `relax`/`calculate`/`md` 能力，
 另提供 `harmonic` 辅助原语（与 sidecar 同规格：零模/虚频如实计数）与 `referenceEnergy`
 （本引擎自洽参考态，非实验值，随交付声明）；玩具势教学档精度声明在先。
@@ -311,10 +311,10 @@ interface AnalysisPlugin {
 - 谱系登记：分析结果同样落 append-only Trajectory（`type: 'analysis_complete'`）——
   分析产出与计算结果同为事实，与计算事件同一溯源链。
 
-参考实现：`@saturday/plugin-neb`（NEB 最小能量路径与过渡态势垒；能量/梯度注入式，
-内置 LJ 双阱玩具体系）、`@saturday/plugin-eos`（Birch-Murnaghan 状态方程拟合；
+参考实现：`@toki0413/plugin-neb`（NEB 最小能量路径与过渡态势垒；能量/梯度注入式，
+内置 LJ 双阱玩具体系）、`@toki0413/plugin-eos`（Birch-Murnaghan 状态方程拟合；
 显式 (V, E) 序列或按缩放体积静态单点自产，四参数联合辨识，
-收敛 / rmse / r² 随结果与 Trajectory 交付）与 `@saturday/plugin-phonon`
+收敛 / rmse / r² 随结果与 Trajectory 交付）与 `@toki0413/plugin-phonon`
 （Γ 点声子：力注入式有限位移 → 声学和规则投影 → 质量加权动力学矩阵，
 频率（负值 = 虚频）与虚频计数分层交付——显著虚频按显式阈值判定稳定性，
 数值噪声负值单独如实报告；声学零频对解析弹簧模型闭式对账，
@@ -381,10 +381,10 @@ interface SampledStructure {
 - **交付即谱系**：交付按 `ResolvedStructure` 兼容形态（§4.1）转换，`source` 以 `generative:`
   前缀写入谱系；不可变与 fork 语义继承 §6。
 
-参考实现三个层级：微扰采样器（`@saturday/plugin-sampler-perturb`，`likelihood: 'none'`、
-`invertible: false`）、OU 采样器（`@saturday/plugin-sampler-ou`，闭式转移核 + 精确提议似然
+参考实现三个层级：微扰采样器（`@toki0413/plugin-sampler-perturb`，`likelihood: 'none'`、
+`invertible: false`）、OU 采样器（`@toki0413/plugin-sampler-ou`，闭式转移核 + 精确提议似然
 `likelihood: 'exact'`，逐候选附可独立重算的 `logProb`；OU 单峰定位为局部采样器，跨盆地探索由
-多锚点混合提案承担）与仿射耦合流采样器（`@saturday/plugin-sampler-flow`，双射输运映射
+多锚点混合提案承担）与仿射耦合流采样器（`@toki0413/plugin-sampler-flow`，双射输运映射
 `invertible: true` 首实证 + 换元公式精确似然 `likelihood: 'exact'`；`encode` 是 `decode` 的严格逆，
 `encode∘sample ≡ id` 机械对账到浮点精度；流参数由 seed 派生——非训练产物，如实声明）。
 
@@ -446,7 +446,7 @@ interface SampledStructure {
 
 **职责**：让材料上下文成为响应式谱系图——每个导出量声明推导来源，
 上游失效沿推导图向下游传播，重算惰性且预算受控。
-独立插件 `@saturday/plugin-derivation`，不依赖其他服务（纯提供方）。
+独立插件 `@toki0413/plugin-derivation`，不依赖其他服务（纯提供方）。
 
 ```typescript
 /** ref 形如 'material:<id>' | 'job:<id>' | 'result:<id>' | 'engine:<id>'（事件薄、数据厚，§7.2） */
@@ -614,7 +614,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
   （候选能量/筛选排序，引擎入输入），势函数热替换沿 `engine:<id>` 全链失效；
 - 响应式协效应下沉：`getService` → 依赖声明 + 激活/去激活（演进中，不构成本版承诺）。
 
-### 8.3 契约测试套件（@saturday/contract-tests）
+### 8.3 契约测试套件（@toki0413/contract-tests）
 
 兼容性由测试而非文档承诺。五条核心 seam 的标准断言集独立成包：
 `structureResolverContract`（§4.1）、`potentialProviderContract`（§4.2 + §5.2，
@@ -721,7 +721,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 
 ```javascript
 // my-plugin.mjs —— 第三方插件最小骨架
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 
 export default {
   name: 'my-analysis',

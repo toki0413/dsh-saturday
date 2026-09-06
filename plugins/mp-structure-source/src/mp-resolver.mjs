@@ -5,7 +5,7 @@
 // 可测试性：HTTP 传输经构造函数注入（默认 globalThis.fetch），
 // 测试用 stub 替换，无需真实 API Key 也能验证契约形状。
 
-import { Z } from '@saturday/core/elements'
+import { Z } from '@toki0413/core/elements'
 
 export class MpApiKeyMissingError extends Error {
   constructor() {

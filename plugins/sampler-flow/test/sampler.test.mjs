@@ -1,4 +1,4 @@
-// @saturday/plugin-sampler-flow 测试（契约 §4.5 sampler seam 第三实证：invertible 首实证）
+// @toki0413/plugin-sampler-flow 测试（契约 §4.5 sampler seam 第三实证：invertible 首实证）
 // 纯层：契约套件（采样语义/诚实声明/谱系前缀/确定性/显式失败/可回算 + 双射透传）；
 // 流数学：双射往返（encode∘decode ≡ id）、换元公式独立重算、微分同胚窗口门禁；
 // 插件层：工具挂载与回收、缺依赖显式报错、端到端采样 + encode 往返、种子确定性。
@@ -6,8 +6,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver } from '@saturday/core'
-import { samplerContract } from '@saturday/contract-tests'
+import { Material, PrototypeLibResolver } from '@toki0413/core'
+import { samplerContract } from '@toki0413/contract-tests'
 import plugin, {
   affineFlowSampler, createFlowSampler, flowForward, flowInverse, flowParams,
   baseLogProb, SAMPLER_NAME,

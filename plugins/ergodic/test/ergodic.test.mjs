@@ -1,4 +1,4 @@
-// @saturday/plugin-ergodic 测试（契约 §4.5 oracle 条款：遍历对账首个实证 + 升档实证）
+// @toki0413/plugin-ergodic 测试（契约 §4.5 oracle 条款：遍历对账首个实证 + 升档实证）
 // 纯层：对账统计与判定强度三档分级（信息性 / 声明交付不一致 / Boltzmann 重加权检验）；
 // 升档：OU 采样器（likelihood: exact）→ 重要性重加权解析对账（权重/ESS/重加权均值落闭式）；
 // 插件层：工具挂载与回收、缺服务显式报错、端到端对账（判定 + 事件 + 确定性）；
@@ -7,9 +7,9 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
-import { Material, PrototypeLibResolver, PotentialRegistry } from '@saturday/core'
-import { referencePerturbationSampler } from '@saturday/plugin-sampler-perturb'
-import { ouSampler } from '@saturday/plugin-sampler-ou'
+import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
+import { referencePerturbationSampler } from '@toki0413/plugin-sampler-perturb'
+import { ouSampler } from '@toki0413/plugin-sampler-ou'
 import plugin, { compareEnsembleToMD, ergodicVerdict, checkErgodic, reweightToBoltzmann, KB_EV_PER_K } from '../src/index.mjs'
 
 // ── 纯层：对账统计 ──────────────────────────────────────────
@@ -393,7 +393,7 @@ test('8. 确定性：同种子同判定量，异种子异时间平均', async ()
 // 对账工具如实报告诱导测度与不变分布的距离，而不是粉饰。
 
 test('9. 集成（真实 sidecar）：微扰采样对 LJ 能量函数 → 信息性不对账', async t => {
-  const { default: asePlugin } = await import('@saturday/plugin-ase')
+  const { default: asePlugin } = await import('@toki0413/plugin-ase')
   const coreFiber = await ctx.registry.plugin({
     name: 'stub-core-ase',
     async apply(ctx) {
@@ -443,7 +443,7 @@ test('9. 集成（真实 sidecar）：微扰采样对 LJ 能量函数 → 信息
 })
 
 test('10. 集成（真实 sidecar）：MD 种子确定性——同种子同轨迹能量', async t => {
-  const { default: asePlugin } = await import('@saturday/plugin-ase')
+  const { default: asePlugin } = await import('@toki0413/plugin-ase')
   const coreFiber = await ctx.registry.plugin({
     name: 'stub-core-ase2',
     async apply(ctx) {

@@ -8,8 +8,8 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import asePlugin from '@saturday/plugin-ase'
-import freeEnergyPlugin from '@saturday/plugin-free-energy'
+import asePlugin from '@toki0413/plugin-ase'
+import freeEnergyPlugin from '@toki0413/plugin-free-energy'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({

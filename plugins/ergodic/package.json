@@ -1,5 +1,5 @@
 {
-  "name": "@saturday/plugin-ergodic",
+  "name": "@toki0413/plugin-ergodic",
   "version": "0.3.0",
   "description": "Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。",
   "type": "module",
@@ -11,15 +11,15 @@
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@saturday/kernel": "^0.3.0",
-    "@saturday/core": "^0.3.0"
+    "@toki0413/kernel": "^0.3.0",
+    "@toki0413/core": "^0.3.0"
   },
   "devDependencies": {
-    "@saturday/contract-tests": "^0.3.0",
-    "@saturday/plugin-sampler-perturb": "^0.3.0",
-    "@saturday/plugin-sampler-ou": "^0.3.0",
-    "@saturday/plugin-ase": "^0.3.0",
-    "@saturday/python-bridge": "^0.3.0"
+    "@toki0413/contract-tests": "^0.3.0",
+    "@toki0413/plugin-sampler-perturb": "^0.3.0",
+    "@toki0413/plugin-sampler-ou": "^0.3.0",
+    "@toki0413/plugin-ase": "^0.3.0",
+    "@toki0413/python-bridge": "^0.3.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

@@ -5,9 +5,9 @@
 #
 # 步骤：
 #   1) 声明插件包到 profile 的 package.json dependencies 并安装：
-#        { "dependencies": { "@saturday/bridge": "file:/path/to/Saturday/packages/bridge" } }
+#        { "dependencies": { "@toki0413/bridge": "file:/path/to/Saturday/packages/bridge" } }
 #        cd $DSH_HOME/profiles/web && pnpm install
-#      （注册表包直接用 `dsh plugin --profile web add @saturday/bridge`；
+#      （注册表包直接用 `dsh plugin --profile web add @toki0413/bridge`；
 #        本地路径经 CLI 安装有已知问题，绕过方案见适配清单 §0；
 #        修改本地包的 package.json 后需"先删依赖再重新添加"以刷新快照）
 #   2) 将下面的行写入 profile 的 cordis.patch.yml（注意是 - insert: 列表形式）
@@ -21,7 +21,7 @@
 
 - insert:
     - id: saturday
-      name: '@saturday/bridge'
+      name: '@toki0413/bridge'
       config:
         # Python sidecar 配置（可选，默认 python3 + 包内 sidecar.py）
         # bridge:
@@ -35,13 +35,13 @@
 # （可用性预检：逐引擎探测运行时版本并如实报告，stamp=true 时盖章升级指纹实测态）。
 # workflow.screen 的 evidenceSources 参数向 Agent 暴露内置证据源：
 #   ["hull"]（凸包距离，需参考态）/ ["mixing-entropy"]（理想混合熵组分先验），可同启。
-# 依赖的 @saturday/plugin-* 包同样先声明到 profile 的 package.json dependencies。
+# 依赖的 @toki0413/plugin-* 包同样先声明到 profile 的 package.json dependencies。
 # - insert:
 #     - id: saturday-screening
-#       name: '@saturday/plugin-screening'
+#       name: '@toki0413/plugin-screening'
 #     - id: saturday-free-energy   # 热力学第二档：构型自由能曲线（需引擎支持 md）
-#       name: '@saturday/plugin-free-energy'
+#       name: '@toki0413/plugin-free-energy'
 #     - id: saturday-ergodic
-#       name: '@saturday/plugin-ergodic'
+#       name: '@toki0413/plugin-ergodic'
 #     - id: saturday-derivation    # 可选：活性上下文/失效传播登记簿
-#       name: '@saturday/plugin-derivation'
+#       name: '@toki0413/plugin-derivation'

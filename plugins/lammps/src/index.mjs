@@ -1,8 +1,8 @@
-// @saturday/plugin-lammps —— LAMMPS 引擎插件（契约 §4.2）
+// @toki0413/plugin-lammps —— LAMMPS 引擎插件（契约 §4.2）
 // 薄插件：只把 LammpsProvider 注册进核心插件的 PotentialRegistry。
 // 注册即 effect：卸载时注销，激活指针若指向本引擎则自动重置。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { LammpsProvider } from './lammps-provider.mjs'
 
 export { LammpsProvider, EngineUnavailableError, toLammpsData } from './lammps-provider.mjs'

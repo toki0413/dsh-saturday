@@ -9,7 +9,7 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import plugin from './src/saturday.plugin.mjs'
-import screeningPlugin from '@saturday/plugin-screening'
+import screeningPlugin from '@toki0413/plugin-screening'
 
 const ctx = new Context()
 const fiber = await ctx.registry.plugin({

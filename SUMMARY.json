@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T12:36:51.657Z",
+  "generatedAt": "2026-09-06T16:14:30.996Z",
   "totalPass": 391,
   "totalFail": 0,
   "packageCount": 22,
@@ -7,154 +7,154 @@
   "packages": [
     {
       "dir": "packages\\bridge",
-      "name": "@saturday/bridge",
+      "name": "@toki0413/bridge",
       "version": "0.3.0",
       "pass": 55,
       "fail": 0
     },
     {
       "dir": "packages\\contract-tests",
-      "name": "@saturday/contract-tests",
+      "name": "@toki0413/contract-tests",
       "version": "0.3.0",
       "pass": 31,
       "fail": 0
     },
     {
       "dir": "packages\\core",
-      "name": "@saturday/core",
+      "name": "@toki0413/core",
       "version": "0.3.0",
       "pass": 28,
       "fail": 0
     },
     {
       "dir": "packages\\kernel",
-      "name": "@saturday/kernel",
+      "name": "@toki0413/kernel",
       "version": "0.3.0",
       "pass": null,
       "fail": null
     },
     {
       "dir": "packages\\python-bridge",
-      "name": "@saturday/python-bridge",
+      "name": "@toki0413/python-bridge",
       "version": "0.3.0",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\ase",
-      "name": "@saturday/plugin-ase",
+      "name": "@toki0413/plugin-ase",
       "version": "0.3.0",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\derivation",
-      "name": "@saturday/plugin-derivation",
+      "name": "@toki0413/plugin-derivation",
       "version": "0.3.0",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\eos",
-      "name": "@saturday/plugin-eos",
+      "name": "@toki0413/plugin-eos",
       "version": "0.3.0",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\ergodic",
-      "name": "@saturday/plugin-ergodic",
+      "name": "@toki0413/plugin-ergodic",
       "version": "0.3.0",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\explore",
-      "name": "@saturday/plugin-explore",
+      "name": "@toki0413/plugin-explore",
       "version": "0.3.0",
       "pass": 9,
       "fail": 0
     },
     {
       "dir": "plugins\\free-energy",
-      "name": "@saturday/plugin-free-energy",
+      "name": "@toki0413/plugin-free-energy",
       "version": "0.3.0",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lammps",
-      "name": "@saturday/plugin-lammps",
+      "name": "@toki0413/plugin-lammps",
       "version": "0.3.0",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lennard-jones",
-      "name": "@saturday/plugin-lj",
+      "name": "@toki0413/plugin-lj",
       "version": "0.3.0",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\mace",
-      "name": "@saturday/plugin-mace",
+      "name": "@toki0413/plugin-mace",
       "version": "0.3.0",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\mp-structure-source",
-      "name": "@saturday/plugin-mp",
+      "name": "@toki0413/plugin-mp",
       "version": "0.3.0",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\neb",
-      "name": "@saturday/plugin-neb",
+      "name": "@toki0413/plugin-neb",
       "version": "0.3.0",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\phonon",
-      "name": "@saturday/plugin-phonon",
+      "name": "@toki0413/plugin-phonon",
       "version": "0.3.0",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\replay",
-      "name": "@saturday/plugin-replay",
+      "name": "@toki0413/plugin-replay",
       "version": "0.3.0",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-flow",
-      "name": "@saturday/plugin-sampler-flow",
+      "name": "@toki0413/plugin-sampler-flow",
       "version": "0.3.0",
       "pass": 16,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-ou",
-      "name": "@saturday/plugin-sampler-ou",
+      "name": "@toki0413/plugin-sampler-ou",
       "version": "0.3.0",
       "pass": 67,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-perturb",
-      "name": "@saturday/plugin-sampler-perturb",
+      "name": "@toki0413/plugin-sampler-perturb",
       "version": "0.3.0",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\screening",
-      "name": "@saturday/plugin-screening",
+      "name": "@toki0413/plugin-screening",
       "version": "0.3.0",
       "pass": 38,
       "fail": 0

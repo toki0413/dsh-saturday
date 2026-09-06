@@ -1,9 +1,9 @@
-// @saturday/plugin-sampler-perturb —— 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）
+// @toki0413/plugin-sampler-perturb —— 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）
 // 参考结构微扰采样：给定 referenceId，在参考结构邻域采样 n 个候选。
 // 采样语义而非求逆：候选必须连同非唯一性一起呈现，且可回算验证
 // （生成 → 弛豫 → 核对闭环由工作流层编排，§4.5 oracle 条款）。
 
-import { createCordisAdapter } from '@saturday/kernel'
+import { createCordisAdapter } from '@toki0413/kernel'
 import { referencePerturbationSampler, samplerError } from './sampler.mjs'
 
 export { referencePerturbationSampler, mulberry32, samplerError, SAMPLER_NAME } from './sampler.mjs'

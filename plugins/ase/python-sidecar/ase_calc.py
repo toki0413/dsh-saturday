@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""@saturday/plugin-ase 数据面 —— 通用 ASE 计算器 sidecar。
+"""@toki0413/plugin-ase 数据面 —— 通用 ASE 计算器 sidecar。
 
 与主 sidecar（packages/python-bridge/sidecar.py）同协议（stdio JSON-lines），
 但语义不同：计算器由调用方显式指定（'lj' | 'emt'），不可用时结构化报错

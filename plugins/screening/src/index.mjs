@@ -1,9 +1,9 @@
-// @saturday/plugin-screening —— 批量掺杂筛选工作流插件（契约 §4.3）
+// @toki0413/plugin-screening —— 批量掺杂筛选工作流插件（契约 §4.3）
 // 形态：独立插件，不进核心。编排逻辑保持纯函数（./screening.mjs），
 // 插件层只做工具注册与服务依赖解析（material / potential 由核心插件提供）。
 
-import { createCordisAdapter } from '@saturday/kernel'
-import { compositionFromNumbers } from '@saturday/core'
+import { createCordisAdapter } from '@toki0413/kernel'
+import { compositionFromNumbers } from '@toki0413/core'
 import { screenDopants } from './screening.mjs'
 
 export { screenDopants }
