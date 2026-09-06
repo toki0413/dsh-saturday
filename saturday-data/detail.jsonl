@@ -1,1 +1,0 @@
-{"type":"analysis_complete","analysis":"phonon","result":{"nAtoms":4,"calculator":"ase","minFrequencyTHz":-1.5478454854430679,"maxFrequencyTHz":1.839648187895036e-8,"imaginaryCount":9,"verdict":"unstable","forceResidualMax":1.3877787807814457e-17,"equilibriumForceMax":9.813077866773595e-18},"wallSeconds":0.047,"_ts":"2026-09-06T16:42:15.523Z"}
