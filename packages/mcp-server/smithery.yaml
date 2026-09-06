@@ -1,0 +1,22 @@
+# Smithery 配置 —— Saturday 材料计算 MCP server（stdio）
+# 工具面：材料加载/结构解析、引擎弛豫与单点、Γ 点声子、EOS/NEB 分析、
+# 候选采样（perturb/OU/仿射流）、筛选与遍历对账、推导谱系，共 30 工具。
+# 数据面自适应：宿主环境有 Python + ASE 走 EMT 真物理，否则零依赖 lj-js（横幅如实）。
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      trajectoryPath:
+        type: string
+        description: "Saturday Trajectory（append-only 谱系日志）落盘路径；缺省写当前工作目录 saturday-data/ 下"
+      disablePlugins:
+        type: string
+        description: "逗号分隔的插件排除表（如 plugin-mp,plugin-lammps）；缺省全量挂载"
+  commandFunction: |-
+    (config) => {
+      const env = {}
+      if (config && config.trajectoryPath) env.SATURDAY_TRAJECTORY_PATH = config.trajectoryPath
+      if (config && config.disablePlugins) env.SATURDAY_DISABLE = config.disablePlugins
+      return { command: 'npx', args: ['-y', '@toki0413/mcp-server'], env }
+    }

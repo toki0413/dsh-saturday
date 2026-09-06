@@ -27,6 +27,14 @@ export class LocalToolRegistry {
     return () => this.tools.delete(tool.name)
   }
   list() { return [...this.tools.values()].map(t => ({ name: t.name, description: t.description })) }
+  /** 完整工具描述（含 parameters JSON schema）——宿主适配层（如 MCP server）注册工具面用 */
+  describe() {
+    return [...this.tools.values()].map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters ?? {},
+    }))
+  }
   /** 模拟 Agent 调用工具（测试/无 LLM 演示用） */
   async call(name, args) {
     const tool = this.tools.get(name)

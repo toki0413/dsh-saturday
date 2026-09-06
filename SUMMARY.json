@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06T16:14:30.996Z",
-  "totalPass": 391,
+  "generatedAt": "2026-09-06T17:05:49.907Z",
+  "totalPass": 398,
   "totalFail": 0,
-  "packageCount": 22,
-  "testedCount": 21,
+  "packageCount": 23,
+  "testedCount": 22,
   "packages": [
     {
       "dir": "packages\\bridge",
@@ -32,6 +32,13 @@
       "version": "0.3.0",
       "pass": null,
       "fail": null
+    },
+    {
+      "dir": "packages\\mcp-server",
+      "name": "@toki0413/mcp-server",
+      "version": "0.3.0",
+      "pass": 7,
+      "fail": 0
     },
     {
       "dir": "packages\\python-bridge",

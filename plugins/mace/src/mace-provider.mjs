@@ -45,9 +45,10 @@ export class MaceProvider {
   version = '0.1.0'
   manifest = {
     capabilities: [
-      // ML 通用势的典型定位：精度接近 DFT、速度远超 DFT；比经典势更通用（无需按体系配势）
+      // ML 通用势的典型定位：精度接近 DFT、速度远超 DFT；比经典势更通用（无需按体系配势）。
+      // 只声明 relax：calculate 未实现——声明即承诺（契约 §4.2），提供不了就别声明
+      // （曾虚报 calculate 导致 auto 路由选中后调用爆炸，MCP 全量共置暴露）
       { type: 'relax', accuracy: 0.88, speed: 0.8, cost: 0.25, maxAtoms: 100_000 },
-      { type: 'calculate', accuracy: 0.88, speed: 0.85, cost: 0.25, maxAtoms: 100_000 },
     ],
     constraints: { requiresLicense: false },
     eventGranularity: 'job',   // 一次性子进程推理：只有任务级事件
@@ -112,7 +113,14 @@ export class MaceProvider {
       child.on('close', code => {
         if (code !== 0) return reject(new EngineUnavailableError(this.model, err.slice(0, 200) || `exit ${code}`))
         try { resolve(JSON.parse(out)) }
-        catch { reject(new Error(`MACE runner returned unparseable output: ${out.slice(0, 120)}`)) }
+        catch {
+          // 宿主库可能向 stdout 打印警告（如 cuequivariance 提示）——提取最后一个 JSON 对象子串重试
+          const start = out.lastIndexOf('\n{')
+          if (start >= 0) {
+            try { return resolve(JSON.parse(out.slice(start + 1))) } catch { /* fallthrough */ }
+          }
+          reject(new Error(`MACE runner returned unparseable output: ${out.slice(0, 120)}`))
+        }
       })
       child.stdin.write(JSON.stringify({ graph: material.graph, model: this.model, params }))
       child.stdin.end()

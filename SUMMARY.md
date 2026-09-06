@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-06T16:14:30.994Z
+生成时间：2026-09-06T17:05:49.906Z
 
-**回归基线：391/391**（22 个包，其中 21 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：398/398**（23 个包，其中 22 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -10,6 +10,7 @@
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
+| `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 7/7 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 5/5 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |

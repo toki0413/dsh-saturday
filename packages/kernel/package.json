@@ -5,7 +5,8 @@
   "type": "module",
   "main": "src/cordis-adapter.mjs",
   "exports": {
-    ".": "./src/cordis-adapter.mjs"
+    ".": "./src/cordis-adapter.mjs",
+    "./bootstrap": "./src/bootstrap.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"

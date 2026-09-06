@@ -27,6 +27,16 @@ export default {
       runImpl: config.runImpl,
     })
 
+    // 挂载即探测：环境不可用则不注册（显式降级——与 bridge 数据面回退同款：
+    // 报告如实、engine.availability 可查；注册一个环境损坏的引擎会让 auto 路由
+    // 在全量共置场景永远选中它然后失败）
+    const probeOk = config.skipProbe ? true : await provider.probeModule()
+    if (!probeOk) {
+      process.stderr.write('[plugin-mace] mace-torch 环境不可用（python -c "import mace" 失败），跳过注册；relax 任务将由路由器降级到可用引擎\n')
+      ctx.fiber.store.saturdayMace = { provider, registered: false }
+      return
+    }
+
     rt.effect(() => {
       potential.register(provider)
       return () => potential.unregister(provider.name)

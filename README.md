@@ -67,6 +67,20 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 活性上下文 | `derivation.*` | 推导登记簿：导出量声明推导来源，失效沿推导图向下游传播，冻结结果只追加修正不重算（`@toki0413/plugin-derivation`） |
 | 锚点库 | `sampler.anchor.*` | 弛豫收敛结构自动入库（谱系必填）→ 检索 → 混合提案；支持落盘/回填、血缘审计、修复与触发判据对账（数据治理工具链） |
 
+### MCP server：任意 MCP 宿主接入
+
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（30 工具，
+stdio 传输）：Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
+参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
+
+```bash
+npx @toki0413/mcp-server        # stdio；SATURDAY_DISABLE 可排除插件
+```
+
+宿主适配层边界：MCP server 只依赖 `@toki0413/kernel` 的无宿主引导
+（`bootstrapPlugins`，cordis 的 import 收敛在 kernel 包内）与插件包，
+插件本身对 MCP 无感知——防腐层纪律不变。
+
 引擎插件矩阵（均接入 `@toki0413/contract-tests` 标准套件）：
 `emt-mock`（核心，ASE EMT / LJ）、`lj-js`（零依赖纯 JS，玩具势教学档，优雅回退数据面）、`lammps`（批处理，粒度 job）、`mace`（ML 势，可用性预检）、`ase`（通用 ASE 计算器，自带 sidecar）。
 
