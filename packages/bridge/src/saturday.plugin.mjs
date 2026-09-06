@@ -281,7 +281,8 @@ export default {
 
     // 运行时句柄外挂到 fiber.store（cordis v4：apply 只能返回 void 或 disposer，
     // 不能返回任意对象——返回对象会被当作 effect 而拒绝）；
-    // dataPlane 如实声明当前数据面形态（'emt-mock' | 'lj-js'），演示与工具据此呈现
-    ctx.fiber.store.saturday = { rt, materialService, potential, dataPlane }
+    // dataPlane 如实声明当前数据面形态（'emt-mock' | 'lj-js'），演示与工具据此呈现；
+    // bridgeInfo = sidecar 握手实测态（含 structureSources），测试/宿主据此按能力分支而非档位身份
+    ctx.fiber.store.saturday = { rt, materialService, potential, dataPlane, bridgeInfo: bridge.sidecarInfo ?? null }
   },
 }

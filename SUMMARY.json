@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T20:31:20.855Z",
+  "generatedAt": "2026-09-06T20:44:54.008Z",
   "totalPass": 407,
   "totalFail": 0,
   "packageCount": 23,
@@ -581,7 +581,7 @@
     {
       "index": 83,
       "clause": "分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录）",
-      "evidence": "bridge molecule 测试（EMT 档甲醇全链：fromSmiles nAtoms=6/forcefield=MMFF → toDict pbc=false透传 → 分子弛豫收敛能量有限 → 单点能力探测；zero-deps 档显式失败不静默）"
+      "evidence": "bridge molecule 测试（三态按能力事实分支：无桥显式失败 / 有桥无 RDKit 拦 RDKIT_UNAVAILABLE 实测态门禁（CI 精度档只装 ase 实证此态）/ 全能力甲醇全链 fromSmiles nAtoms=6・forcefield=MMFF・pbc+smiles 随图透传・弛豫收敛且 calculator 如实报告 rdkit-*），不静默）"
     }
   ]
 }
