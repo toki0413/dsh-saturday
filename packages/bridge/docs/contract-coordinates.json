@@ -1,0 +1,113 @@
+{
+  "$comment": "Saturday 插件契约坐标声明。坐标格式沿用 dsh-std 惯例（apiVersion + kind，参照 T-Auto/dsh-ecosystem-spec old/registry/registry-0.15.json），evidenceLevel 枚举借自其 conformance-claim schema（Declared < Parsed < Negotiated < Tested < Observed < Attested）。本文件是能力声明，不是 TUI 准入申报：Saturday 插件经 dsh 原生 bundle 机制挂载，不提供 dsh-plugin.json，未申报 dsh-TUI 插件目录。叙述性对账见同目录 contract-coordinates.md。",
+  "namespace": "saturday.contract/v0",
+  "authority": {
+    "repository": "https://github.com/toki0413/dsh-saturday",
+    "contractDocument": "packages/bridge/docs/plugin-contract-v0.md",
+    "contractVersion": "v0",
+    "contractTests": "@saturday/contract-tests",
+    "releaseVersion": "0.3.0"
+  },
+  "definitions": [
+    {
+      "name": "structure-resolver",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "StructureResolver" },
+      "contractSection": "§4.1",
+      "contractTests": ["structureResolverContract"],
+      "evidenceLevel": "Tested"
+    },
+    {
+      "name": "potential-provider",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "PotentialProvider" },
+      "contractSection": "§4.2 + §5.2",
+      "contractTests": ["potentialProviderContract"],
+      "evidenceLevel": "Tested",
+      "notes": "能力枚举含 md：声明即承诺提供原语；单位与能力指纹（§4.7）与本 seam 的 hello 握手联动"
+    },
+    {
+      "name": "workflow",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "Workflow" },
+      "contractSection": "§4.3",
+      "contractTests": ["workflowContract"],
+      "evidenceLevel": "Tested",
+      "notes": "支持可选 failWhen(material) 断言供同构变体工作流选中失败变体"
+    },
+    {
+      "name": "analysis",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "Analysis" },
+      "contractSection": "§4.4",
+      "contractTests": [],
+      "evidenceLevel": "Declared",
+      "notes": "契约条款在册；五 seam 套件未含 analysis 专项断言，分析插件（eos/neb）以包内测试覆盖"
+    },
+    {
+      "name": "sampler",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "Sampler" },
+      "contractSection": "§4.5",
+      "contractTests": ["samplerContract"],
+      "evidenceLevel": "Tested",
+      "notes": "似然可求值性（exact/approximate/none）与输运可逆性（invertible + encodeLatent 原语）声明均可执行；参考实现 perturb / ou / flow 三层级"
+    },
+    {
+      "name": "derivation",
+      "coordinates": { "apiVersion": "saturday.contract/v0", "kind": "DerivationLedger" },
+      "contractSection": "§4.6",
+      "contractTests": ["derivationContract"],
+      "evidenceLevel": "Tested"
+    }
+  ],
+  "crossCutting": [
+    { "contractSection": "§4.7", "topic": "单位与能力指纹", "notes": "异构引擎生态的泛化地基，经 potential-provider 握手生效" },
+    { "contractSection": "§4.8", "topic": "证据组合律", "notes": "多证据源联合排序，作用于筛选层而非单一 seam" }
+  ],
+  "admissionSelfCheck": {
+    "$comment": "对 dsh-TUI 准入规范（TUI Admission v0.15）七条的诚实自检。status 枚举：satisfied / partial / not-applicable / gated。基线：T-Auto/dsh-ecosystem-spec old/docs/plugin-admission-and-development.md（规范正文主分支修订中，以 /old 全量备份为准；对账日期 2026-09-06）。",
+    "profileVersion": "dsh-tui-admission-v0.15",
+    "specSource": "https://github.com/T-Auto/dsh-ecosystem-spec",
+    "selfCheckDate": "2026-09-06",
+    "items": [
+      {
+        "id": "TUI-PKG-001",
+        "title": "Package identity",
+        "status": "gated",
+        "evidence": "插件以 dsh 原生 bundle 机制挂载（package.json 的 dsh.bundle.plugins 字段），未提供 dsh-plugin.json；如申报 TUI 目录，需按 @dsh-std/manifest Community v0.15 parser 补静态 manifest 并绑定 artifact SHA-256"
+      },
+      {
+        "id": "TUI-PKG-002",
+        "title": "Declaration closure",
+        "status": "partial",
+        "evidence": "依赖卫生纪律与声明闭包精神一致（插件仅依赖 @saturday/kernel 的 SaturdayRuntime 接口、禁止 import cordis/dsh；21 包 files 白名单静态声明发布物）；未提供 dsh-std requires/optional+fallback 形状的静态声明"
+      },
+      {
+        "id": "TUI-HOST-001",
+        "title": "Host descriptor",
+        "status": "not-applicable",
+        "evidence": "宿主侧义务；Saturday 是插件集合，不作为 TUI 宿主参与验证"
+      },
+      {
+        "id": "TUI-RUN-001",
+        "title": "Remote determinism",
+        "status": "partial",
+        "evidence": "纯 Node 计算 + JSON 工具出口，无浏览器/GUI 假定；headless dsh Agent 会话端到端已实证；remote attach 与多 Presentation 场景未验证，manifest 亦未声明 remote attach 兼容"
+      },
+      {
+        "id": "TUI-OBS-001",
+        "title": "Ownership and cleanup",
+        "status": "partial",
+        "evidence": "effect 生命周期由 cordis 可逆效应机制承载（fiber dispose 清理监听器与服务）；未对 deactivate 残留做系统性审计（sidecar 子进程、文件句柄、事件订阅全量清点）"
+      },
+      {
+        "id": "TUI-DEP-001",
+        "title": "Dependency closure",
+        "status": "partial",
+        "evidence": "scripts/pack-check.mjs 机械核验 21 包实际安装 artifact（版本一致性 + files 白名单无夹带）；CI 双档（zero-deps + full-fidelity）覆盖依赖闭包两极；规范要求的固定 dsh-std revision 一项不适用（Saturday 不依赖 dsh-std）"
+      },
+      {
+        "id": "TUI-TRUST-001",
+        "title": "Trust disclosure",
+        "status": "partial",
+        "evidence": "同进程 trusted-in-process 信任模型适用（dsh bundle 插件与宿主同进程）；契约文档 §1.1 三纪律含诚实声明条款；未进入市场/安装界面，暂无面向终端用户的披露面"
+      }
+    ]
+  }
+}
