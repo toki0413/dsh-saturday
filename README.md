@@ -81,6 +81,24 @@ stdio 传输）：Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码�
 npx @toki0413/mcp-server        # stdio；SATURDAY_DISABLE 可排除插件
 ```
 
+宿主配置（Claude Desktop / Cursor / Cherry Studio 等通用 `mcpServers` 格式）：
+
+```json
+{
+  "mcpServers": {
+    "saturday-materials": {
+      "command": "npx",
+      "args": ["-y", "@toki0413/mcp-server"],
+      "env": {
+        "MP_API_KEY": "可选：Materials Project 远端结构解析需要"
+      }
+    }
+  }
+}
+```
+
+环境档位声明：纯 Node 环境下工具面为 lj-js 教学档（零依赖玩具势）；本地安装 Python ≥ 3.10 + ASE ≥ 3.22 后自动解锁 EMT 真物理与全量 31 工具（启动横幅如实呈报，非静默降级）。
+
 宿主适配层边界：MCP server 只依赖 `@toki0413/kernel` 的无宿主引导
 （`bootstrapPlugins`，cordis 的 import 收敛在 kernel 包内）与插件包，
 插件本身对 MCP 无感知——防腐层纪律不变。
