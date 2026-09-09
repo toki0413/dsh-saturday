@@ -76,6 +76,7 @@ semantics of `Material.substitute` keeps lineage traceable end to end.
 | Candidate sampling | `sampler.perturb` | Reference-structure perturbation sampling (`@toki0413/plugin-sampler-perturb`) |
 | OU sampling | `sampler.ou` | Ornstein-Uhlenbeck sampling: closed-form transition kernel + exact proposal likelihood; multi-anchor mixture proposals for cross-basin exploration (`@toki0413/plugin-sampler-ou`) |
 | Flow sampling | `sampler.flow` | Affine coupling flow: bijective transport with `invertible:true` + exact change-of-variables likelihood, `encode` maps back to latent space (`@toki0413/plugin-sampler-flow`) |
+| Random structure search | `sampler.rss` | Uniform random structure generation under composition/count/cell constraints with a minimum-distance gate and seed determinism; second generative implementation of §4.5 (non-flow route), likelihood honestly declared as none (`@toki0413/plugin-rss`) |
 | Sample-then-verify loop | `workflow.explore` | Candidates are re-computed by the engine and ranked by energy (the engine is the only oracle, `@toki0413/plugin-explore`) |
 | Ergodic reconciliation | `workflow.ergodic` | Sampling ensemble averages vs thermostated MD time averages; verdict strength graded by the sampler's likelihood declaration (`@toki0413/plugin-ergodic`) |
 | Configurational free energy | `workflow.freeEnergy` | Temperature-grid thermostated MD + thermodynamic integration; free-energy zero point (anchor) injected explicitly, harmonic approximation supported (`@toki0413/plugin-free-energy`) |
@@ -84,7 +85,7 @@ semantics of `Material.substitute` keeps lineage traceable end to end.
 
 ### MCP server: any MCP host, zero code
 
-The whole tool surface (31 tools) is exposed over the Model Context Protocol via
+The whole tool surface (32 tools) is exposed over the Model Context Protocol via
 `@toki0413/mcp-server` (stdio): Claude Desktop, Cursor, Cline or any MCP host connects with no
 glue code. Parameter schemas flow straight from each tool's contract declaration; tool failures
 surface as MCP `isError` responses carrying structured error codes.
@@ -162,7 +163,7 @@ packages/
     profiles/cordis.patch.yml #   example mount line for a dsh profile
     docs/plugin-contract-v0.md#   Plugin Contract v0 (experimental)
     docs/contract-coordinates.* #  contract coordinates (saturday.contract/v0) + TUI admission self-check
-  mcp-server/                 # @toki0413/mcp-server — MCP protocol projection of the tool surface (31 tools)
+  mcp-server/                 # @toki0413/mcp-server — MCP protocol projection of the tool surface (32 tools)
 plugins/                      # plugin ecosystem (new plugins must pass the contract suite)
   screening/                  #   workflow: batch doping screening
   mp-structure-source/        #   structure source: Materials Project

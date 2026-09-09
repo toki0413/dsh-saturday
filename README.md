@@ -65,6 +65,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样（`@toki0413/plugin-sampler-perturb`） |
 | OU 候选采样 | `sampler.ou` | Ornstein-Uhlenbeck 参考结构采样：闭式转移核 + 精确提议似然；多锚点混合提案支持跨盆地探索（`@toki0413/plugin-sampler-ou`） |
 | 流采样 | `sampler.flow` | 仿射耦合流采样：双射输运映射 `invertible:true` + 换元公式精确似然，`encode` 反演回潜空间（`@toki0413/plugin-sampler-flow`） |
+| 随机结构搜索 | `sampler.rss` | RSS 均匀随机结构生成：成分/原子数/晶胞约束 + 最小间距门禁，种子确定性；§4.5 第二个生成式实现（非 flow 路线），似然诚实声明 none（`@toki0413/plugin-rss`） |
 | 采样回算闭环 | `workflow.explore` | 候选逐送入引擎回算验证后按能量排序（引擎是唯一 oracle，`@toki0413/plugin-explore`） |
 | 遍历对账 | `workflow.ergodic` | 采样系综平均 对 恒温 MD 时间平均；判定强度随采样器似然声明分级（`@toki0413/plugin-ergodic`） |
 | 构型自由能 | `workflow.freeEnergy` | 温度网格逐点恒温 MD + 热力学积分出构型自由能曲线；自由能零点（锚点）显式注入，支持谐波近似物理化（`@toki0413/plugin-free-energy`） |
@@ -73,7 +74,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（31 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（32 工具，
 stdio 传输）：Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
 
@@ -167,6 +168,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   ase/                        #   @toki0413/plugin-ase —— 引擎：通用 ASE 计算器，自带 sidecar
   lennard-jones/              #   @toki0413/plugin-lj —— 引擎：零依赖纯 JS LJ（优雅回退数据面，指纹 lj-js）
   replay/                     #   @toki0413/plugin-replay —— 分析：Trajectory 回放与索引重建
+  rss/                        #   @toki0413/plugin-rss —— 采样：RSS 随机结构搜索（§4.5 非 flow 生成式第二实证）
   neb/                        #   @toki0413/plugin-neb —— 分析：NEB 最小能量路径与势垒
   eos/                        #   @toki0413/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合
   phonon/                     #   @toki0413/plugin-phonon —— 分析：Γ 点声子（虚频与稳定性判定）
@@ -200,6 +202,7 @@ npm run demo:mixture-sampling --workspace @toki0413/bridge   # 多锚点混合�
 npm run demo:anchor-guided --workspace @toki0413/bridge      # 锚点引导闭环（入库→检索→提案→回算→排序）
 npm run demo:anchor-auto --workspace @toki0413/bridge        # 全自动锚点闭环（弛豫产物自动入库）
 npm run demo:anchor-resume --workspace @toki0413/bridge      # 跨会话恢复（落盘→回填→续供，谱系不断）
+npm run demo:rss --workspace @toki0413/bridge                # RSS 随机结构搜索 → 回算闭环（环境自适应）
 npm run demo:agent --workspace @toki0413/bridge              # Agent 会话端到端（mock LLM，十个阶段）
 ```
 

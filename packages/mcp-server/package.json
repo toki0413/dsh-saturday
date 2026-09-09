@@ -31,6 +31,7 @@
     "@toki0413/plugin-neb": "^0.3.0",
     "@toki0413/plugin-phonon": "^0.3.0",
     "@toki0413/plugin-replay": "^0.3.0",
+    "@toki0413/plugin-rss": "^0.3.0",
     "@toki0413/plugin-sampler-flow": "^0.3.0",
     "@toki0413/plugin-sampler-ou": "^0.3.0",
     "@toki0413/plugin-sampler-perturb": "^0.3.0",

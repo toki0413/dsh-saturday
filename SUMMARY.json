@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-06T21:15:29.162Z",
-  "totalPass": 407,
+  "generatedAt": "2026-09-09T05:09:04.000Z",
+  "totalPass": 420,
   "totalFail": 0,
-  "packageCount": 23,
-  "testedCount": 22,
+  "packageCount": 24,
+  "testedCount": 23,
   "packages": [
     {
       "dir": "packages\\bridge",
@@ -136,6 +136,13 @@
       "name": "@toki0413/plugin-replay",
       "version": "0.3.4",
       "pass": 5,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\rss",
+      "name": "@toki0413/plugin-rss",
+      "version": "0.3.4",
+      "pass": 13,
       "fail": 0
     },
     {
@@ -582,6 +589,11 @@
       "index": 83,
       "clause": "分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；可用性探针必须真导入 rdkit 本体（`from rdkit import Chem`）——adapter 内部才是延迟导入，「模块导入成功 ≠ 依赖在场」，假阳性会让 structureSources 谎报 true 穿过门禁后才炸 ModuleNotFoundError（CI 精度档只装 ase 实证，stub 遮蔽复现诚实降级）；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录）",
       "evidence": "bridge molecule 测试（三态按能力事实分支：无桥显式失败 / 有桥无 RDKit 拦 RDKIT_UNAVAILABLE 实测态门禁（CI 精度档只装 ase 实证此态）/ 全能力甲醇全链 fromSmiles nAtoms=6・forcefield=MMFF・pbc+smiles 随图透传・弛豫收敛且 calculator 如实报告 rdkit-*），不静默）"
+    },
+    {
+      "index": 84,
+      "clause": "RSS 随机结构搜索采样器（§4.5 第二个生成式实现，非 flow 路线）：composition/reference 双 target（成分显式 elements+counts / numbers，或自参考结构 graph 继承——结构本身不参考）；均匀提议 + 最小间距门禁（截断分布归一化常数无闭式 → 似然诚实声明 none，不伪造 exact）；正交晶胞随机化 + 逐原子放置重试耗尽显式 SAMPLE_NOT_FOUND（不静默放宽门禁）；mulberry32 种子确定性（同种子同序列，异种子异样本）；候选 graph 兼容 §4.1 可直接构造 Material（generative:rss 谱系前缀）；invertible:false 不提供 encode（encodeLatent 守卫 INVERTIBILITY_UNDECLARED）",
+      "evidence": "plugin-rss 测试（契约套件 samplerContract 全断言 + 插件层 7 测试：成分守恒 Cu3Pt / 门禁双分支（逐对周期性最小像距离验算 + 不可行显式失败）/ 种子确定性 / composition 与 referenceId 双路径缺依赖显式错 / encode 守卫）+ demo:rss 端到端（RSS 生成 → explore 回算排序，环境自适应）"
     }
   ]
 }

@@ -28,6 +28,7 @@ import pluginMp from '@toki0413/plugin-mp'
 import pluginNeb from '@toki0413/plugin-neb'
 import pluginPhonon from '@toki0413/plugin-phonon'
 import pluginReplay from '@toki0413/plugin-replay'
+import pluginRss from '@toki0413/plugin-rss'
 import pluginSamplerFlow from '@toki0413/plugin-sampler-flow'
 import pluginSamplerOu from '@toki0413/plugin-sampler-ou'
 import pluginSamplerPerturb from '@toki0413/plugin-sampler-perturb'
@@ -49,6 +50,7 @@ export const PLUGIN_MANIFEST = [
   { name: 'plugin-neb', apply: pluginNeb.apply },
   { name: 'plugin-phonon', apply: pluginPhonon.apply },
   { name: 'plugin-replay', apply: pluginReplay.apply },
+  { name: 'plugin-rss', apply: pluginRss.apply },
   { name: 'plugin-sampler-flow', apply: pluginSamplerFlow.apply },
   { name: 'plugin-sampler-ou', apply: pluginSamplerOu.apply },
   { name: 'plugin-sampler-perturb', apply: pluginSamplerPerturb.apply },
