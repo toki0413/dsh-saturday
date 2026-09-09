@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-mace",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。",
   "type": "module",
   "main": "src/index.mjs",

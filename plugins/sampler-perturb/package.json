@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-sampler-perturb",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。",
   "type": "module",
   "main": "src/index.mjs",

@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-derivation",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。",
   "type": "module",
   "main": "src/index.mjs",

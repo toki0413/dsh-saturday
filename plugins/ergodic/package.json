@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-ergodic",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。",
   "type": "module",
   "main": "src/index.mjs",

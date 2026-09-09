@@ -1,6 +1,6 @@
 {
   "name": "saturday",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "description": "Saturday — 材料计算的插件运行时（Everything is a plugin，宿主为 DeepSeek Harness / Cordis v4）",
   "type": "module",
