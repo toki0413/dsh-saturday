@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-11T17:16:02.044Z
+生成时间：2026-09-11T17:45:35.887Z
 
-**回归基线：424/424**（24 个包，其中 23 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：431/431**（24 个包，其中 23 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -20,7 +20,7 @@
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
 | `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 14/14 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
-| `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。 | 11/11 |
+| `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。 | 18/18 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
 | `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 14/14 |
@@ -31,7 +31,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，88 条）
+## 实证条款（契约文档附录 A，89 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -121,6 +121,7 @@
 - **#86** MP 结构源挂载可用性门禁（plugin-mace/plugin-lammps 先例推广到结构源 seam）：MP_API_KEY（config.apiKey / 环境变量）缺失 → 服务与 structure.resolve 工具均不注册 + registered:false + 显式 stderr（工具面不展示本环境注定失败的能力；配置凭据后重新挂载即解锁）；checkImpl 注入面与引擎插件同款（证据：plugin-mp 测试 5（无凭据：服务/工具不在场 + registered:false；有凭据路径由既有测试 4 向后兼容回归））
 - **#87** MCP 参数 schema 直通含 required 语义：`jsonToZodShape` 对 `required: true` 的参数不再包 optional()（缺参由 MCP schema 校验显式拒绝，不再流入领域层报出难以归因的业务错）；带 default 仍可选；未知类型仍显式报错不放宽——schema 不得对宿主撒谎（实机审计驱动修复第二项）（证据：packages/mcp-server 测试 8（required/optional/default 三态 isOptional 断言 + 缺必填参数端到端 schema 拒绝）+ 既有测试 5/6 回归）
 - **#88** HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立）（证据：云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容）
+- **#89** MACE 常驻 batch 模式与按实现补声明：resident 复用 python-bridge JSON-lines 协议（模型加载一次跨作业复用——一次性形态每次重载 torch+模型，GPU 在场时进程开销远大于计算）；能力声明随模式动态生成：一次性仅 relax，常驻 relax+calculate+md（实现什么声明什么，#83 虚报 calculate 教训的制度化）；md 参数门禁 JS 侧前置（MD_PARAMS_INVALID 不烧远程作业）；连接级失败 ENGINE_UNAVAILABLE 不静默换引擎；挂载握手失败不注册（mace/lammps/mp 先例三连）；transport 注入 SshTransport 即远程 GPU 集群；mace_sidecar.py 随包发布（py_compile 门禁）（证据：plugin-mace resident 测试 1-7（双形态能力声明/协议调用/参数门禁/失败语义/probeVersion 回读/挂载两分支/路由集成，18/18）+ 云端常驻实测（如执行另计））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

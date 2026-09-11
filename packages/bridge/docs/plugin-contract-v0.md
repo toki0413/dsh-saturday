@@ -751,6 +751,7 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 86 | MP 结构源挂载可用性门禁（plugin-mace/plugin-lammps 先例推广到结构源 seam）：MP_API_KEY（config.apiKey / 环境变量）缺失 → 服务与 structure.resolve 工具均不注册 + registered:false + 显式 stderr（工具面不展示本环境注定失败的能力；配置凭据后重新挂载即解锁）；checkImpl 注入面与引擎插件同款 | plugin-mp 测试 5（无凭据：服务/工具不在场 + registered:false；有凭据路径由既有测试 4 向后兼容回归） |
 | 87 | MCP 参数 schema 直通含 required 语义：`jsonToZodShape` 对 `required: true` 的参数不再包 optional()（缺参由 MCP schema 校验显式拒绝，不再流入领域层报出难以归因的业务错）；带 default 仍可选；未知类型仍显式报错不放宽——schema 不得对宿主撒谎（实机审计驱动修复第二项） | packages/mcp-server 测试 8（required/optional/default 三态 isOptional 断言 + 缺必填参数端到端 schema 拒绝）+ 既有测试 5/6 回归 |
 | 88 | HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立） | 云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容 |
+| 89 | MACE 常驻 batch 模式与按实现补声明：resident 复用 python-bridge JSON-lines 协议（模型加载一次跨作业复用——一次性形态每次重载 torch+模型，GPU 在场时进程开销远大于计算）；能力声明随模式动态生成：一次性仅 relax，常驻 relax+calculate+md（实现什么声明什么，#83 虚报 calculate 教训的制度化）；md 参数门禁 JS 侧前置（MD_PARAMS_INVALID 不烧远程作业）；连接级失败 ENGINE_UNAVAILABLE 不静默换引擎；挂载握手失败不注册（mace/lammps/mp 先例三连）；transport 注入 SshTransport 即远程 GPU 集群；mace_sidecar.py 随包发布（py_compile 门禁） | plugin-mace resident 测试 1-7（双形态能力声明/协议调用/参数门禁/失败语义/probeVersion 回读/挂载两分支/路由集成，18/18）+ 云端常驻实测（如执行另计） |
 
 
 ```javascript

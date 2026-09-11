@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T17:16:02.045Z",
-  "totalPass": 424,
+  "generatedAt": "2026-09-11T17:45:35.889Z",
+  "totalPass": 431,
   "totalFail": 0,
   "packageCount": 24,
   "testedCount": 23,
@@ -107,7 +107,7 @@
       "dir": "plugins/mace",
       "name": "@toki0413/plugin-mace",
       "version": "0.3.5",
-      "pass": 11,
+      "pass": 18,
       "fail": 0
     },
     {
@@ -614,6 +614,11 @@
       "index": 88,
       "clause": "HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立）",
       "evidence": "云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容"
+    },
+    {
+      "index": 89,
+      "clause": "MACE 常驻 batch 模式与按实现补声明：resident 复用 python-bridge JSON-lines 协议（模型加载一次跨作业复用——一次性形态每次重载 torch+模型，GPU 在场时进程开销远大于计算）；能力声明随模式动态生成：一次性仅 relax，常驻 relax+calculate+md（实现什么声明什么，#83 虚报 calculate 教训的制度化）；md 参数门禁 JS 侧前置（MD_PARAMS_INVALID 不烧远程作业）；连接级失败 ENGINE_UNAVAILABLE 不静默换引擎；挂载握手失败不注册（mace/lammps/mp 先例三连）；transport 注入 SshTransport 即远程 GPU 集群；mace_sidecar.py 随包发布（py_compile 门禁）",
+      "evidence": "plugin-mace resident 测试 1-7（双形态能力声明/协议调用/参数门禁/失败语义/probeVersion 回读/挂载两分支/路由集成，18/18）+ 云端常驻实测（如执行另计）"
     }
   ]
 }

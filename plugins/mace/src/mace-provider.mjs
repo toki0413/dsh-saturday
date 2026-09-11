@@ -1,14 +1,22 @@
 // MACE Provider —— PotentialProvider seam 的机器学习势实现（契约 §4.2）
 // 与 LAMMPS 经典势对照的另一条路线：基于 mace-torch 的通用 ML 势（MACE-MP 等）。
 //
-// 形态：一次性 Python 子进程推理（无 sidecar 常驻），事件粒度 'job'。
-// 可用性预检：relax 前先探测 `import mace`；不可用显式抛
-// ENGINE_UNAVAILABLE，绝不静默降级（契约 §4.2 路由契约）。
+// 双形态：
+//  • 一次性子进程（缺省，历史形态）：每次调用 spawn python 跑推理脚本，仅实现 relax；
+//  • 常驻 batch（resident: true）：复用 @toki0413/python-bridge 的 JSON-lines 协议，
+//    模型只加载一次跨作业复用（一次性形态每次重载 torch+模型，GPU 在场时进程开销
+//    远大于计算本身）；实现 relax/calculate/md 三作业，能力声明随模式动态生成——
+//    实现什么声明什么，一次性形态绝不因常驻形态的存在而虚报 calculate/md
+//    （#83 时代虚报 calculate 致 auto 选中后爆炸的实证教训）。
+// 远程形态免费获得：transport 传 SshTransport 即经 SSH 在远程（如 GPU 集群）跑 sidecar。
+// 可用性预检失败显式抛 ENGINE_UNAVAILABLE，绝不静默降级（契约 §4.2 路由契约）。
 // 探测与执行器均可注入，测试无需安装 torch。
 
 import { spawn } from 'node:child_process'
 import { platform } from 'node:os'
 import { randomUUID } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
+import { PythonBridge } from '@toki0413/python-bridge'
 
 export class EngineUnavailableError extends Error {
   constructor(model, cause) {
@@ -17,6 +25,10 @@ export class EngineUnavailableError extends Error {
           'Saturday never silently substitutes another engine')
     this.code = 'ENGINE_UNAVAILABLE'
   }
+}
+
+export class MaceError extends Error {
+  constructor(code, message) { super(`${message} (${code})`); this.code = code }
 }
 
 /** 默认执行脚本：stdin 收结构 JSON，stdout 吐结果 JSON。
@@ -40,38 +52,66 @@ print(json.dumps({'converged': bool(converged),
                   'n_steps': int(opt.nsteps)}))
 `
 
+/** 能力声明随模式生成：一次性形态只声明它真实现的 relax */
+const ONESHOT_CAPABILITIES = [
+  { type: 'relax', accuracy: 0.88, speed: 0.8, cost: 0.25, maxAtoms: 100_000 },
+]
+/** 常驻形态额外实现并声明 calculate（能量+力）与 md（Langevin NVT）；
+ *  不声明 stress 等未实现性质（assertCalculable 门禁按此显式拒绝） */
+const RESIDENT_CAPABILITIES = [
+  { type: 'relax', accuracy: 0.88, speed: 0.8, cost: 0.25, maxAtoms: 100_000 },
+  { type: 'calculate', accuracy: 0.88, speed: 0.85, cost: 0.25, maxAtoms: 100_000 },
+  { type: 'md', accuracy: 0.88, speed: 0.75, cost: 0.25, maxAtoms: 100_000 },
+]
+
 export class MaceProvider {
   name = 'mace'
   version = '0.1.0'
-  manifest = {
-    capabilities: [
-      // ML 通用势的典型定位：精度接近 DFT、速度远超 DFT；比经典势更通用（无需按体系配势）。
-      // 只声明 relax：calculate 未实现——声明即承诺（契约 §4.2），提供不了就别声明
-      // （曾虚报 calculate 导致 auto 路由选中后调用爆炸，MCP 全量共置暴露）
-      { type: 'relax', accuracy: 0.88, speed: 0.8, cost: 0.25, maxAtoms: 100_000 },
-    ],
-    constraints: { requiresLicense: false },
-    eventGranularity: 'job',   // 一次性子进程推理：只有任务级事件
-    // M1（单位与指纹）：MACE-MP 输出 eV/Å/fs；档位（small/medium/large）是配置项，
-    // 运行时版本/档位未回读 → unknown（诚实降级，不冒充已知）
-    units: { energy: 'eV', length: 'Å', time: 'fs' },
-    fingerprint: { software: 'mace', method: 'ML-MACE', version: 'unknown' },
-  }
 
   /**
    * @param {Object}   opts
    * @param {string}  [opts.model]      MACE-MP 档位（'small'|'medium'|'large'）
+   * @param {boolean} [opts.resident]   常驻 batch 模式（python-bridge 协议，模型加载一次）
    * @param {string}  [opts.python]     Python 命令（Windows 默认 'python'）
-   * @param {Function}[opts.spawnImpl]   子进程执行器注入（测试用伪进程）
-   * @param {Function}[opts.checkImpl]  可用性探测注入：() => Promise<boolean>
-   * @param {Function}[opts.runImpl]    执行器注入：(material, params) => Promise<result>
+   * @param {string}  [opts.sidecarPath] 常驻 sidecar 路径（缺省随包 mace_sidecar.py）
+   * @param {object}  [opts.transport]  注入传输（SshTransport → 远程/GPU 集群跑 sidecar）
+   * @param {object}  [opts.bridge]      注入 PythonBridge 替身（测试用）
+   * @param {Function}[opts.spawnImpl]   子进程执行器注入（一次性形态测试用）
+   * @param {Function}[opts.checkImpl]   可用性探测注入：() => Promise<boolean>
+   * @param {Function}[opts.runImpl]     一次性执行器注入：(material, params) => Promise<result>
    */
-  constructor({ model = 'medium', python, spawnImpl, checkImpl, runImpl } = {}) {
+  constructor({
+    model = 'medium', python, spawnImpl, checkImpl, runImpl,
+    resident = false, bridge, sidecarPath, transport,
+  } = {}) {
     this.model = model
+    this.resident = resident === true
     this.python = python ?? (platform() === 'win32' ? 'python' : 'python3')
     this.spawnImpl = spawnImpl ?? spawn
     this.checkImpl = checkImpl ?? (() => this.probeModule())
     this.runImpl = runImpl ?? ((material, params) => this.runOnce(material, params))
+
+    // 常驻模式：模型加载一次的 sidecar 通道（本地子进程或注入 transport）
+    this.bridge = null
+    if (this.resident) {
+      this._hello = null
+      this._connected = false
+      this._bridgeOwned = bridge == null
+      this.bridge = bridge ?? new PythonBridge(transport
+        ? { transport }
+        : { python: this.python, sidecar: sidecarPath ??
+            fileURLToPath(new URL('../sidecar/mace_sidecar.py', import.meta.url)) })
+    }
+
+    this.manifest = {
+      capabilities: this.resident ? RESIDENT_CAPABILITIES : ONESHOT_CAPABILITIES,
+      constraints: { requiresLicense: false },
+      eventGranularity: 'job',   // 两种形态都是任务级事件（无逐迭代回调）
+      // M1（单位与指纹）：MACE-MP 输出 eV/Å/fs；档位（small/medium/large）是配置项，
+      // 运行时版本/档位未回读 → unknown（诚实降级，不冒充已知）
+      units: { energy: 'eV', length: 'Å', time: 'fs' },
+      fingerprint: { software: 'mace', method: 'ML-MACE', version: 'unknown' },
+    }
   }
 
   /** 默认探测：`python -c "import mace"`，退出码 0 即可用 */
@@ -83,11 +123,12 @@ export class MaceProvider {
     })
   }
 
-  /**
-   * 运行时版本回读（实测态）：`python -c "import mace; print(mace.__version__)"`。
-   * 探测失败（模块缺失/退出异常/无输出）返回 null——诚实降级保持 'unknown'，不冒充。
-   */
+  /** 运行时版本回读（实测态）：一次性形态 `python -c "import mace; print(mace.__version__)"`；
+   *  常驻形态握手 hello 携带实测版本。探测失败诚实返回 null——保持 'unknown' 不冒充。 */
   probeVersion() {
+    if (this.resident) {
+      return this.connect().then(h => h?.version ?? null).catch(() => null)
+    }
     return new Promise(resolve => {
       let out = ''
       let child
@@ -127,14 +168,92 @@ export class MaceProvider {
     })
   }
 
+  // ── 常驻 batch 模式：模型加载一次，跨作业复用 ──────────────────
+
+  /** 连接即就绪验证：hello 握手会加载模型（失败在此暴露，不留到首个作业） */
+  async connect() {
+    if (!this.resident) {
+      throw new MaceError('MODE_UNSUPPORTED', 'connect() 属常驻模式（resident: true）；一次性形态无需连接')
+    }
+    if (!this._connected) {
+      await this.bridge.connect()
+      this._hello = this.bridge.sidecarInfo ?? null
+      this._connected = true
+    }
+    return this._hello
+  }
+
+  async disconnect() {
+    if (this.resident && this._connected) {
+      this._connected = false
+      this._hello = null
+      await this.bridge.disconnect().catch(() => {})
+    }
+  }
+
+  /** 常驻调用统一入口：连接级失败 → ENGINE_UNAVAILABLE（绝不静默换引擎） */
+  async _call(method, params) {
+    try {
+      await this.connect()
+      return await this.bridge.call(method, params)
+    } catch (err) {
+      if (err instanceof MaceError) throw err
+      throw new EngineUnavailableError(this.model, err.message)
+    }
+  }
+
+  /** 单点能量+力（eV、eV/Å）——仅常驻形态实现并声明（一次性形态调用即显式拒绝） */
+  async calculate(material, params = {}) {
+    if (!this.resident) {
+      throw new MaceError('CAPABILITY_NOT_IMPLEMENTED',
+        '一次性子进程形态未实现 calculate（manifest 亦未声明）；请启用 resident 模式')
+    }
+    const result = await this._call('calculate', { graph: material.graph, params })
+    return { engine: this.name, calculator: result.calculator ?? `mace:${this.model}`, ...result }
+  }
+
+  /** Langevin NVT 系综 MD（仅常驻形态）；参数门禁在 JS 侧前置校验，错误码可归因 */
+  async md(material, params = {}) {
+    if (!this.resident) {
+      throw new MaceError('CAPABILITY_NOT_IMPLEMENTED',
+        '一次性子进程形态未实现 md（manifest 亦未声明）；请启用 resident 模式')
+    }
+    const { temperatureK, steps = 100, dtFs = 1.0 } = params
+    if (typeof temperatureK !== 'number' || !Number.isFinite(temperatureK) || temperatureK <= 0) {
+      throw new MaceError('MD_PARAMS_INVALID', `md requires temperatureK > 0 (K); got ${temperatureK}`)
+    }
+    if (!Number.isInteger(steps) || steps < 1) {
+      throw new MaceError('MD_PARAMS_INVALID', `md requires integer steps >= 1; got ${steps}`)
+    }
+    if (typeof dtFs !== 'number' || !(dtFs > 0)) {
+      throw new MaceError('MD_PARAMS_INVALID', `md requires dtFs > 0 (fs); got ${dtFs}`)
+    }
+    const result = await this._call('md', { graph: material.graph, params })
+    return { engine: this.name, calculator: result.calculator ?? `mace:${this.model}`, ...result }
+  }
+
   async relax(material, params = {}) {
-    // 预检即门禁：每次放松前探测（结果不缓存——环境可能在运行中变化）
+    const jobId = randomUUID()
+    const t0 = Date.now()
+    if (this.resident) {
+      // 常驻模式：连接即门禁（hello 已验证就绪），不再每作业 spawn 探测
+      const result = await this._call('relax', { graph: material.graph, params })
+      return {
+        jobId,
+        engine: this.name,
+        converged: result.converged,
+        energy: result.energy,
+        n_steps: result.n_steps ?? 0,
+        positions: result.positions,
+        calculator: result.calculator ?? `mace:${this.model}`,
+        wall_seconds: (Date.now() - t0) / 1000,
+      }
+    }
+    // 一次性模式预检即门禁：每次放松前探测（结果不缓存——环境可能在运行中变化）
     const available = await this.checkImpl()
     if (!available) {
       throw new EngineUnavailableError(this.model, 'python module "mace" is not importable')
     }
-    const jobId = randomUUID()
-    const t0 = Date.now()
     const result = await this.runImpl(material, params)
     return {
       jobId,

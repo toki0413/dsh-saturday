@@ -122,7 +122,7 @@ EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。
 |---|---|---|
 | 纯 Node（无 Python） | `lj-js`（零依赖纯 JS，LJ 玩具势） | 全部演示可跑；精度为教学档（玩具势声明在先，参考态为引擎自洽参考非实验值） |
 | + Python ≥ 3.10 + ASE ≥ 3.22 | `emt-mock`（EMT 真物理）+ `ase` | 解锁 EMT 精度；sidecar 内缺 ASE 自动回退 LJ 玩具势（如实声明） |
-| + LAMMPS / MACE | `lammps` / `mace` | 生产级引擎接入；缺失时可用性预检如实报告（`demo:availability`） |
+| + LAMMPS / MACE | `lammps` / `mace` | 生产级引擎接入；缺失时可用性预检如实报告（不注册不降级）；MACE 另支持常驻 batch 模式（`resident: true`，模型加载一次，relax/calculate/md；transport 可指 SshTransport 跑远程 GPU） |
 | + 远程集群（SSH） | sidecar 在远程执行 | 站点配置 `~/.saturday/clusters.json` + `bridge.cluster` 指定；连接失败显式上抛不回退本地（远程语义是算力选择） |
 
 - **Node ≥ 22**（dsh 硬性要求；裸 cordis 测试可在 Node 20 运行）
@@ -166,7 +166,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   screening/                  #   @toki0413/plugin-screening —— 工作流：批量掺杂筛选
   mp-structure-source/        #   @toki0413/plugin-mp —— 结构源：Materials Project
   lammps/                     #   @toki0413/plugin-lammps —— 引擎：LAMMPS 批处理，粒度 job
-  mace/                       #   @toki0413/plugin-mace —— 引擎：MACE ML 势，可用性预检
+  mace/                       #   @toki0413/plugin-mace —— 引擎：MACE ML 势，一次性/常驻 batch 双形态，可用性预检
   ase/                        #   @toki0413/plugin-ase —— 引擎：通用 ASE 计算器，自带 sidecar
   lennard-jones/              #   @toki0413/plugin-lj —— 引擎：零依赖纯 JS LJ（优雅回退数据面，指纹 lj-js）
   replay/                     #   @toki0413/plugin-replay —— 分析：Trajectory 回放与索引重建

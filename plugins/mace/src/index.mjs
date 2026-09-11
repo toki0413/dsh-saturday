@@ -1,11 +1,13 @@
 // @toki0413/plugin-mace —— MACE（mace-torch）ML 势引擎插件（契约 §4.2）
 // 薄插件：只把 MaceProvider 注册进核心插件的 PotentialRegistry。
 // 注册即 effect：卸载时注销，激活指针若指向本引擎则自动重置。
+// 双形态：缺省一次性子进程（仅 relax）；config.resident = 常驻 batch
+// （python-bridge 协议，模型加载一次，relax/calculate/md；transport 可注入 SshTransport 跑远程 GPU）。
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { MaceProvider } from './mace-provider.mjs'
 
-export { MaceProvider, EngineUnavailableError } from './mace-provider.mjs'
+export { MaceProvider, EngineUnavailableError, MaceError } from './mace-provider.mjs'
 
 export default {
   name: 'saturday-mace',
@@ -25,7 +27,32 @@ export default {
       spawnImpl: config.spawnImpl,
       checkImpl: config.checkImpl,
       runImpl: config.runImpl,
+      resident: config.resident,
+      bridge: config.bridge,
+      sidecarPath: config.sidecarPath,
+      transport: config.transport,
     })
+
+    // 常驻模式：挂载即 connect（hello 握手加载模型 = 就绪验证）；失败不注册并显式报告
+    //（plugin-mace/plugin-lammps 同款门禁：注册一个环境损坏的引擎会让 auto 路由永远选中它然后失败）
+    if (config.resident === true) {
+      try {
+        await provider.connect()
+      } catch (err) {
+        process.stderr.write(`[plugin-mace] 常驻 sidecar 不可用（${String(err.message).split('\n')[0]}），跳过注册；relax 任务将由路由器降级到可用引擎\n`)
+        ctx.fiber.store.saturdayMace = { provider, registered: false }
+        return
+      }
+      rt.effect(() => {
+        potential.register(provider)
+        return () => {
+          potential.unregister(provider.name)
+          provider.disconnect().catch(() => {})
+        }
+      }, 'mace-provider')
+      ctx.fiber.store.saturdayMace = { provider, hello: provider._hello }
+      return
+    }
 
     // 挂载即探测：环境不可用则不注册（显式降级——与 bridge 数据面回退同款：
     // 报告如实、engine.availability 可查；注册一个环境损坏的引擎会让 auto 路由
