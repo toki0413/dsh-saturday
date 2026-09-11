@@ -36,13 +36,17 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：89 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：91 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 89, '附录 A 当前应为 89 条实证映射')
+  assert.equal(rows.length, 91, '附录 A 当前应为 91 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(90).clause.includes('弹性张量') && at(90).evidence.includes('plugin-elasticity'),
+      '第 90 条证据指向弹性张量 6×6（analysis seam 第三实证）')
+  assert.ok(at(91).clause.includes('md 原语') && at(91).evidence.includes('plugin-mace'),
+      '第 91 条证据指向 MACE 常驻 md 对齐 free-energy 消费约定')
   assert.ok(at(89).clause.includes('MACE 常驻') && at(89).evidence.includes('plugin-mace'),
       '第 89 条证据指向 MACE 常驻 batch 与按实现补声明')
   assert.ok(at(88).clause.includes('真机') && at(88).evidence.includes('AutoDL'),

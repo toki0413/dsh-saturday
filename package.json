@@ -1,6 +1,6 @@
 {
   "name": "saturday",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": true,
   "description": "Saturday — 材料计算的插件运行时（Everything is a plugin，宿主为 DeepSeek Harness / Cordis v4）",
   "type": "module",
@@ -26,5 +26,9 @@
   },
   "bugs": {
     "url": "https://github.com/toki0413/dsh-saturday/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@toki0413/mcp-server": "^0.3.5"
   }
 }

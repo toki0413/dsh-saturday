@@ -70,7 +70,11 @@ def handle(method, params):
             "calculator": "mace:" + MODEL,
         }
         if "stress" in p.get("properties", []):
-            raise ValueError("stress not declared by mace sidecar (未实现的能力不声明)")
+            if not bool(atoms.pbc[0]):
+                raise ValueError("stress requires periodic cell (分子体系无应力量定义)")
+            # ASE 应力约定随实现如实透传；符号约定由消费层（plugin-elasticity）
+            # 统一处理并与解析各向同性/实测文献对账
+            result["stress"] = [float(x) for x in atoms.get_stress(voigt=True)]
         return result
 
     if method == "relax":
@@ -91,32 +95,41 @@ def handle(method, params):
         from ase.md.langevin import Langevin
         from ase import units
         p = params.get("params", {})
-        temperature_k = p.get("temperatureK")
+        # 参数名对齐 md 原语既有约定（free-energy 消费方传 temperature_K/dt_fs/sample_every；
+        # camelCase 作别名兼容）
+        temperature_k = p.get("temperature_K", p.get("temperatureK"))
         steps = p.get("steps", 100)
-        dt_fs = p.get("dtFs", 1.0)
+        dt = p.get("dt_fs", p.get("dtFs", 1.0))
+        sample_every = p.get("sample_every", 5)
         if not isinstance(temperature_k, (int, float)) or temperature_k <= 0:
-            raise ValueError("md requires params.temperatureK > 0 (K)")
+            raise ValueError("md requires params.temperature_K > 0 (K)")
         if not isinstance(steps, int) or steps < 1:
             raise ValueError("md requires params.steps >= 1")
-        if dt_fs <= 0:
-            raise ValueError("md requires params.dtFs > 0 (fs)")
+        if dt <= 0:
+            raise ValueError("md requires params.dt_fs > 0 (fs)")
+        if not isinstance(sample_every, int) or sample_every < 1:
+            raise ValueError("md requires params.sample_every >= 1")
         atoms = to_atoms(params["graph"])
         # ase Langevin 参数名是 temperature_K（带下划线）；云端实跑实证：写 temperatureK
         # 会在远端抛 "Exactly one of 'temperature', 'temperature_K'"——fake 单测只能验协议，
         # Python 侧签名必须真机验证
-        dyn = Langevin(atoms, timestep=dt_fs * units.fs,
+        dyn = Langevin(atoms, timestep=float(dt) * units.fs,
                        temperature_K=float(temperature_k), friction=0.005)
+        energies = []
+        dyn.attach(lambda: energies.append(float(atoms.get_potential_energy())),
+                   interval=sample_every)
         dyn.run(steps=steps)
         # 温度由动能算：T = 2·KE / (ndof·kB)（ase 3.28 Langevin 无 get_temperature，
         # 云端实跑实证；能量均分计数用 3N 自由度，无约束体系即本形态）
         ke = dyn.atoms.get_kinetic_energy()
         ndof = 3 * len(dyn.atoms)
-        temperature_K = 2.0 * ke / (ndof * units.kB)
+        final_temperature_K = 2.0 * ke / (ndof * units.kB)
         return {
-            "energy": float(atoms.get_potential_energy()),
-            "temperature_K": float(temperature_K),
+            "energies": energies,
+            "temperature_K": float(final_temperature_K),
+            "target_temperature_K": float(temperature_k),
             "steps": int(steps),
-            "dtFs": float(dt_fs),
+            "sampled": len(energies),
             "ensemble": "NVT-Langevin",
             "calculator": "mace:" + MODEL,
         }

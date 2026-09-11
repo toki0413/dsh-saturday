@@ -32,7 +32,7 @@ function fakeBridge({ failConnect = false } = {}) {
       calls.push({ method, params })
       if (method === 'relax') return { converged: true, energy: -8.17, n_steps: 5, positions: [[0, 0, 0], [1.8, 0, 0]], calculator: 'mace:medium' }
       if (method === 'calculate') return { energy: -8.1, forces: [[0, 0, 0], [0, 0, 0.1]], calculator: 'mace:medium' }
-      if (method === 'md') return { energy: -8.0, temperature_K: 297.3, steps: params.params.steps, ensemble: 'NVT-Langevin', calculator: 'mace:medium' }
+      if (method === 'md') return { energies: [-8.01, -8.02, -8.0], temperature_K: 297.3, target_temperature_K: params.params.temperature_K, steps: params.params.steps, sampled: 3, ensemble: 'NVT-Langevin', calculator: 'mace:medium' }
       throw new Error(`Unknown method: ${method}`)
     },
     async disconnect() { calls.push({ method: '__disconnect' }) },
@@ -45,6 +45,8 @@ test('1. 能力声明随模式生成：一次性仅 relax；常驻 relax+calcula
     '一次性形态不得因常驻形态存在而虚报 calculate/md')
   const res = new MaceProvider({ resident: true, bridge: fakeBridge() })
   assert.deepEqual(res.manifest.capabilities.map(c => c.type).sort(), ['calculate', 'md', 'relax'])
+  const calcCap = res.manifest.capabilities.find(c => c.type === 'calculate')
+  assert.ok(calcCap.properties.includes('stress'), '常驻 calculate 声明 stress（弹性张量的应力源）')
 })
 
 test('2. 常驻 relax/calculate/md 经 bridge 协议调用：方法名与 graph 载荷正确、结果透传', async () => {
@@ -54,12 +56,15 @@ test('2. 常驻 relax/calculate/md 经 bridge 协议调用：方法名与 graph 
   assert.equal(r.engine, 'mace')
   assert.equal(r.converged, true)
   assert.equal(r.energy, -8.17)
-  const c = await p.calculate(material)
+  const c = await p.calculate(material, { properties: ['stress'] })
   assert.ok(Array.isArray(c.forces) && c.forces.length === 2, 'forces 随行（phonon forceProvider 依赖此形状）')
   const m = await p.md(material, { temperatureK: 300, steps: 10 })
   assert.equal(m.ensemble, 'NVT-Langevin')
   assert.equal(m.temperature_K, 297.3)
+  assert.deepEqual(m.energies.length, 3, 'energies 轨迹透传（free-energy 消费形状）')
+  assert.equal(m.target_temperature_K, 300, 'temperatureK 别名归一为 temperature_K 下发')
   assert.deepEqual(b.calls.map(x => x.method), ['relax', 'calculate', 'md'])
+  assert.equal(b.calls[2].params.params.temperature_K, 300)
   assert.deepEqual(b.calls[0].params.graph, graph, 'graph 原样入载荷')
 })
 

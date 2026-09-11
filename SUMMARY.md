@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-11T17:45:35.887Z
+生成时间：2026-09-11T18:18:49.288Z
 
-**回归基线：431/431**（24 个包，其中 23 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：436/436**（25 个包，其中 24 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -14,6 +14,7 @@
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
+| `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 5/5 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 9/9 |
@@ -31,7 +32,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，89 条）
+## 实证条款（契约文档附录 A，91 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -122,6 +123,8 @@
 - **#87** MCP 参数 schema 直通含 required 语义：`jsonToZodShape` 对 `required: true` 的参数不再包 optional()（缺参由 MCP schema 校验显式拒绝，不再流入领域层报出难以归因的业务错）；带 default 仍可选；未知类型仍显式报错不放宽——schema 不得对宿主撒谎（实机审计驱动修复第二项）（证据：packages/mcp-server 测试 8（required/optional/default 三态 isOptional 断言 + 缺必填参数端到端 schema 拒绝）+ 既有测试 5/6 回归）
 - **#88** HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立）（证据：云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容）
 - **#89** MACE 常驻 batch 模式与按实现补声明：resident 复用 python-bridge JSON-lines 协议（模型加载一次跨作业复用——一次性形态每次重载 torch+模型，GPU 在场时进程开销远大于计算）；能力声明随模式动态生成：一次性仅 relax，常驻 relax+calculate+md（实现什么声明什么，#83 虚报 calculate 教训的制度化）；md 参数门禁 JS 侧前置（MD_PARAMS_INVALID 不烧远程作业）；连接级失败 ENGINE_UNAVAILABLE 不静默换引擎；挂载握手失败不注册（mace/lammps/mp 先例三连）；transport 注入 SshTransport 即远程 GPU 集群；mace_sidecar.py 随包发布（py_compile 门禁）（证据：plugin-mace resident 测试 1-7（双形态能力声明/协议调用/参数门禁/失败语义/probeVersion 回读/挂载两分支/路由集成，18/18）+ 云端常驻实测（如执行另计））
+- **#90** 弹性张量 6×6（analysis seam 第三实证，plugin-elasticity）：6 种 Voigt 应变 ± 中心差分（12 次引擎 calculate 应力）→ C_ij=∂σ_i/∂ε_j（拉正约定，σ_tension=−σ_ASE）；对称化 + VRH 多晶 K/G/E/ν + Born 正定判据（自带 Jacobi，零外部依赖）+ 立方各向异性因子 A；应力源能力门禁——引擎未声明 calculate+stress 即 ELASTICITY_STRESS_MISSING 显式拒绝（绝不退化为能量二阶差分近似）；仿射应变无内部弛豫的适用边界如实声明；单位换算显式随交付（1 eV/Å³=160.2176634 GPa，CODATA 推导）；MACE 常驻档为当前 stress 源（properties 声明解锁）（证据：plugin-elasticity 测试 1-5（剪切几何 O(ε²) 容差/各向同性解析对账 C11=λ+2μ·C44=μ·A=1/Jacobi 不变量/端到端 12 次调用/工具门禁双分支）+ 云端 GPU 实测（Cu 文献值对账，见执行记录））
+- **#91** MACE 常驻 md 对齐 md 原语约定（free-energy@MACE 接线）：参数名 temperature_K 主名 + temperatureK 别名、dt_fs/sample_every 对齐；交付 energies 采样轨迹（free-energy 消费形状）；无 energies 即 ENGINE_UNAVAILABLE（协议漂移显式失败不静默）；sidecar 温度由动能闭式 T=2KE/(3N·kB)（ase 3.28 无 get_temperature 实跑实证）；常驻 calculate properties 声明 stress 支撑弹性张量（证据：plugin-mace resident 测试 1-2 更新（energies 透传/别名归一/stress 声明）+ 云端 free-energy@MACE 温度网格实测（见执行记录））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

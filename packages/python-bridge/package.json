@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/python-bridge",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。",
   "type": "module",
   "main": "src/index.mjs",

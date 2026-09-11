@@ -60,7 +60,7 @@ const ONESHOT_CAPABILITIES = [
  *  不声明 stress 等未实现性质（assertCalculable 门禁按此显式拒绝） */
 const RESIDENT_CAPABILITIES = [
   { type: 'relax', accuracy: 0.88, speed: 0.8, cost: 0.25, maxAtoms: 100_000 },
-  { type: 'calculate', accuracy: 0.88, speed: 0.85, cost: 0.25, maxAtoms: 100_000 },
+  { type: 'calculate', accuracy: 0.88, speed: 0.85, cost: 0.25, maxAtoms: 100_000, properties: ['stress'] },
   { type: 'md', accuracy: 0.88, speed: 0.75, cost: 0.25, maxAtoms: 100_000 },
 ]
 
@@ -212,23 +212,32 @@ export class MaceProvider {
     return { engine: this.name, calculator: result.calculator ?? `mace:${this.model}`, ...result }
   }
 
-  /** Langevin NVT 系综 MD（仅常驻形态）；参数门禁在 JS 侧前置校验，错误码可归因 */
+  /** Langevin NVT 系综 MD（仅常驻形态）；参数名对齐 md 原语约定（temperature_K 主名、
+   *  temperatureK 别名；free-energy 工作流即此约定）；交付含 energies 采样轨迹 */
   async md(material, params = {}) {
     if (!this.resident) {
       throw new MaceError('CAPABILITY_NOT_IMPLEMENTED',
         '一次性子进程形态未实现 md（manifest 亦未声明）；请启用 resident 模式')
     }
-    const { temperatureK, steps = 100, dtFs = 1.0 } = params
-    if (typeof temperatureK !== 'number' || !Number.isFinite(temperatureK) || temperatureK <= 0) {
-      throw new MaceError('MD_PARAMS_INVALID', `md requires temperatureK > 0 (K); got ${temperatureK}`)
+    const temperature = params.temperature_K ?? params.temperatureK
+    const steps = params.steps ?? 100
+    const dt = params.dt_fs ?? params.dtFs ?? 1.0
+    if (typeof temperature !== 'number' || !Number.isFinite(temperature) || temperature <= 0) {
+      throw new MaceError('MD_PARAMS_INVALID', `md requires temperature_K > 0 (K); got ${temperature}`)
     }
     if (!Number.isInteger(steps) || steps < 1) {
       throw new MaceError('MD_PARAMS_INVALID', `md requires integer steps >= 1; got ${steps}`)
     }
-    if (typeof dtFs !== 'number' || !(dtFs > 0)) {
-      throw new MaceError('MD_PARAMS_INVALID', `md requires dtFs > 0 (fs); got ${dtFs}`)
+    if (typeof dt !== 'number' || !(dt > 0)) {
+      throw new MaceError('MD_PARAMS_INVALID', `md requires dt_fs > 0 (fs); got ${dt}`)
     }
-    const result = await this._call('md', { graph: material.graph, params })
+    const result = await this._call('md', {
+      graph: material.graph,
+      params: { ...params, temperature_K: temperature, dt_fs: dt, steps },
+    })
+    if (!Array.isArray(result?.energies)) {
+      throw new EngineUnavailableError(this.model, 'md returned no energies series (sidecar 协议漂移)')
+    }
     return { engine: this.name, calculator: result.calculator ?? `mace:${this.model}`, ...result }
   }
 

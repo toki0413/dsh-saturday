@@ -17,6 +17,7 @@ import { bootstrapPlugins } from '@toki0413/kernel/bootstrap'
 import bridgePlugin from '@toki0413/bridge'
 import pluginAse from '@toki0413/plugin-ase'
 import pluginDerivation from '@toki0413/plugin-derivation'
+import pluginElasticity from '@toki0413/plugin-elasticity'
 import pluginEos from '@toki0413/plugin-eos'
 import pluginErgodic from '@toki0413/plugin-ergodic'
 import pluginExplore from '@toki0413/plugin-explore'
@@ -39,6 +40,7 @@ export const PLUGIN_MANIFEST = [
   { name: 'saturday', apply: bridgePlugin.apply },
   { name: 'plugin-ase', apply: pluginAse.apply },
   { name: 'plugin-derivation', apply: pluginDerivation.apply },
+  { name: 'plugin-elasticity', apply: pluginElasticity.apply },
   { name: 'plugin-eos', apply: pluginEos.apply },
   { name: 'plugin-ergodic', apply: pluginErgodic.apply },
   { name: 'plugin-explore', apply: pluginExplore.apply },

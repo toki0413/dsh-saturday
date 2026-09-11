@@ -62,6 +62,7 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 势垒分析 | `analysis.neb` | NEB 最小能量路径与过渡态势垒（`@toki0413/plugin-neb`） |
 | 状态方程 | `analysis.eos` | Birch-Murnaghan（三阶）EOS 拟合（`@toki0413/plugin-eos`） |
 | 声子分析 | `analysis.phonon` | Γ 点声子：力注入式有限位移 + 声学和规则，频率/虚频/显式阈值稳定性判定（`@toki0413/plugin-phonon`） |
+| 弹性张量 | `analysis.elasticity` | 完整 6×6 刚度张量：6 种 Voigt 应变 ± 中心差分（12 次引擎应力计算），VRH 多晶 K/G/E/ν、Born 正定判据、各向异性因子 A；应力源能力门禁（需引擎声明 calculate+stress，当前为 MACE 常驻档；无应力显式拒绝不近似）（`@toki0413/plugin-elasticity`） |
 | 候选采样 | `sampler.perturb` | 参考结构微扰采样（`@toki0413/plugin-sampler-perturb`） |
 | OU 候选采样 | `sampler.ou` | Ornstein-Uhlenbeck 参考结构采样：闭式转移核 + 精确提议似然；多锚点混合提案支持跨盆地探索（`@toki0413/plugin-sampler-ou`） |
 | 流采样 | `sampler.flow` | 仿射耦合流采样：双射输运映射 `invertible:true` + 换元公式精确似然，`encode` 反演回潜空间（`@toki0413/plugin-sampler-flow`） |
@@ -74,8 +75,8 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（32 工具，
-stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 31 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（33 工具，
+stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 32 工具，
 环境不可用的引擎/结构源挂载即跳过并显式报告，不展示注定失败的能力）：
 Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
@@ -174,6 +175,7 @@ plugins/                      # 插件生态（新插件必须过 contract-tests
   neb/                        #   @toki0413/plugin-neb —— 分析：NEB 最小能量路径与势垒
   eos/                        #   @toki0413/plugin-eos —— 分析：Birch-Murnaghan 状态方程拟合
   phonon/                     #   @toki0413/plugin-phonon —— 分析：Γ 点声子（虚频与稳定性判定）
+  elasticity/                 #   @toki0413/plugin-elasticity —— 分析：6×6 弹性张量 + Born 判据 + VRH
   sampler-perturb/            #   @toki0413/plugin-sampler-perturb —— 采样：参考结构微扰
   sampler-ou/                 #   @toki0413/plugin-sampler-ou —— 采样：OU 受控扩散 + 混合提案 + 锚点工具链
   sampler-flow/               #   @toki0413/plugin-sampler-flow —— 采样：仿射耦合流（可逆输运 + 换元精确似然）
