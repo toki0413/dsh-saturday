@@ -2,12 +2,14 @@
 export { Material, MaterialService } from './material.mjs'
 export {
   PotentialRegistry,
+  engineSourceId,
   NoCapableProviderError,
   LicenseUnavailableError,
   GranularityUnavailableError,
   PropertyUnsupportedError,
   BASELINE_PROPERTIES,
 } from './potential.mjs'
+export { JobLedger, jobError } from './jobs.mjs'
 export { makeCalculationRecord } from './calculation-record.mjs'
 export {
   formationEnthalpy,

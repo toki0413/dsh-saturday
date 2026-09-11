@@ -78,22 +78,22 @@ test('4. M2 激活门禁：热切换事件携带指纹差异声明（声明而�
   assert.equal(events.length, 3, '重复激活同名引擎不发事件')
 })
 
-test('5. 实测态回读升级：stampFingerprint 只丰富 version，非实测值即拒（不盖章冒充）', () => {
+test('5. 实测态回读升级：stampFingerprint 只丰富 version，非实测值即拒（不盖章冒充；盖章变异步——源标识变化要广播失效）', async () => {
   const reg = new PotentialRegistry(null)
   const provider = { name: 'probe-engine', manifest: { ...baseManifest() } }
   reg.register(provider)
   assert.equal(provider._fingerprint.version, 'unknown', '注册后为声明态')
   // 探测成功 → 盖章升级为实测态；原 manifest 不被改写（与 M1 同款）
-  const stamped = reg.stampFingerprint('probe-engine', { version: '3.23.0' })
+  const stamped = await reg.stampFingerprint('probe-engine', { version: '3.23.0' })
   assert.deepEqual(stamped, { software: 'stub', method: 'stub', version: '3.23.0' })
   assert.equal(provider._fingerprint.version, '3.23.0')
   assert.equal(provider.manifest.fingerprint.version, undefined, '原 manifest 不改写（连 version 键都不补，声明态 ≠ 实测态）')
   // 探测失败方不得拿 unknown/空值/非字符串盖章（保持声明态，不污染指纹）
   for (const bad of ['unknown', '', null, 3.23, undefined]) {
-    assert.throws(() => reg.stampFingerprint('probe-engine', { version: bad }),
+    await assert.rejects(() => reg.stampFingerprint('probe-engine', { version: bad }),
       err => err.code === 'FINGERPRINT_STAMP_INVALID')
   }
   assert.equal(provider._fingerprint.version, '3.23.0', '非法盖章不得污染已升级指纹')
-  assert.throws(() => reg.stampFingerprint('ghost-engine', { version: '1.0' }),
+  await assert.rejects(() => reg.stampFingerprint('ghost-engine', { version: '1.0' }),
     /not registered/, '未注册引擎无章可盖')
 })

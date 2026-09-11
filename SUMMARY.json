@@ -1,182 +1,182 @@
 {
-  "generatedAt": "2026-09-11T18:18:49.289Z",
-  "totalPass": 436,
+  "generatedAt": "2026-09-11T19:04:18.919Z",
+  "totalPass": 446,
   "totalFail": 0,
   "packageCount": 25,
   "testedCount": 24,
   "packages": [
     {
-      "dir": "packages/bridge",
+      "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
-      "version": "0.3.5",
-      "pass": 56,
+      "version": "0.3.6",
+      "pass": 60,
       "fail": 0
     },
     {
-      "dir": "packages/contract-tests",
+      "dir": "packages\\contract-tests",
       "name": "@toki0413/contract-tests",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 31,
       "fail": 0
     },
     {
-      "dir": "packages/core",
+      "dir": "packages\\core",
       "name": "@toki0413/core",
-      "version": "0.3.5",
-      "pass": 28,
+      "version": "0.3.6",
+      "pass": 34,
       "fail": 0
     },
     {
-      "dir": "packages/kernel",
+      "dir": "packages\\kernel",
       "name": "@toki0413/kernel",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": null,
       "fail": null
     },
     {
-      "dir": "packages/mcp-server",
+      "dir": "packages\\mcp-server",
       "name": "@toki0413/mcp-server",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 8,
       "fail": 0
     },
     {
-      "dir": "packages/python-bridge",
+      "dir": "packages\\python-bridge",
       "name": "@toki0413/python-bridge",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 10,
       "fail": 0
     },
     {
-      "dir": "plugins/ase",
+      "dir": "plugins\\ase",
       "name": "@toki0413/plugin-ase",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 12,
       "fail": 0
     },
     {
-      "dir": "plugins/derivation",
+      "dir": "plugins\\derivation",
       "name": "@toki0413/plugin-derivation",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 15,
       "fail": 0
     },
     {
-      "dir": "plugins/elasticity",
+      "dir": "plugins\\elasticity",
       "name": "@toki0413/plugin-elasticity",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 5,
       "fail": 0
     },
     {
-      "dir": "plugins/eos",
+      "dir": "plugins\\eos",
       "name": "@toki0413/plugin-eos",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 8,
       "fail": 0
     },
     {
-      "dir": "plugins/ergodic",
+      "dir": "plugins\\ergodic",
       "name": "@toki0413/plugin-ergodic",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 14,
       "fail": 0
     },
     {
-      "dir": "plugins/explore",
+      "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 9,
       "fail": 0
     },
     {
-      "dir": "plugins/free-energy",
+      "dir": "plugins\\free-energy",
       "name": "@toki0413/plugin-free-energy",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 12,
       "fail": 0
     },
     {
-      "dir": "plugins/lammps",
+      "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 14,
       "fail": 0
     },
     {
-      "dir": "plugins/lennard-jones",
+      "dir": "plugins\\lennard-jones",
       "name": "@toki0413/plugin-lj",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 15,
       "fail": 0
     },
     {
-      "dir": "plugins/mace",
+      "dir": "plugins\\mace",
       "name": "@toki0413/plugin-mace",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 18,
       "fail": 0
     },
     {
-      "dir": "plugins/mp-structure-source",
+      "dir": "plugins\\mp-structure-source",
       "name": "@toki0413/plugin-mp",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 9,
       "fail": 0
     },
     {
-      "dir": "plugins/neb",
+      "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 8,
       "fail": 0
     },
     {
-      "dir": "plugins/phonon",
+      "dir": "plugins\\phonon",
       "name": "@toki0413/plugin-phonon",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 14,
       "fail": 0
     },
     {
-      "dir": "plugins/replay",
+      "dir": "plugins\\replay",
       "name": "@toki0413/plugin-replay",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 5,
       "fail": 0
     },
     {
-      "dir": "plugins/rss",
+      "dir": "plugins\\rss",
       "name": "@toki0413/plugin-rss",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 13,
       "fail": 0
     },
     {
-      "dir": "plugins/sampler-flow",
+      "dir": "plugins\\sampler-flow",
       "name": "@toki0413/plugin-sampler-flow",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 16,
       "fail": 0
     },
     {
-      "dir": "plugins/sampler-ou",
+      "dir": "plugins\\sampler-ou",
       "name": "@toki0413/plugin-sampler-ou",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 67,
       "fail": 0
     },
     {
-      "dir": "plugins/sampler-perturb",
+      "dir": "plugins\\sampler-perturb",
       "name": "@toki0413/plugin-sampler-perturb",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 11,
       "fail": 0
     },
     {
-      "dir": "plugins/screening",
+      "dir": "plugins\\screening",
       "name": "@toki0413/plugin-screening",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "pass": 38,
       "fail": 0
     }
@@ -636,6 +636,21 @@
       "index": 91,
       "clause": "MACE 常驻 md 对齐 md 原语约定（free-energy@MACE 接线）：参数名 temperature_K 主名 + temperatureK 别名、dt_fs/sample_every 对齐；交付 energies 采样轨迹（free-energy 消费形状）；无 energies 即 ENGINE_UNAVAILABLE（协议漂移显式失败不静默）；sidecar 温度由动能闭式 T=2KE/(3N·kB)（ase 3.28 无 get_temperature 实跑实证）；常驻 calculate properties 声明 stress 支撑弹性张量",
       "evidence": "plugin-mace resident 测试 1-2 更新（energies 透传/别名归一/stress 声明）+ 云端 free-energy@MACE 温度网格实测（见执行记录）"
+    },
+    {
+      "index": 92,
+      "clause": "作业台账与带语义的引擎拆下（动态拆装承载机制，§2.2 机制化）：JobLedger 提交即记账/销账即消失/重复 settle 幂等；PotentialRegistry 注入 provider.jobs（鸭子类型可选参与，既有 provider 零破坏）+ detach(name,{onActive}) 三策略——refuse 缺省有在途作业即 ACTIVE_JOBS、drain 超时仍 DRAIN_TIMEOUT（不静默等待成功）、cancel 无 provider.cancel 即 CANCEL_UNSUPPORTED（不假装能停）；unregister 收回台账句柄",
+      "evidence": "core jobs 测试 1-4（记账/销账/drain 时序/三策略全分支）"
+    },
+    {
+      "index": 93,
+      "clause": "引擎源标识与热替换状态连续性（G2 修复）：engineSourceId=engine:<name>@sha256(software|method|version|model)前8位——engine:<name> 仍是稳定失效手柄，源标识承载指纹变化；同名引擎换 checkpoint 档位 → 源标识必异；stampFingerprint 变异步：实测盖章使 sourceId 变化时广播 saturday/potential/refingerprinted，bridge 订阅沿 engine:<name> 传播失效（盖章升级不再对下游隐身）；盖同值幂等不广播（不制造假失效）；同名重注册 PROVIDE_COLLISION 显式拒绝（attach 不静默替换已在池引擎）",
+      "evidence": "core jobs 测试 5-6 + potential.test 测试 5 异步化 + bridge runtime-tools 测试 3-4（碰撞防护/盖章→derivation 下游自动 invalid 端到端）"
+    },
+    {
+      "index": 94,
+      "clause": "运行时动词面（自我演化的 Agent 入口，bridge 三工具）：runtime.capability.list（声明能力+properties/实测指纹/源标识/粒度/在途作业数/可用性探针）；runtime.engine.attach（动态 import + apply 到当前 Context，新引擎即时入 autoRoute 候选池——注册即生效无握手缓存；挂载即验证 available() 探针随交付；providersGained 为空=走了插件自己的挂载门禁，如实报告不假成功）；runtime.engine.detach（先查台账再拆，经 attach 挂载的连 fiber 回收，宿主挂载的不越权回收）；attach/detach 决策动作全部落 Trajectory（可回放可撤销——可逆的是决策上下文）",
+      "evidence": "bridge runtime-tools 测试 1-4（清单/attach 即时入池/detach 经台账/Trajectory 双事件/失效端到端）+ mcp-server 测试 1（36 工具在册）"
     }
   ]
 }

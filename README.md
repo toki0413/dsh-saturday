@@ -71,12 +71,13 @@ Saturday 把论文的两个正交维度落到材料计算域：
 | 遍历对账 | `workflow.ergodic` | 采样系综平均 对 恒温 MD 时间平均；判定强度随采样器似然声明分级（`@toki0413/plugin-ergodic`） |
 | 构型自由能 | `workflow.freeEnergy` | 温度网格逐点恒温 MD + 热力学积分出构型自由能曲线；自由能零点（锚点）显式注入，支持谐波近似物理化（`@toki0413/plugin-free-energy`） |
 | 活性上下文 | `derivation.*` | 推导登记簿：导出量声明推导来源，失效沿推导图向下游传播，冻结结果只追加修正不重算（`@toki0413/plugin-derivation`） |
+| 运行时动词面 | `runtime.capability.list` / `runtime.engine.attach` / `runtime.engine.detach` | 动态拆装与自我演化的 Agent 入口：能力清单（声明+实测指纹/源标识/在途作业数）、运行时挂载（即时入 autoRoute 候选池，挂载即验证，不重启宿主）、带作业台账语义的拆下（refuse/drain/cancel，不静默杀任务）；决策动作落 Trajectory 可回放；引擎指纹实测变更（refingerprinted）沿 engine 引用传播失效（bridge 提供） |
 | 锚点库 | `sampler.anchor.*` | 弛豫收敛结构自动入库（谱系必填）→ 检索 → 混合提案；支持落盘/回填、血缘审计、修复与触发判据对账（数据治理工具链） |
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（33 工具，
-stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 32 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（36 工具，
+stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 35 工具，
 环境不可用的引擎/结构源挂载即跳过并显式报告，不展示注定失败的能力）：
 Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。

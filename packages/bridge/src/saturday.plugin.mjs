@@ -229,7 +229,7 @@ export default {
           if (typeof provider.probeVersion === 'function') {
             try { version = await provider.probeVersion() } catch { version = null }
           }
-          if (version && stamp) potential.stampFingerprint(name, { version })
+          if (version && stamp) await potential.stampFingerprint(name, { version })
           const fp = provider._fingerprint
           engines.push({
             name,
@@ -277,6 +277,150 @@ export default {
           `势函数热替换：比较基准由 ${previous} 切换为 ${engine}，旧引擎产出的导出量需重算或作废`,
         )
       }
+    })
+
+    // 热替换状态连续性的另一半：同名引擎指纹实质变化（实测版本盖章、换 checkpoint 档位）
+    // 也是失效源——engine:<name> 手柄不变但 sourceId 变，下游沿同一入口传播失效
+    rt.on('saturday/potential/refingerprinted', async event => {
+      const derivation = rt.getService('derivation')
+      const { engine, previousSourceId, sourceId, version } = event.payload
+      if (derivation) {
+        await derivation.invalidate(
+          `engine:${engine}`,
+          `引擎指纹实测态变更（${previousSourceId} → ${sourceId}，version=${version}）：旧指纹产出的导出量需重算或作废`,
+        )
+      }
+    })
+
+    // ── 运行时动词面（动态拆装/自我演化的 Agent 入口）：能力清单 / 挂载 / 拆下 ──
+    // attach/detach 是决策动作：全部落 Trajectory（可回放、可撤销——可逆的是决策上下文）；
+    // 挂载即验证：新 provider 的 available() 探针随交付报告，不静默假成功。
+    const runtimeErr = (code, msg) => Object.assign(new Error(`${msg} (${code})`), { code })
+    const attachedFibers = new Map()   // pluginName → { fiber, engines[] }：本工具挂的才可卸
+
+    rt.registerTool({
+      name: 'runtime.capability.list',
+      description: '运行时能力清单：每个已注册引擎的声明能力（capabilities+properties）、实测指纹' +
+                   '（fingerprint+sourceId）、事件粒度、在途作业数与可用性探针结果。' +
+                   '自我演化闭环的"当前缺什么"查询面。',
+      parameters: {},
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute() {
+        const engines = []
+        for (const [name, provider] of potential.providers) {
+          let available = null
+          if (typeof provider.available === 'function') {
+            try { available = await provider.available() } catch { available = false }
+          }
+          engines.push({
+            name,
+            capabilities: provider.manifest.capabilities.map(c => ({
+              type: c.type, properties: c.properties ?? null, maxAtoms: c.maxAtoms ?? null,
+            })),
+            eventGranularity: provider.manifest.eventGranularity ?? 'iteration',
+            fingerprint: provider._fingerprint,
+            sourceId: provider._sourceId,
+            resident: provider.resident ?? false,
+            available,
+            activeJobs: potential.jobs.activeOf(name).length,
+            isActive: potential.activeProvider === name,
+          })
+        }
+        return { engines, attached: [...attachedFibers.keys()] }
+      },
+    })
+
+    rt.registerTool({
+      name: 'runtime.engine.attach',
+      description: '运行时挂载引擎插件（不重启宿主、不中断其他插件事件流）：按包名动态 import 并 apply；' +
+                   '新引擎即时进 autoRoute 候选池（注册即生效，无握手缓存）；挂载即验证（available() 探针随交付）；' +
+                   '凭据/二进制缺失走该插件自己的挂载门禁——providersGained 为空即如实报告不假成功。动作落 Trajectory。',
+      parameters: {
+        plugin: { type: 'string', required: true, description: '包名（@toki0413/plugin-lammps）或短名（lammps）' },
+        config: { type: 'object', description: '传给插件 apply 的配置（如 { resident: true }）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ plugin, config = {} } = {}) {
+        if (typeof plugin !== 'string' || plugin.length === 0) {
+          throw runtimeErr('ATTACH_BAD_INPUT', 'plugin name required')
+        }
+        const spec = plugin.startsWith('@') ? plugin : `@toki0413/plugin-${plugin}`
+        const before = new Set(potential.providers.keys())
+        let mod
+        try { mod = await import(spec) } catch (err) {
+          throw runtimeErr('ATTACH_IMPORT_FAILED', `cannot import "${spec}": ${String(err.message).split('\n')[0]}`)
+        }
+        const entry = mod.default
+        if (!entry?.apply) {
+          throw runtimeErr('ATTACH_NOT_A_PLUGIN', `"${spec}" 默认导出缺 { name, apply } 插件形态`)
+        }
+        if (attachedFibers.has(entry.name)) {
+          throw runtimeErr('ATTACH_ALREADY_MOUNTED', `插件 "${entry.name}" 已由本工具挂载；先 detach 再重挂（不双挂）`)
+        }
+        const fiber = await ctx.registry.plugin({ name: entry.name, apply: (c) => entry.apply(c, config) })
+        const gained = [...potential.providers.keys()].filter(k => !before.has(k))
+        const report = []
+        for (const g of gained) {
+          const p = potential.providers.get(g)
+          let available = null
+          if (typeof p.available === 'function') {
+            try { available = await p.available() } catch { available = false }
+          }
+          report.push({ engine: g, sourceId: p._sourceId, capabilities: p.manifest.capabilities.map(c => c.type), available })
+        }
+        attachedFibers.set(entry.name, { fiber, engines: gained })
+        await rt.appendTrajectory({
+          type: 'runtime_engine_attach', plugin: spec, mounted: entry.name,
+          engines: gained, sourceIds: report.map(r => r.sourceId),
+        })
+        return {
+          ok: true, mounted: entry.name, providersGained: gained, engines: report,
+          note: gained.length === 0
+            ? '插件挂载成功但无引擎入池：走了该插件自己的挂载门禁（环境/凭据不可用即不注册，见其 stderr）——如实报告，不假成功'
+            : '新引擎即时进入 autoRoute 候选池（注册即生效，无握手缓存）',
+        }
+      },
+    })
+
+    rt.registerTool({
+      name: 'runtime.engine.detach',
+      description: '运行时拆下引擎：先查作业台账再注销——onActive refuse（缺省，有在途作业即拒 ACTIVE_JOBS）' +
+                   '/drain（等到超时，超时可拒）/cancel（无 cancel 通道即 CANCEL_UNSUPPORTED，不假装能停）；' +
+                   '经 attach 工具挂载的插件连 fiber 一起回收（服务/工具随 cordis effect 退场）。动作落 Trajectory。',
+      parameters: {
+        engine: { type: 'string', required: true, description: '引擎名（如 lammps / mace / lj-js）' },
+        onActive: { type: 'string', default: 'refuse', description: 'refuse | drain | cancel' },
+        timeoutMs: { type: 'integer', default: 60000, description: 'drain/cancel 等待预算' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ engine, onActive = 'refuse', timeoutMs = 60000 } = {}) {
+        const result = await potential.detach(engine, { onActive, timeoutMs })
+        let pluginDisposed = null
+        for (const [pname, rec] of attachedFibers) {
+          if (rec.engines.includes(engine)) {
+            await rec.fiber.dispose()
+            attachedFibers.delete(pname)
+            pluginDisposed = pname
+            break
+          }
+        }
+        await rt.appendTrajectory({ type: 'runtime_engine_detach', engine, onActive, pluginDisposed })
+        return {
+          ...result, pluginDisposed,
+          note: pluginDisposed == null
+            ? '引擎已从注册表注销；其宿主插件非本工具挂载，fiber 归宿主生命周期管理（不越权回收）'
+            : '插件 fiber 已回收：其服务与工具随 cordis effect 自动退场',
+        }
+      },
     })
 
     // 运行时句柄外挂到 fiber.store（cordis v4：apply 只能返回 void 或 disposer，

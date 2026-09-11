@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-11T18:18:49.288Z
+生成时间：2026-09-11T19:04:18.915Z
 
-**回归基线：436/436**（25 个包，其中 24 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：446/446**（25 个包，其中 24 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 56/56 |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 60/60 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 34/34 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 8/8 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -32,7 +32,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，91 条）
+## 实证条款（契约文档附录 A，94 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -125,6 +125,9 @@
 - **#89** MACE 常驻 batch 模式与按实现补声明：resident 复用 python-bridge JSON-lines 协议（模型加载一次跨作业复用——一次性形态每次重载 torch+模型，GPU 在场时进程开销远大于计算）；能力声明随模式动态生成：一次性仅 relax，常驻 relax+calculate+md（实现什么声明什么，#83 虚报 calculate 教训的制度化）；md 参数门禁 JS 侧前置（MD_PARAMS_INVALID 不烧远程作业）；连接级失败 ENGINE_UNAVAILABLE 不静默换引擎；挂载握手失败不注册（mace/lammps/mp 先例三连）；transport 注入 SshTransport 即远程 GPU 集群；mace_sidecar.py 随包发布（py_compile 门禁）（证据：plugin-mace resident 测试 1-7（双形态能力声明/协议调用/参数门禁/失败语义/probeVersion 回读/挂载两分支/路由集成，18/18）+ 云端常驻实测（如执行另计））
 - **#90** 弹性张量 6×6（analysis seam 第三实证，plugin-elasticity）：6 种 Voigt 应变 ± 中心差分（12 次引擎 calculate 应力）→ C_ij=∂σ_i/∂ε_j（拉正约定，σ_tension=−σ_ASE）；对称化 + VRH 多晶 K/G/E/ν + Born 正定判据（自带 Jacobi，零外部依赖）+ 立方各向异性因子 A；应力源能力门禁——引擎未声明 calculate+stress 即 ELASTICITY_STRESS_MISSING 显式拒绝（绝不退化为能量二阶差分近似）；仿射应变无内部弛豫的适用边界如实声明；单位换算显式随交付（1 eV/Å³=160.2176634 GPa，CODATA 推导）；MACE 常驻档为当前 stress 源（properties 声明解锁）（证据：plugin-elasticity 测试 1-5（剪切几何 O(ε²) 容差/各向同性解析对账 C11=λ+2μ·C44=μ·A=1/Jacobi 不变量/端到端 12 次调用/工具门禁双分支）+ 云端 GPU 实测（Cu 文献值对账，见执行记录））
 - **#91** MACE 常驻 md 对齐 md 原语约定（free-energy@MACE 接线）：参数名 temperature_K 主名 + temperatureK 别名、dt_fs/sample_every 对齐；交付 energies 采样轨迹（free-energy 消费形状）；无 energies 即 ENGINE_UNAVAILABLE（协议漂移显式失败不静默）；sidecar 温度由动能闭式 T=2KE/(3N·kB)（ase 3.28 无 get_temperature 实跑实证）；常驻 calculate properties 声明 stress 支撑弹性张量（证据：plugin-mace resident 测试 1-2 更新（energies 透传/别名归一/stress 声明）+ 云端 free-energy@MACE 温度网格实测（见执行记录））
+- **#92** 作业台账与带语义的引擎拆下（动态拆装承载机制，§2.2 机制化）：JobLedger 提交即记账/销账即消失/重复 settle 幂等；PotentialRegistry 注入 provider.jobs（鸭子类型可选参与，既有 provider 零破坏）+ detach(name,{onActive}) 三策略——refuse 缺省有在途作业即 ACTIVE_JOBS、drain 超时仍 DRAIN_TIMEOUT（不静默等待成功）、cancel 无 provider.cancel 即 CANCEL_UNSUPPORTED（不假装能停）；unregister 收回台账句柄（证据：core jobs 测试 1-4（记账/销账/drain 时序/三策略全分支））
+- **#93** 引擎源标识与热替换状态连续性（G2 修复）：engineSourceId=engine:<name>@sha256(software|method|version|model)前8位——engine:<name> 仍是稳定失效手柄，源标识承载指纹变化；同名引擎换 checkpoint 档位 → 源标识必异；stampFingerprint 变异步：实测盖章使 sourceId 变化时广播 saturday/potential/refingerprinted，bridge 订阅沿 engine:<name> 传播失效（盖章升级不再对下游隐身）；盖同值幂等不广播（不制造假失效）；同名重注册 PROVIDE_COLLISION 显式拒绝（attach 不静默替换已在池引擎）（证据：core jobs 测试 5-6 + potential.test 测试 5 异步化 + bridge runtime-tools 测试 3-4（碰撞防护/盖章→derivation 下游自动 invalid 端到端））
+- **#94** 运行时动词面（自我演化的 Agent 入口，bridge 三工具）：runtime.capability.list（声明能力+properties/实测指纹/源标识/粒度/在途作业数/可用性探针）；runtime.engine.attach（动态 import + apply 到当前 Context，新引擎即时入 autoRoute 候选池——注册即生效无握手缓存；挂载即验证 available() 探针随交付；providersGained 为空=走了插件自己的挂载门禁，如实报告不假成功）；runtime.engine.detach（先查台账再拆，经 attach 挂载的连 fiber 回收，宿主挂载的不越权回收）；attach/detach 决策动作全部落 Trajectory（可回放可撤销——可逆的是决策上下文）（证据：bridge runtime-tools 测试 1-4（清单/attach 即时入池/detach 经台账/Trajectory 双事件/失效端到端）+ mcp-server 测试 1（36 工具在册））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

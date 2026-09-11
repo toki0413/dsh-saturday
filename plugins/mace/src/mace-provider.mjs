@@ -191,12 +191,18 @@ export class MaceProvider {
     }
   }
 
-  /** 常驻调用统一入口：连接级失败 → ENGINE_UNAVAILABLE（绝不静默换引擎） */
+  /** 常驻调用统一入口：连接级失败 → ENGINE_UNAVAILABLE（绝不静默换引擎）；
+   *  异步作业过作业台账记账（register 时由 PotentialRegistry 鸭子注入 this.jobs），
+   *  卸载路径据此 drain/refuse/cancel，不静默杀任务也不留孤儿 */
   async _call(method, params) {
+    const jobId = this.jobs?.submit({ provider: this.name, kind: method })
     try {
       await this.connect()
-      return await this.bridge.call(method, params)
+      const result = await this.bridge.call(method, params)
+      if (jobId != null) this.jobs.settle(jobId, 'ok')
+      return result
     } catch (err) {
+      if (jobId != null) this.jobs.settle(jobId, 'failed')
       if (err instanceof MaceError) throw err
       throw new EngineUnavailableError(this.model, err.message)
     }
@@ -241,6 +247,7 @@ export class MaceProvider {
     return { engine: this.name, calculator: result.calculator ?? `mace:${this.model}`, ...result }
   }
 
+  /** 一次性形态的异步执行也记账（卸载同样需知道在途作业） */
   async relax(material, params = {}) {
     const jobId = randomUUID()
     const t0 = Date.now()
@@ -259,11 +266,25 @@ export class MaceProvider {
       }
     }
     // 一次性模式预检即门禁：每次放松前探测（结果不缓存——环境可能在运行中变化）
-    const available = await this.checkImpl()
+    const ledgerId = this.jobs?.submit({ provider: this.name, materialId: material?.id ?? null, kind: 'relax' })
+    let available
+    try {
+      available = await this.checkImpl()
+    } finally {
+      if (ledgerId != null) this.jobs.settle(ledgerId, available ? 'ok' : 'failed')
+    }
     if (!available) {
       throw new EngineUnavailableError(this.model, 'python module "mace" is not importable')
     }
-    const result = await this.runImpl(material, params)
+    const runId = this.jobs?.submit({ provider: this.name, materialId: material?.id ?? null, kind: 'relax' })
+    let result
+    try {
+      result = await this.runImpl(material, params)
+      if (runId != null) this.jobs.settle(runId, 'ok')
+    } catch (e) {
+      if (runId != null) this.jobs.settle(runId, 'failed')
+      throw e
+    }
     return {
       jobId,
       engine: this.name,
@@ -274,4 +295,6 @@ export class MaceProvider {
       wall_seconds: (Date.now() - t0) / 1000,
     }
   }
+
+  /** 取消能力声明：一次性形态无 cancel 通道——台账据此显式 CANCEL_UNSUPPORTED 而非假装能停 */
 }
