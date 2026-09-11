@@ -20,7 +20,7 @@ Saturday 是材料计算的**插件运行时**：引擎、结构源、工作流�
 
 | 纪律 | 内容 |
 |---|---|
-| **依赖卫生（防腐层）** | 插件只依赖 `@toki0413/kernel` 暴露的 `SaturdayRuntime` 接口，禁止 import cordis / dsh；上游破坏性变更的影响面收敛到适配层一个文件 |
+| **依赖卫生（防腐层）** | 插件只依赖 `@toki0413/kernel` 暴露的 `SaturdayRuntime` 接口，禁止 import cordis / dsh；上游破坏性变更的影响面收敛到适配层一个文件。唯一豁免：dsh 静态工具注册所需的 `defineTool` 动态导入（`await import('@deepseek-ai/dsh-tools').catch(() => ({}))`，不可得即回落裸 cordis/CI 路径）——豁免面仅限该符号，不得扩散到 cordis/dsh 其他表面（实证：附录 A #44） |
 | **契约即宪法** | 本文档 + 契约测试套件共同构成兼容性承诺；文档与测试冲突时以测试为准 |
 | **核心瘦削** | 默认一切是插件；功能进核心需要举证（跨插件一致性 / 性能 / 安全三选一） |
 
@@ -747,6 +747,10 @@ L1 段落摘要（收敛趋势/极值/异常）→ L2 任务摘要 → L3 研究
 | 82 | HPC 远程执行（§4.2 执行位置增补）：传输抽象 LocalTransport/SshTransport——bridge 对传输无感知（协议不变：JSON-lines + 死亡进程快速拒绝 + EPIPE 兑底全链生效）；站点配置 ~/.saturday/clusters.json（host/user/port/python/workDir/sshOptions）由桥层解析；SshTransport 命令构造（BatchMode/端口/密钥选项）与远程 sidecar 存在性预检 verify()（缺失即报错，绝不静默本地回退）；bridge.cluster 指定远程集群时连接失败显式上抛不回退本地（远程语义是算力选择，回退 = 违背指令）；注入式假 SSH 通道（spawnImpl 替身 + Readable 形状 stub）覆盖 connect/hello/call/断连全链 | python-bridge 测试 6-10（命令构造与 target/远程命令/构造门禁/注入式 SSH 全链/verify 预检两分支/loadClusters 门禁与缺文件）+ 既有 5 项向后兼容回归 |
 | 83 | 分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；可用性探针必须真导入 rdkit 本体（`from rdkit import Chem`）——adapter 内部才是延迟导入，「模块导入成功 ≠ 依赖在场」，假阳性会让 structureSources 谎报 true 穿过门禁后才炸 ModuleNotFoundError（CI 精度档只装 ase 实证，stub 遮蔽复现诚实降级）；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录） | bridge molecule 测试（三态按能力事实分支：无桥显式失败 / 有桥无 RDKit 拦 RDKIT_UNAVAILABLE 实测态门禁（CI 精度档只装 ase 实证此态）/ 全能力甲醇全链 fromSmiles nAtoms=6・forcefield=MMFF・pbc+smiles 随图透传・弛豫收敛且 calculator 如实报告 rdkit-*），不静默） |
 | 84 | RSS 随机结构搜索采样器（§4.5 第二个生成式实现，非 flow 路线）：composition/reference 双 target（成分显式 elements+counts / numbers，或自参考结构 graph 继承——结构本身不参考）；均匀提议 + 最小间距门禁（截断分布归一化常数无闭式 → 似然诚实声明 none，不伪造 exact）；正交晶胞随机化 + 逐原子放置重试耗尽显式 SAMPLE_NOT_FOUND（不静默放宽门禁）；mulberry32 种子确定性（同种子同序列，异种子异样本）；候选 graph 兼容 §4.1 可直接构造 Material（generative:rss 谱系前缀）；invertible:false 不提供 encode（encodeLatent 守卫 INVERTIBILITY_UNDECLARED） | plugin-rss 测试（契约套件 samplerContract 全断言 + 插件层 7 测试：成分守恒 Cu3Pt / 门禁双分支（逐对周期性最小像距离验算 + 不可行显式失败）/ 种子确定性 / composition 与 referenceId 双路径缺依赖显式错 / encode 守卫）+ demo:rss 端到端（RSS 生成 → explore 回算排序，环境自适应） |
+| 85 | LAMMPS 挂载可用性探测（plugin-mace 先例补齐，实机审计驱动修复）：势文件未配置或二进制不可达 → 不注册 + registered:false + 显式 stderr 报告（注册环境损坏引擎会让 auto 路由在全量共置场景永远选中它然后失败）；probeAvailability 三分支（no potentialFile / binary probe -h 失败 / 实测横幅版本）；干净安装实机复验：无 Python 环境 engine=auto 由 ENGINE_UNAVAILABLE(LAMMPS) 改为落 lj-js 完成弛豫 | plugin-lammps 测试 8-9（探测三分支 + 探测失败不注册）+ 无 Python 子进程环境 engine=auto 实机复验（lj-js converged，三引擎跳过逐条如实打印） |
+| 86 | MP 结构源挂载可用性门禁（plugin-mace/plugin-lammps 先例推广到结构源 seam）：MP_API_KEY（config.apiKey / 环境变量）缺失 → 服务与 structure.resolve 工具均不注册 + registered:false + 显式 stderr（工具面不展示本环境注定失败的能力；配置凭据后重新挂载即解锁）；checkImpl 注入面与引擎插件同款 | plugin-mp 测试 5（无凭据：服务/工具不在场 + registered:false；有凭据路径由既有测试 4 向后兼容回归） |
+| 87 | MCP 参数 schema 直通含 required 语义：`jsonToZodShape` 对 `required: true` 的参数不再包 optional()（缺参由 MCP schema 校验显式拒绝，不再流入领域层报出难以归因的业务错）；带 default 仍可选；未知类型仍显式报错不放宽——schema 不得对宿主撒谎（实机审计驱动修复第二项） | packages/mcp-server 测试 8（required/optional/default 三态 isOptional 断言 + 缺必填参数端到端 schema 拒绝）+ 既有测试 5/6 回归 |
+| 88 | HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立） | 云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容 |
 
 
 ```javascript

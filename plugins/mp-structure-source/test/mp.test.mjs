@@ -115,6 +115,25 @@ test('4. 插件挂载：服务与工具就位，工具输出只含引用信息',
   assert.equal(ctx.reflect.get('structure-resolver.materials-project'), undefined)
 })
 
+test('5. 凭据缺失 → 挂载即跳过注册：服务/工具均不在场 + registered:false（plugin-mace 先例，不展示注定失败的能力）', async () => {
+  const savedKey = process.env.MP_API_KEY
+  delete process.env.MP_API_KEY
+  try {
+    const ctx = new Context()
+    const fiber = await ctx.registry.plugin({
+      name: 'saturday-mp',
+      apply: (ctx) => plugin.apply(ctx, { fetchImpl: stubFetch() }),   // 无 apiKey
+    })
+    const { rt, registered } = fiber.store.saturdayMp
+    assert.equal(registered, false, '挂载记录如实呈报未注册')
+    assert.equal(ctx.reflect.get('structure-resolver.materials-project'), undefined, '服务不注册')
+    assert.deepEqual(rt.tools.list().map(t => t.name), [], '工具面不含 structure.resolve')
+    await fiber.dispose()
+  } finally {
+    if (savedKey !== undefined) process.env.MP_API_KEY = savedKey
+  }
+})
+
 // ── 标准契约套件（§4.1，传输用 stub，无需真实 API Key）───────────
 structureResolverContract({
   subject: 'materials-project',

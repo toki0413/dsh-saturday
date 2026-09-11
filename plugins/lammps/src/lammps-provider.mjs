@@ -108,6 +108,22 @@ export class LammpsProvider {
   }
 
   /**
+   * 挂载可用性探测（plugin-mace 同款先例）：势文件未配置或二进制不可达即判不可用——
+   * 注册一个环境损坏的引擎会让 auto 路由在全量共置场景永远选中它然后失败。
+   * 返回 { ok, reason }：不可用时 reason 进显式日志，不静默。
+   */
+  async probeAvailability() {
+    if (!this.potentialFile) {
+      return { ok: false, reason: 'no potential file configured (config.potentialFile)' }
+    }
+    const version = await this.probeVersion()
+    if (!version) {
+      return { ok: false, reason: `binary "${this.binary}" not runnable (probe -h failed)` }
+    }
+    return { ok: true, reason: `LAMMPS ${version}` }
+  }
+
+  /**
    * 运行时版本回读（实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
    * 探测失败（无二进制/启动异常/无横幅）返回 null——诚实降级保持 'unknown'，
    * 绝不拿非实测值盖章（与 M1 诚实降级同款纪律）。

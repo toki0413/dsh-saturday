@@ -89,7 +89,10 @@ export function jsonToZodShape(parameters) {
     let base = zodFor(def, key)
     if (def.description) base = base.describe(def.description)
     if (def.default !== undefined) base = base.default(def.default)
-    else base = base.optional()
+    else if (def.required !== true) base = base.optional()
+    // required: true 不包 optional()——契约声明的必填语义直通宿主（缺参由 MCP schema
+    // 校验显式拒绝，而非流入领域层报出难以归因的业务错）；诚实纪律同款：
+    // schema 不得对宿主撒谎
     shape[key] = base
   }
   return shape

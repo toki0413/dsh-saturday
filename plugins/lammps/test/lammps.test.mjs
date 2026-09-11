@@ -95,7 +95,7 @@ test('5. 插件生命周期：注册即 effect，卸载自动注销（§2）', a
 
   const fiber = await ctx.registry.plugin({
     name: 'saturday-lammps',
-    apply: (ctx) => plugin.apply(ctx, {}),
+    apply: (ctx) => plugin.apply(ctx, { skipProbe: true }),
   })
   assert.ok(potential.get('lammps'), 'provider registered on mount')
 
@@ -124,7 +124,7 @@ test('6. 激活引擎被注销：激活指针自动重置', async () => {
   const potential = coreFiber.store.potential
   const fiber = await ctx.registry.plugin({
     name: 'saturday-lammps',
-    apply: (ctx) => plugin.apply(ctx, {}),
+    apply: (ctx) => plugin.apply(ctx, { skipProbe: true }),
   })
   await potential.activate('lammps')
   assert.equal(potential.activeProvider, 'lammps')
@@ -165,4 +165,50 @@ test('7. 实测态回读：probeVersion 解析 `binary -h` 横幅；探测失败
   // 输出无横幅 → null（不猜测版本，与"不静默近似"同款）
   const noBanner = new LammpsProvider({ spawnImpl: () => fakeChild({ stdout: 'unexpected output' }) })
   assert.equal(await noBanner.probeVersion(), null)
+})
+
+// ── 挂载可用性探测（plugin-mace 先例补齐：环境损坏的引擎不得注册进路由）──
+
+test('8. probeAvailability：势文件未配/二进制不可达/可用 三分支', async () => {
+  const noPot = new LammpsProvider({ spawnImpl: () => fakeChild() })
+  const a = await noPot.probeAvailability()
+  assert.equal(a.ok, false)
+  assert.match(a.reason, /potential file/)
+
+  const noBin = new LammpsProvider({
+    potentialFile: 'Cu.eam.alloy',
+    spawnImpl: () => fakeChild({ spawnError: Object.assign(new Error('spawn lmp ENOENT'), { code: 'ENOENT' }) }),
+  })
+  const b = await noBin.probeAvailability()
+  assert.equal(b.ok, false)
+  assert.match(b.reason, /not runnable/)
+
+  const good = new LammpsProvider({
+    potentialFile: 'Cu.eam.alloy',
+    spawnImpl: () => fakeChild({ stdout: 'LAMMPS (2 Aug 2023)\n' }),
+  })
+  const c = await good.probeAvailability()
+  assert.equal(c.ok, true)
+  assert.match(c.reason, /2 Aug 2023/)
+})
+
+test('9. 挂载探测失败 → 不注册 + registered:false（auto 路由不再选中它）', async () => {
+  const ctx = new Context()
+  const coreFiber = await ctx.registry.plugin({
+    name: 'stub-core',
+    apply(ctx) {
+      const potential = new PotentialRegistry({ on() {}, emit() {} })
+      ctx.reflect.provide('potential', potential)
+      ctx.fiber.store.potential = potential
+    },
+  })
+  const potential = coreFiber.store.potential
+  const fiber = await ctx.registry.plugin({
+    name: 'saturday-lammps',
+    apply: (ctx) => plugin.apply(ctx, { checkImpl: async () => false }),
+  })
+  assert.throws(() => potential.get('lammps'), /not registered/, '不可用引擎不得注册')
+  assert.equal(fiber.store.saturdayLammps.registered, false, '挂载记录如实呈报未注册')
+  await fiber.dispose()
+  await coreFiber.dispose()
 })

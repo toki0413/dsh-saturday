@@ -11,6 +11,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createSaturdayMcpServer, jsonToZodShape, PLUGIN_MANIFEST } from '../src/index.mjs'
 
+// 工具面形状断言的前提：结构源可用性门禁（plugin-mp）在凭据缺失时不注册
+// structure.resolve——本套件验的是全量挂载的工具面形状，故声明“凭据在场”；
+// 不覆盖已有真 key，凭据行为本身由 plugin-mp 测试 5 负责。
+process.env.MP_API_KEY = process.env.MP_API_KEY ?? 'surface-shape-test-only'
+
 async function withServer(fn, options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'saturday-mcp-'))
   const { mcp, boot } = await createSaturdayMcpServer({
@@ -119,4 +124,27 @@ test('7. Trajectory 谱系：MCP 工具调用路径的产出落 append-only 日�
     await boot.dispose()
     await rm(dir, { recursive: true, force: true })
   }
+})
+
+test('8. required 语义直通：required/optional/default 三态 + 缺必填参数被 schema 层显式拒绝（不落入领域层）', async () => {
+  // 单元层：转换后的 Zod 形状保留必填性
+  const shape = jsonToZodShape({
+    query: { type: 'string', required: true, description: '化学式' },
+    polymorphRank: { type: 'integer', description: '可选' },
+    n: { type: 'integer', default: 8, description: '带默认值' },
+  })
+  assert.equal(shape.query.isOptional(), false, 'required: true 不得包 optional')
+  assert.equal(shape.polymorphRank.isOptional(), true, '未标 required 仍可选（向后兼容）')
+  assert.equal(shape.n.isOptional(), true, '带 default 可选')
+  // 端到端：缺 query 调用 material.load → 拒绝发生在 schema 层，错误可归因到参数名
+  await withServer(async (client) => {
+    let rejected = false
+    try {
+      const r = await client.callTool({ name: 'material.load', arguments: {} })
+      rejected = r.isError === true && /query/i.test(r.content[0].text)
+    } catch (err) {
+      rejected = /query/i.test(String(err.message))
+    }
+    assert.ok(rejected, '缺必填参数必须被 schema 校验显式拒绝')
+  })
 })

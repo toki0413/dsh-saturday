@@ -75,7 +75,9 @@ Saturday 把论文的两个正交维度落到材料计算域：
 ### MCP server：任意 MCP 宿主接入
 
 上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（32 工具，
-stdio 传输）：Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
+stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 31 工具，
+环境不可用的引擎/结构源挂载即跳过并显式报告，不展示注定失败的能力）：
+Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
 
 ```bash

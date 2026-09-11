@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-09T05:09:03.997Z
+生成时间：2026-09-11T17:16:02.044Z
 
-**回归基线：420/420**（24 个包，其中 23 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：424/424**（24 个包，其中 23 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -10,7 +10,7 @@
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 28/28 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
-| `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 7/7 |
+| `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 8/8 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
@@ -18,10 +18,10 @@
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 9/9 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
-| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 12/12 |
+| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 14/14 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。与 LAMMPS 经典势对照的机器学习势路线；可用性预检失败显式抛错，绝不静默降级。 | 11/11 |
-| `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 8/8 |
+| `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
 | `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
 | `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 14/14 |
 | `@toki0413/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
@@ -31,7 +31,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，84 条）
+## 实证条款（契约文档附录 A，88 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -117,6 +117,10 @@
 - **#82** HPC 远程执行（§4.2 执行位置增补）：传输抽象 LocalTransport/SshTransport——bridge 对传输无感知（协议不变：JSON-lines + 死亡进程快速拒绝 + EPIPE 兑底全链生效）；站点配置 ~/.saturday/clusters.json（host/user/port/python/workDir/sshOptions）由桥层解析；SshTransport 命令构造（BatchMode/端口/密钥选项）与远程 sidecar 存在性预检 verify()（缺失即报错，绝不静默本地回退）；bridge.cluster 指定远程集群时连接失败显式上抛不回退本地（远程语义是算力选择，回退 = 违背指令）；注入式假 SSH 通道（spawnImpl 替身 + Readable 形状 stub）覆盖 connect/hello/call/断连全链（证据：python-bridge 测试 6-10（命令构造与 target/远程命令/构造门禁/注入式 SSH 全链/verify 预检两分支/loadClusters 门禁与缺文件）+ 既有 5 项向后兼容回归）
 - **#83** 分子 QC 扩展（§4.1 分子源 + §4.2 体系-引擎匹配增补）：非周期体系入域模型（AtomGraph.pbc/smiles 可选字段，toDict 透传，缺省=周期性向后兼容）；structure.fromSmiles：SMILES → RDKit 加氢 → ETKDG 3D → MMFF/UFF 预弛豫 → 非周期 Material，RDKit 可用性按 sidecar 握手实测态（structureSources）门禁、缺失显式 RDKIT_UNAVAILABLE 不降级；可用性探针必须真导入 rdkit 本体（`from rdkit import Chem`）——adapter 内部才是延迟导入，「模块导入成功 ≠ 依赖在场」，假阳性会让 structureSources 谎报 true 穿过门禁后才炸 ModuleNotFoundError（CI 精度档只装 ase 实证，stub 遮蔽复现诚实降级）；分子引擎路由：pbc=False → RDKit MMFF/UFF（单点能量+力、弛豫；kcal/mol 统一换算 eV），金属势 EMT/周期 lj-mock 对孤立分子是错物理不得回退（零晶胞求逆即奇异矩阵实证），RDKit 缺失分子计算显式报错；拓扑重建优先 SMILES（原子集校验），无 SMILES 回退 xyz 键感知（rdDetermineBonds，失败显式报错）；xtb/psi4 半经验/DFT 为同门禁可选升级（本机环境 pip 不可装如实记录）（证据：bridge molecule 测试（三态按能力事实分支：无桥显式失败 / 有桥无 RDKit 拦 RDKIT_UNAVAILABLE 实测态门禁（CI 精度档只装 ase 实证此态）/ 全能力甲醇全链 fromSmiles nAtoms=6・forcefield=MMFF・pbc+smiles 随图透传・弛豫收敛且 calculator 如实报告 rdkit-*），不静默））
 - **#84** RSS 随机结构搜索采样器（§4.5 第二个生成式实现，非 flow 路线）：composition/reference 双 target（成分显式 elements+counts / numbers，或自参考结构 graph 继承——结构本身不参考）；均匀提议 + 最小间距门禁（截断分布归一化常数无闭式 → 似然诚实声明 none，不伪造 exact）；正交晶胞随机化 + 逐原子放置重试耗尽显式 SAMPLE_NOT_FOUND（不静默放宽门禁）；mulberry32 种子确定性（同种子同序列，异种子异样本）；候选 graph 兼容 §4.1 可直接构造 Material（generative:rss 谱系前缀）；invertible:false 不提供 encode（encodeLatent 守卫 INVERTIBILITY_UNDECLARED）（证据：plugin-rss 测试（契约套件 samplerContract 全断言 + 插件层 7 测试：成分守恒 Cu3Pt / 门禁双分支（逐对周期性最小像距离验算 + 不可行显式失败）/ 种子确定性 / composition 与 referenceId 双路径缺依赖显式错 / encode 守卫）+ demo:rss 端到端（RSS 生成 → explore 回算排序，环境自适应））
+- **#85** LAMMPS 挂载可用性探测（plugin-mace 先例补齐，实机审计驱动修复）：势文件未配置或二进制不可达 → 不注册 + registered:false + 显式 stderr 报告（注册环境损坏引擎会让 auto 路由在全量共置场景永远选中它然后失败）；probeAvailability 三分支（no potentialFile / binary probe -h 失败 / 实测横幅版本）；干净安装实机复验：无 Python 环境 engine=auto 由 ENGINE_UNAVAILABLE(LAMMPS) 改为落 lj-js 完成弛豫（证据：plugin-lammps 测试 8-9（探测三分支 + 探测失败不注册）+ 无 Python 子进程环境 engine=auto 实机复验（lj-js converged，三引擎跳过逐条如实打印））
+- **#86** MP 结构源挂载可用性门禁（plugin-mace/plugin-lammps 先例推广到结构源 seam）：MP_API_KEY（config.apiKey / 环境变量）缺失 → 服务与 structure.resolve 工具均不注册 + registered:false + 显式 stderr（工具面不展示本环境注定失败的能力；配置凭据后重新挂载即解锁）；checkImpl 注入面与引擎插件同款（证据：plugin-mp 测试 5（无凭据：服务/工具不在场 + registered:false；有凭据路径由既有测试 4 向后兼容回归））
+- **#87** MCP 参数 schema 直通含 required 语义：`jsonToZodShape` 对 `required: true` 的参数不再包 optional()（缺参由 MCP schema 校验显式拒绝，不再流入领域层报出难以归因的业务错）；带 default 仍可选；未知类型仍显式报错不放宽——schema 不得对宿主撒谎（实机审计驱动修复第二项）（证据：packages/mcp-server 测试 8（required/optional/default 三态 isOptional 断言 + 缺必填参数端到端 schema 拒绝）+ 既有测试 5/6 回归）
+- **#88** HPC 远程执行真机实证（#82 注入式之外的首次真实 SSH 通道）：容器内自连（BatchMode 密钥）→ bridge.cluster + clustersPath 经 loadClusters → SshTransport verify/launch → 远程 sidecar EMT 弛豫与本地同引擎能量逐位一致（Cu -0.028138 eV，converged）；不可达集群（端口 2222）显式上抛不回退本地（远程语义实机成立）（证据：云端 AutoDL 实测记录（D0-D3 全绿，2026-09-12）+ python-bridge 既有注入式测试 6-10 向后兼容）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

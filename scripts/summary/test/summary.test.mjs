@@ -36,13 +36,21 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：84 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：88 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 84, '附录 A 当前应为 84 条实证映射')
+  assert.equal(rows.length, 88, '附录 A 当前应为 88 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(88).clause.includes('真机') && at(88).evidence.includes('AutoDL'),
+      '第 88 条证据指向 HPC 远程执行真机实证（云端 SSH 实测）')
+  assert.ok(at(87).clause.includes('required') && at(87).evidence.includes('mcp-server'),
+      '第 87 条证据指向 MCP required 语义直通（schema 不对宿主撒谎）')
+  assert.ok(at(86).clause.includes('MP 结构源') && at(86).evidence.includes('plugin-mp'),
+      '第 86 条证据指向 MP 结构源挂载可用性门禁（凭据缺失不注册）')
+  assert.ok(at(85).clause.includes('LAMMPS') && at(85).evidence.includes('plugin-lammps'),
+      '第 85 条证据指向 LAMMPS 挂载可用性探测（干净安装实机审计驱动修复）')
   assert.ok(at(84).clause.includes('RSS') && at(84).evidence.includes('plugin-rss'),
       '第 84 条证据指向 RSS 随机结构搜索采样器（§4.5 非 flow 生成式第二实证）')
   assert.ok(at(83).clause.includes('分子') && at(83).evidence.includes('molecule'),

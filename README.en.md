@@ -86,9 +86,12 @@ semantics of `Material.substitute` keeps lineage traceable end to end.
 ### MCP server: any MCP host, zero code
 
 The whole tool surface (32 tools) is exposed over the Model Context Protocol via
-`@toki0413/mcp-server` (stdio): Claude Desktop, Cursor, Cline or any MCP host connects with no
-glue code. Parameter schemas flow straight from each tool's contract declaration; tool failures
-surface as MCP `isError` responses carrying structured error codes.
+`@toki0413/mcp-server` (stdio; the surface shrinks honestly with the environment — without
+`MP_API_KEY`, `structure.resolve` is not registered = 31 tools; engines/structure sources with
+unavailable dependencies skip registration at mount and report explicitly, never advertising a
+capability doomed to fail): Claude Desktop, Cursor, Cline or any MCP host connects with no
+glue code. Parameter schemas flow straight from each tool's contract declaration (required flags
+included); tool failures surface as MCP `isError` responses carrying structured error codes.
 
 ```bash
 npx @toki0413/mcp-server        # stdio; SATURDAY_DISABLE excludes plugins
