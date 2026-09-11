@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-sampler-ou",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。",
   "type": "module",
   "main": "src/index.mjs",

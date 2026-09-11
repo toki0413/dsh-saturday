@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-elasticity",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。",
   "type": "module",
   "main": "src/index.mjs",

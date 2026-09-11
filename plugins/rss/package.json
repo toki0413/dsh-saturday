@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-rss",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Saturday RSS 随机结构搜索采样器（契约 §4.5 sampler seam 第二个生成式实现，非 flow 路线）：成分/原子数/晶胞约束下的均匀随机结构生成，最小间距门禁，种子确定性，候选可回算验证。",
   "type": "module",
   "main": "src/index.mjs",

@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-mace",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。",
   "type": "module",
   "main": "src/index.mjs",
