@@ -66,12 +66,15 @@ test('2. attach 即时入池 → detach 经台账 → 再 attach（决策动作�
   } finally { await dv.dispose(); await core.dispose(); await rm(dir, { recursive: true, force: true }) }
 })
 
-test('3. 重挂碰撞防护：宿主已挂的插件再 attach → 同名引擎显式拒绝，不静默替换', async () => {
-  const { core, rt, potential, dir, dv } = await boot()
+test('3. 重挂碰撞防护：同名引擎新对象再注册 → 显式拒绝，不静默替换', async () => {
+  const { core, potential, dir, dv } = await boot()
   try {
-    // emt-mock 由核心插件注册；伪造一个同名重注册路径：直接调 register
+    // 拿当前在册的任一引擎（零依赖档 lj-js / 精度档 emt-mock），用同名新对象再注册 → 显式拒绝。
+    // 断言按"引擎已在册"这一能力事实，与具体是哪个数据面（档位身份）无关。
+    const [existing] = [...potential.providers.values()]
+    assert.ok(existing, '启动后至少有一个数据面引擎在册')
     assert.throws(
-      () => potential.register({ ...[...potential.providers.values()][0], name: 'emt-mock' }),
+      () => potential.register({ ...existing }),
       err => err.code === 'PROVIDE_COLLISION')
   } finally { await dv.dispose(); await core.dispose(); await rm(dir, { recursive: true, force: true }) }
 })

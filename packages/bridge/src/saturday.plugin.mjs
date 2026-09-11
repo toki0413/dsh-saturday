@@ -363,8 +363,18 @@ export default {
         if (attachedFibers.has(entry.name)) {
           throw runtimeErr('ATTACH_ALREADY_MOUNTED', `插件 "${entry.name}" 已由本工具挂载；先 detach 再重挂（不双挂）`)
         }
-        const fiber = await ctx.registry.plugin({ name: entry.name, apply: (c) => entry.apply(c, config) })
-        const gained = [...potential.providers.keys()].filter(k => !before.has(k))
+        // 幂等挂载：若该插件要注册的引擎已在册（如零依赖档核心启动时把 lj-js 直接注册为回退数据面），
+        // 其 apply 会撞 PotentialRegistry 的同名碰撞防护（PROVIDE_COLLISION）——这不是错误，是"确保在册"
+        // 的既有事实：cordis 回滚该 fiber 后如实返回 ok + 空 gained（不双挂、不假成功），动作仍落 Trajectory。
+        let fiber = null
+        let alreadyRegistered = false
+        try {
+          fiber = await ctx.registry.plugin({ name: entry.name, apply: (c) => entry.apply(c, config) })
+        } catch (err) {
+          if (err?.code === 'PROVIDE_COLLISION') alreadyRegistered = true
+          else throw err
+        }
+        const gained = alreadyRegistered ? [] : [...potential.providers.keys()].filter(k => !before.has(k))
         const report = []
         for (const g of gained) {
           const p = potential.providers.get(g)
@@ -374,16 +384,18 @@ export default {
           }
           report.push({ engine: g, sourceId: p._sourceId, capabilities: p.manifest.capabilities.map(c => c.type), available })
         }
-        attachedFibers.set(entry.name, { fiber, engines: gained })
+        if (!alreadyRegistered) attachedFibers.set(entry.name, { fiber, engines: gained })
         await rt.appendTrajectory({
           type: 'runtime_engine_attach', plugin: spec, mounted: entry.name,
           engines: gained, sourceIds: report.map(r => r.sourceId),
         })
         return {
           ok: true, mounted: entry.name, providersGained: gained, engines: report,
-          note: gained.length === 0
-            ? '插件挂载成功但无引擎入池：走了该插件自己的挂载门禁（环境/凭据不可用即不注册，见其 stderr）——如实报告，不假成功'
-            : '新引擎即时进入 autoRoute 候选池（注册即生效，无握手缓存）',
+          note: alreadyRegistered
+            ? '目标引擎已在册（核心/宿主启动时已注册）：attach 幂等返回不双挂；如需替换实现先 detach'
+            : gained.length === 0
+              ? '插件挂载成功但无引擎入池：走了该插件自己的挂载门禁（环境/凭据不可用即不注册，见其 stderr）——如实报告，不假成功'
+              : '新引擎即时进入 autoRoute 候选池（注册即生效，无握手缓存）',
         }
       },
     })
