@@ -1,0 +1,36 @@
+# 发布 MCP Server 元数据到官方 MCP Registry（不重复发 npm：npm 包由本地 publish-all 负责）。
+# 认证走 GitHub OIDC（mcp-publisher login github-oidc）——免长期密钥，靠 Actions 临时 OIDC
+# 令牌证明"本仓库 toki0413/dsh-saturday = io.github.toki0413/* 命名空间归属"。
+# 门禁先行：server.json 的 name 必须与已发布 npm 包 package.json 的 mcpName 一致；
+# server.json/package/Git tag 三处版本必须严格一致（Registry v1.4.0 强制），不一致即发布失败。
+# 触发：push v* tag 自动发布；或 workflow_dispatch 手动选 ref 补发。
+
+name: Publish to MCP Registry
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: 发布 server.json 到 Registry（OIDC）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write # OIDC 认证必需
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 安装 mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: OIDC 登录 Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: 发布到 MCP Registry
+        run: ./mcp-publisher publish
