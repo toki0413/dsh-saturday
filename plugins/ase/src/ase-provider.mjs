@@ -48,6 +48,19 @@ export class AseProvider {
   }
 
   /**
+   * 运行期可用性探针（capability.list / attach 冒烟消费）：向常驻 sidecar 发一次
+   * hello 握手——通过即可用；sidecar 死透/不可达即 false（不抛，探针语义就是布尔）。
+   */
+  async available() {
+    try {
+      const h = await this.bridge.call('hello', {}, { timeoutMs: 10_000 })
+      return Boolean(h?.sidecar)
+    } catch {
+      return false
+    }
+  }
+
+  /**
    * 运行时版本回读（实测态）：sidecar 握手携带 ASE 实际版本。
    * 探测成功返回实测版本（调用方经 stampFingerprint 升级指纹）；
    * 探测失败/无 ASE 返回 null——诚实降级保持 'unknown'，绝不冒充。

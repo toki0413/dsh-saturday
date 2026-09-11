@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T19:04:18.919Z",
-  "totalPass": 446,
+  "generatedAt": "2026-09-11T19:16:42.392Z",
+  "totalPass": 447,
   "totalFail": 0,
   "packageCount": 25,
   "testedCount": 24,
@@ -114,7 +114,7 @@
       "dir": "plugins\\mace",
       "name": "@toki0413/plugin-mace",
       "version": "0.3.6",
-      "pass": 18,
+      "pass": 19,
       "fail": 0
     },
     {
@@ -651,6 +651,11 @@
       "index": 94,
       "clause": "运行时动词面（自我演化的 Agent 入口，bridge 三工具）：runtime.capability.list（声明能力+properties/实测指纹/源标识/粒度/在途作业数/可用性探针）；runtime.engine.attach（动态 import + apply 到当前 Context，新引擎即时入 autoRoute 候选池——注册即生效无握手缓存；挂载即验证 available() 探针随交付；providersGained 为空=走了插件自己的挂载门禁，如实报告不假成功）；runtime.engine.detach（先查台账再拆，经 attach 挂载的连 fiber 回收，宿主挂载的不越权回收）；attach/detach 决策动作全部落 Trajectory（可回放可撤销——可逆的是决策上下文）",
       "evidence": "bridge runtime-tools 测试 1-4（清单/attach 即时入池/detach 经台账/Trajectory 双事件/失效端到端）+ mcp-server 测试 1（36 工具在册）"
+    },
+    {
+      "index": 95,
+      "clause": "运行期可用性探针全引擎补齐（capability.list/attach 冒烟把坏没坏变成可查询事实）：外部依赖引擎以真实握手/探测为据——emt-mock/ase 向常驻 sidecar 发 hello（死透即 false，布尔语义不抛）、lammps 复用 probeAvailability 布尔投影、mace 常驻=连接健康/一次性=模块可导入（探针自身抛异常也归约 false，不向外泄）；lj-js 显式声明恒 true（零外部依赖是设计事实非未探测）；探针缺失仍为 null=未知（与指纹 unknown 同语义，不冒充）",
+      "evidence": "plugin-mace resident 测试 5b（连接成/败/一次性/异常归约四态）+ bridge runtime-tools 测试 1（activeProvider.available 必为布尔）+ lammps 测试 8-9 向后兼容"
     }
   ]
 }

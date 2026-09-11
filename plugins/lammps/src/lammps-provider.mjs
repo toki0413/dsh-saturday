@@ -123,6 +123,11 @@ export class LammpsProvider {
     return { ok: true, reason: `LAMMPS ${version}` }
   }
 
+  /** 运行期可用性探针（capability.list / attach 冒烟消费）：复用挂载探测的布尔投影 */
+  async available() {
+    return (await this.probeAvailability()).ok
+  }
+
   /**
    * 运行时版本回读（实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
    * 探测失败（无二进制/启动异常/无横幅）返回 null——诚实降级保持 'unknown'，

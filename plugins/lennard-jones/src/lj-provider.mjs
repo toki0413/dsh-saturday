@@ -40,6 +40,11 @@ export class LjProvider {
     return this.version
   }
 
+  /** 可用性探针显式声明 true：零外部依赖是设计事实（见文件头），不是未探测 */
+  async available() {
+    return true
+  }
+
   async relax(material, params = {}) {
     const jobId = randomUUID()
     const t0 = Date.now()

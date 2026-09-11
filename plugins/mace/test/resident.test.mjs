@@ -89,6 +89,14 @@ test('5. probeVersion 常驻回读 = hello 实测版本；握手失败诚实 nul
   assert.equal(await new MaceProvider({ resident: true, bridge: fakeBridge({ failConnect: true }) }).probeVersion(), null)
 })
 
+test('5b. available() 探针：常驻=连接健康（握手成/败即真/假），一次性=模块可导入', async () => {
+  assert.equal(await new MaceProvider({ resident: true, bridge: fakeBridge() }).available(), true)
+  assert.equal(await new MaceProvider({ resident: true, bridge: fakeBridge({ failConnect: true }) }).available(), false)
+  assert.equal(await new MaceProvider({ checkImpl: async () => false }).available(), false)
+  assert.equal(await new MaceProvider({ checkImpl: async () => { throw new Error('spawn ENOENT') } }).available(), false,
+    '探针本体抛异常也归约为 false（布尔语义不向外泄）')
+})
+
 test('6. 插件挂载（常驻）：握手成功即注册 + hello 随 store；卸载注销且断连收尸；就绪失败不注册', async () => {
   const ctx = new Context()
   const coreFiber = await ctx.registry.plugin({

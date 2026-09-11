@@ -33,6 +33,8 @@ test('1. capability.list：在册引擎带源标识/能力/在途作业数', asy
     const e = out.engines.find(x => x.name === potential.activeProvider)
     assert.match(e.sourceId, /^engine:.+@[0-9a-f]{8}$/)
     assert.ok(Array.isArray(e.capabilities) && e.capabilities[0].type)
+    assert.equal(typeof e.available, 'boolean',
+      '在册引擎的可用性现在是可查询事实（探针已补齐：emt-mock/lj-js 真实握手或显式声明）')
     assert.equal(e.activeJobs, 0)
     assert.deepEqual(out.attached, [])
   } finally { await dv.dispose(); await core.dispose(); await rm(dir, { recursive: true, force: true }) }

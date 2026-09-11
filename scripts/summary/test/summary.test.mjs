@@ -36,13 +36,21 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：91 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：95 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 91, '附录 A 当前应为 91 条实证映射')
+  assert.equal(rows.length, 95, '附录 A 当前应为 95 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(95).clause.includes('探针') && at(95).evidence.includes('resident'),
+      '第 95 条证据指向可用性探针全引擎补齐')
+  assert.ok(at(92).clause.includes('作业台账') && at(92).evidence.includes('core jobs'),
+      '第 92 条证据指向作业台账与 detach 三策略')
+  assert.ok(at(93).clause.includes('源标识') && at(93).clause.includes('refingerprinted'),
+      '第 93 条证据指向引擎源标识与热替换状态连续性')
+  assert.ok(at(94).clause.includes('运行时动词面') && at(94).evidence.includes('runtime-tools'),
+      '第 94 条证据指向运行时动词面三工具')
   assert.ok(at(90).clause.includes('弹性张量') && at(90).evidence.includes('plugin-elasticity'),
       '第 90 条证据指向弹性张量 6×6（analysis seam 第三实证）')
   assert.ok(at(91).clause.includes('md 原语') && at(91).evidence.includes('plugin-mace'),

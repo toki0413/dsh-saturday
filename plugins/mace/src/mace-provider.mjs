@@ -123,6 +123,18 @@ export class MaceProvider {
     })
   }
 
+  /**
+   * 运行期可用性探针（capability.list / attach 冒烟消费）：
+   * 常驻形态 = 连接健康（握手成功/模型已加载）；一次性形态 = 模块可导入。
+   * 两者都是布尔语义不抛——探针的意义就是把"坏没坏"变成可查询事实。
+   */
+  async available() {
+    if (this.resident) {
+      try { await this.connect(); return true } catch { return false }
+    }
+    try { return await this.checkImpl() } catch { return false }
+  }
+
   /** 运行时版本回读（实测态）：一次性形态 `python -c "import mace; print(mace.__version__)"`；
    *  常驻形态握手 hello 携带实测版本。探测失败诚实返回 null——保持 'unknown' 不冒充。 */
   probeVersion() {

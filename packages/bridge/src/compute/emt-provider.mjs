@@ -25,6 +25,16 @@ export class EmtMockProvider {
     }
   }
 
+  /** 运行期可用性探针：sidecar hello 握手通过即可用（布尔语义，不抛） */
+  async available() {
+    try {
+      const h = await this.bridge.call('hello', {}, { timeoutMs: 10_000 })
+      return Boolean(h?.sidecar)
+    } catch {
+      return false
+    }
+  }
+
   async relax(material, params = {}) {
     const jobId = randomUUID()
     const result = await this.bridge.call('relax', {
