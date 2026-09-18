@@ -360,9 +360,10 @@ test('15. 集成：Cu → analysis.phonon.thermo（BZ 热力学）+ 谱系落盘
       assert.ok(out.series[1].cvJmolK >= out.series[0].cvJmolK, 'C_v 随 T 单调升')
       assert.ok(out.summary.maxFrequencyTHz > 0 && out.summary.thetaDK > 0)
       assert.equal(typeof out.summary.valid, 'boolean')
-      // 实空间力常数诊断：ASR 与牛顿第三残余受控
+      // 实空间力常数诊断：ASR（构造恒等式，两档都≈0）与牛顿第三（按力常量级判，引擎无关）
       assert.ok(out.fcDiagnostics.asrResidualAfter < 1e-6, 'ASR 行和≈0')
-      assert.ok(out.fcDiagnostics.newtonResidual < 1e-6, '牛顿第三对称')
+      assert.ok(out.fcDiagnostics.newtonResidual <= 5e-2 * out.fcDiagnostics.maxPhi,
+        `牛顿第三残差远小于力常量级（got ${out.fcDiagnostics.newtonResidual}, maxPhi ${out.fcDiagnostics.maxPhi}）——折叠约定错会飙到 O(maxPhi)`)
       await new Promise(r => setTimeout(r, 50))
       const text = await readFile(path, 'utf8')
       assert.ok(text.includes('"phonon-thermo"'), 'analysis_complete(phonon-thermo) 落 Trajectory')

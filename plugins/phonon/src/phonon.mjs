@@ -532,12 +532,14 @@ export async function runForceConstants(graph, forceProvider, { displacement = 0
 
   const blocks = []
   let rangeMax = 0
+  let maxPhi = 0
   for (const [k, b] of phi) {
     // 剔除范数≈0 的块（超胞网格内无耦合的远壳，如小力程体系的半格点）：
     // 不携信息且会把 rangeMax 撑到 rep/2；真实引擎的远邻不会恰好为 0，故不误删。
     let norm = 0
     for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) norm = Math.max(norm, Math.abs(b[a][c]))
     if (norm < 1e-12) continue
+    maxPhi = Math.max(maxPhi, norm)
     const [i, j, rx, ry, rz] = k.split(',').map(Number)
     blocks.push({ i, j, R: [rx, ry, rz], phi: b })
     rangeMax = Math.max(rangeMax, Math.abs(rx), Math.abs(ry), Math.abs(rz))
@@ -547,7 +549,7 @@ export async function runForceConstants(graph, forceProvider, { displacement = 0
     fc,
     diagnostics: {
       calculator, supercell: { rep: supercellRep, atoms: M, rangeMax },
-      equilibriumForceMax, forceResidualMax, newtonResidual,
+      equilibriumForceMax, forceResidualMax, newtonResidual, maxPhi,
       asrResidualBefore, asrResidualAfter, nBlocks: blocks.length, displacement,
     },
   }
