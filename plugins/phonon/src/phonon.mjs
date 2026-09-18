@@ -396,3 +396,159 @@ export async function runPhononAnalysis(graph, forceProvider, options = {}) {
     asrApplied: applyAsr,
   }
 }
+
+// ── 实空间力常数提取 Φ_{ij}(R)（供全 BZ Born–von Kármán 插值消费）────────────
+// 与列位移 Γ 法的区别：这里位移单个代表像（原胞 j 在格矢 [0,0,0] 的像），读全部
+// 超胞原子的力响应 → Φ_{ij}(R)[αβ] = −ΔF_{i(R),α}/Δu_{j,β}，保留格矢 R 分辨。
+// 超胞周期性下跨边界的响应按最近镜像折回小格矢 R = Rr − rep·round(Rr/rep)
+//（与列位移法同一前提：超胞半边长须覆盖引擎力程，否则折回会串壳）。
+// 牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称化、声学求和 Σ_{j,R}Φ_{ij}(R)=0（ASR，改自作用块）
+// 都执行，但**残余如实报告**（不静默粉饰）：折回串壳或力程不足会让 asr/newton 残余变大。
+
+/** 最近镜像折回：把超胞像格矢分量折到 (-rep/2, rep/2] 的最小等价整数 */
+const negRKey = (i, j, R) => `${j},${i},${-R[0]},${-R[1]},${-R[2]}`
+const blockKey = (i, j, R) => `${i},${j},${R[0]},${R[1]},${R[2]}`
+const transpose3 = (m) => [[m[0][0], m[1][0], m[2][0]], [m[0][1], m[1][1], m[2][1]], [m[0][2], m[1][2], m[2][2]]]
+
+/**
+ * 从超胞有限位移力响应提取实空间力常数 Φ_{ij}(R)。
+ * @param {object} graph 原胞 AtomGraph
+ * @param {async (g)=>{forces:number[][], calculator?}} forceProvider 力注入（单点）
+ * @param {{displacement?:number, supercellRep?:[number,number,number]}} options
+ *   supercellRep 必须至少一轴 >1（否则无 R 分辨，BZ 插值退化）
+ * @returns {{ fc, diagnostics }} fc 供 phononFrequenciesAtQ 消费
+ */
+export async function runForceConstants(graph, forceProvider, { displacement = 0.01, supercellRep = [3, 3, 3] } = {}) {
+  if (typeof forceProvider !== 'function') throw phononError('PHONON_FORCE_PROVIDER_MISSING', 'runForceConstants requires forceProvider')
+  if (!Number.isFinite(displacement) || displacement <= 0) throw phononError('PHONON_BAD_DISPLACEMENT', `displacement must be positive finite; got ${displacement}`)
+  const nodes = graph?.nodes
+  if (!Array.isArray(nodes) || nodes.length === 0) throw phononError('PHONON_BAD_GRAPH', 'graph.nodes must be non-empty')
+  if (!Array.isArray(graph?.cell) || graph.cell.length !== 3) throw phononError('PHONON_BAD_GRAPH', 'graph.cell must be 3×3')
+  if (!Array.isArray(supercellRep) || supercellRep.length !== 3 || supercellRep.some(r => !Number.isInteger(r) || r < 1)) {
+    throw phononError('PHONON_BAD_SUPERCELL', `supercellRep must be three positive integers; got ${JSON.stringify(supercellRep)}`)
+  }
+  if (!supercellRep.some(r => r > 1)) {
+    throw phononError('PHONON_BAD_SUPERCELL', 'real-space FC requires a supercell (some axis >1); [1,1,1] has no R resolution for BZ interpolation')
+  }
+  const nAtoms = nodes.length
+  const masses = nodes.map(n => {
+    const m = MASS_AMU[n?.number]
+    if (!Number.isFinite(m)) throw phononError('PHONON_MASS_MISSING', `no standard atomic mass for Z=${n?.number}`)
+    return m
+  })
+
+  const sc = buildSupercell(graph, supercellRep)
+  const sgraph = sc.graph
+  const M = sgraph.nodes.length
+  const cellIndex = sc.cellIndex
+  const imageCell = sc.imageCell
+  const fold = (axis, r) => r - supercellRep[axis] * Math.round(r / supercellRep[axis])
+  // 原胞原子 j 在格矢 [0,0,0] 的代表像（被位移对象）
+  const originIndex = new Array(nAtoms).fill(-1)
+  for (let k = 0; k < M; k++) {
+    if (imageCell[k][0] === 0 && imageCell[k][1] === 0 && imageCell[k][2] === 0 && originIndex[cellIndex[k]] < 0) {
+      originIndex[cellIndex[k]] = k
+    }
+  }
+
+  const eq = await forceProvider(sgraph)
+  let equilibriumForceMax = 0
+  if (!Array.isArray(eq?.forces) || eq.forces.length !== M) throw phononError('PHONON_BAD_FORCE', `equilibrium forces wrong shape (expected ${M})`)
+  for (const f of eq.forces) equilibriumForceMax = Math.max(equilibriumForceMax, Math.hypot(...f))
+
+  const phi = new Map()
+  const getB = (i, j, R) => { const k = blockKey(i, j, R); let b = phi.get(k); if (!b) { b = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; phi.set(k, b) } return b }
+  let forceResidualMax = 0
+  let calculator = eq?.calculator ?? 'injected'
+  for (let j = 0; j < nAtoms; j++) {
+    for (let beta = 0; beta < 3; beta++) {
+      const k0 = originIndex[j]
+      const mk = (sign) => { const g = structuredClone(sgraph); g.nodes[k0].position[beta] += sign * displacement; return g }
+      const plus = await forceProvider(mk(1)); const minus = await forceProvider(mk(-1))
+      if (!Array.isArray(plus?.forces) || plus.forces.length !== M || !Array.isArray(minus?.forces) || minus.forces.length !== M) {
+        throw phononError('PHONON_BAD_FORCE', `forces wrong shape at job (atom ${j}, dir ${beta})`)
+      }
+      const Rj = imageCell[k0] // 位移原子格矢（恒为 [0,0,0]）
+      for (let k = 0; k < M; k++) {
+        const i = cellIndex[k]
+        const rawR = imageCell[k]
+        const R = [fold(0, rawR[0] - Rj[0]), fold(1, rawR[1] - Rj[1]), fold(2, rawR[2] - Rj[2])]
+        const blk = getB(i, j, R)
+        for (let alpha = 0; alpha < 3; alpha++) {
+          blk[alpha][beta] = -(plus.forces[k][alpha] - minus.forces[k][alpha]) / (2 * displacement)
+          forceResidualMax = Math.max(forceResidualMax, Math.abs(plus.forces[k][alpha] + minus.forces[k][alpha]) / 2)
+        }
+      }
+      if (typeof plus?.calculator === 'string') calculator = plus.calculator
+    }
+  }
+
+  // 牛顿第三对称化：Φ_{ij}(R) ← ½[Φ_{ij}(R) + Φ_{ji}(−R)ᵀ]
+  let newtonResidual = 0
+  for (const [k, b] of [...phi]) {
+    const [i, j, x, y, z] = k.split(',').map(Number)
+    const R = [x, y, z]
+    const rev = phi.get(negRKey(i, j, R))
+    if (rev) {
+      const bT = transpose3(rev)
+      for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) newtonResidual = Math.max(newtonResidual, Math.abs(b[a][c] - bT[a][c]))
+      const avg = b.map((row, a) => row.map((v, c) => (v + bT[a][c]) / 2))
+      for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) { b[a][c] = avg[a][c]; rev[c][a] = avg[a][c] }
+    }
+  }
+
+  // 声学求和修正：自作用块 Φ_{ii}(0) ← −Σ_{(j,R)≠(i,0)} Φ_{ij}(R)
+  const asrResidualBefore = (() => {
+    let mx = 0
+    for (let i = 0; i < nAtoms; i++) {
+      for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) {
+        let s = 0
+        for (const [k, b] of phi) { const [pi, , , , ] = k.split(',').map(Number); if (pi === i) s += b[a][c] }
+        mx = Math.max(mx, Math.abs(s))
+      }
+    }
+    return mx
+  })()
+  for (let i = 0; i < nAtoms; i++) {
+    const self = getB(i, i, [0, 0, 0])
+    for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) {
+      let s = 0
+      for (const [k, b] of phi) {
+        const [pi, pj, rx, ry, rz] = k.split(',').map(Number)
+        if (pi === i && !(pj === i && rx === 0 && ry === 0 && rz === 0)) s += b[a][c]
+      }
+      self[a][c] = -s
+    }
+  }
+  const asrResidualAfter = (() => {
+    let mx = 0
+    for (let i = 0; i < nAtoms; i++) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) {
+      let s = 0
+      for (const [k, b] of phi) { const [pi] = k.split(',').map(Number); if (pi === i) s += b[a][c] }
+      mx = Math.max(mx, Math.abs(s))
+    }
+    return mx
+  })()
+
+  const blocks = []
+  let rangeMax = 0
+  for (const [k, b] of phi) {
+    // 剔除范数≈0 的块（超胞网格内无耦合的远壳，如小力程体系的半格点）：
+    // 不携信息且会把 rangeMax 撑到 rep/2；真实引擎的远邻不会恰好为 0，故不误删。
+    let norm = 0
+    for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) norm = Math.max(norm, Math.abs(b[a][c]))
+    if (norm < 1e-12) continue
+    const [i, j, rx, ry, rz] = k.split(',').map(Number)
+    blocks.push({ i, j, R: [rx, ry, rz], phi: b })
+    rangeMax = Math.max(rangeMax, Math.abs(rx), Math.abs(ry), Math.abs(rz))
+  }
+  const fc = { nAtoms, masses, cell: graph.cell, blocks }
+  return {
+    fc,
+    diagnostics: {
+      calculator, supercell: { rep: supercellRep, atoms: M, rangeMax },
+      equilibriumForceMax, forceResidualMax, newtonResidual,
+      asrResidualBefore, asrResidualAfter, nBlocks: blocks.length, displacement,
+    },
+  }
+}

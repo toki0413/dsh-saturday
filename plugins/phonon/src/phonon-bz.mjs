@@ -214,3 +214,81 @@ export function debyeCv3D(thetaK, T, { atoms = 1 } = {}) {
 export function debyeTemperatureFromMax(fMaxTHz) {
   return (fMaxTHz * THZ_TO_MEV) / KB_MEV_PER_K
 }
+
+/** 高斯展宽态密度（给定频率集 THz）：归一化到总模数=1 */
+export function gaussianDosFromFreqs(freqsTHz, { emin = 0, emax = null, sigmaTHz = 0.05, points = 200 } = {}) {
+  const pos = freqsTHz.filter(f => f > 0)
+  const hi = emax ?? (pos.length ? Math.max(...pos) : sigmaTHz * 3)
+  const grid = Array.from({ length: points }, (_, k) => emin + ((hi - emin) * k) / (points - 1))
+  const dos = new Array(points).fill(0)
+  if (!pos.length) return { omega: grid, dos, nModes: 0 }
+  const norm = 1 / (sigmaTHz * Math.sqrt(2 * Math.PI) * pos.length)
+  for (const fq of pos) {
+    for (let k = 0; k < points; k++) {
+      const d = (grid[k] - fq) / sigmaTHz
+      dos[k] += Math.exp(-0.5 * d * d) * norm
+    }
+  }
+  return { omega: grid, dos, nModes: pos.length }
+}
+
+/**
+ * 全布里渊区声子热力学编排：在 Γ 心 n×n×n 网格采全部声子支 → 每原胞归一的
+ * C_v(T)/熵/振动自由能 + Debye 对照 + 态密度。虚频（动力学不稳定）如实计数并置 validity。
+ * @param {object} fc 实空间力常数（runForceConstants 产物）
+ * @param {{mesh?:number, temperatureGrid?:number[], freqTolTHz?:number}} opts
+ */
+export function runPhononThermo(fc, { mesh = 12, temperatureGrid = [50, 100, 150, 200, 300], freqTolTHz = 1e-6 } = {}) {
+  if (!fc || !Array.isArray(fc.blocks)) throw bzError('BZ_BAD_FC', 'runPhononThermo requires fc.blocks (from runForceConstants)')
+  if (!Array.isArray(temperatureGrid) || temperatureGrid.length === 0) throw bzError('BZ_BAD_TEMPERATURE', 'temperatureGrid must be a non-empty array')
+  for (const T of temperatureGrid) if (!Number.isFinite(T) || T <= 0) throw bzError('BZ_BAD_TEMPERATURE', `each T must be > 0 K; got ${T}`)
+  const meshPts = gammaMesh(mesh)
+  const Nq = meshPts.length
+  const allFreqs = []
+  let acousticZero = 0, imaginary = 0
+  for (const { q } of meshPts) {
+    for (const f of phononFrequenciesAtQ(fc, q).frequenciesTHz) {
+      if (f > freqTolTHz) allFreqs.push(f)
+      else if (f < -freqTolTHz) imaginary++
+      else acousticZero++
+    }
+  }
+  const fMax = allFreqs.length ? Math.max(...allFreqs) : 0
+  const thetaDK = fMax > 0 ? debyeTemperatureFromMax(fMax) : 0
+  const nAtoms = fc.nAtoms
+  const perCell = (v) => v / Nq // 每原胞（对全部 q 点平均）
+  const zeroPointMeVPerCell = perCell(allFreqs.reduce((s, f) => s + 0.5 * f * THZ_TO_MEV, 0))
+  const series = temperatureGrid.map((T) => {
+    const agg = thermoFromFrequenciesTHz(allFreqs, T, { freqTolTHz })
+    return {
+      T,
+      cvJmolK: perCell(agg.cvKb) * R_J_PER_MOL_K,
+      sJmolK: perCell(agg.sJmolK),
+      uVibMeV: perCell(agg.energyMeV),
+      fVibMeV: perCell(agg.freeMeV),
+      debyeCvJmolK: debyeCv3D(thetaDK, T, { atoms: nAtoms }),
+    }
+  })
+  return {
+    mesh: { n: mesh, nPoints: Nq, modesPerCell: nAtoms * 3 },
+    series,
+    dos: gaussianDosFromFreqs(allFreqs),
+    summary: {
+      maxFrequencyTHz: fMax,
+      thetaDK,
+      zeroPointEnergyMeVPerCell: zeroPointMeVPerCell,
+      acousticZeroModesFiltered: acousticZero,
+      imaginaryModes: imaginary,
+      valid: imaginary === 0, // 有虚频 → 参考结构偏离平衡或真不稳定，热力学量不可信
+    },
+    units: {
+      cv: 'J/mol/K（每化学式单位 = 每原胞，网格平均）',
+      entropy: 'J/mol/K',
+      energy: 'meV/原胞（含零点能）',
+      frequency: 'THz',
+      debye: '连续介质 Debye 模型（3D, θ_D=ħω_max/k_B）作数值对照，非格点结果冒充',
+    },
+    note: 'C_v/S/F 由 q 网格上玻尔兹曼谐振子求和（每支一个模式）；声学零模（Γ 三支）q→0 测度为零已剔除；'
+      + '虚频计数如实交付，>0 则 valid=false 不假装热力学可信。',
+  }
+}

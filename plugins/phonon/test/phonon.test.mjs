@@ -329,3 +329,48 @@ test('14. supercellRep 门禁：非法值显式报错；[1,1,1] 保持原胞模�
     () => runPhononAnalysis(graph, independentSpring(k, [[0, 0, 0]]), { supercellRep: [1, 0, 1] }),
     err => err.code === 'PHONON_BAD_SUPERCELL')
 })
+
+test('15. 集成：Cu → analysis.phonon.thermo（BZ 热力学）+ 谱系落盘；无力引擎显式失败', async () => {
+  const ctx = new Context()
+  const dir = await mkdtemp(join(tmpdir(), 'saturday-phono-thermo-'))
+  const path = join(dir, 'trajectory.jsonl')
+  const coreFiber = await ctx.registry.plugin({
+    name: 'saturday', apply: (ctx) => bridgePlugin.apply(ctx, { trajectoryPath: path }),
+  })
+  const phononFiber = await ctx.registry.plugin({
+    name: 'saturday-phonon', apply: (ctx) => plugin.apply(ctx, { trajectoryPath: path }),
+  })
+  const coreRt = coreFiber.store.saturday.rt
+  const phononRt = phononFiber.store.saturdayPhonon.rt
+  try {
+    const loaded = await coreRt.tools.call('material.load', { query: 'Cu' })
+    let out = null
+    try {
+      out = await phononRt.tools.call('analysis.phonon.thermo',
+        { materialId: loaded.materialId, mesh: 6, temperatures: [100, 300] })
+    } catch (err) {
+      assert.equal(err.code, 'PHONON_FORCE_MISSING', '无力引擎（lj-js）必须显式报错，不静默降级')
+    }
+    if (out) {
+      assert.equal(out.mesh.nPoints, 6 ** 3)
+      assert.equal(out.mesh.modesPerCell, 12, 'Cu conventional 4 原子 → 12 支')
+      assert.equal(out.series.length, 2)
+      // C_v(T) 随温度单调不降且有限
+      for (const s of out.series) assert.ok(Number.isFinite(s.cvJmolK) && s.cvJmolK > 0)
+      assert.ok(out.series[1].cvJmolK >= out.series[0].cvJmolK, 'C_v 随 T 单调升')
+      assert.ok(out.summary.maxFrequencyTHz > 0 && out.summary.thetaDK > 0)
+      assert.equal(typeof out.summary.valid, 'boolean')
+      // 实空间力常数诊断：ASR 与牛顿第三残余受控
+      assert.ok(out.fcDiagnostics.asrResidualAfter < 1e-6, 'ASR 行和≈0')
+      assert.ok(out.fcDiagnostics.newtonResidual < 1e-6, '牛顿第三对称')
+      await new Promise(r => setTimeout(r, 50))
+      const text = await readFile(path, 'utf8')
+      assert.ok(text.includes('"phonon-thermo"'), 'analysis_complete(phonon-thermo) 落 Trajectory')
+    }
+  } finally {
+    await phononFiber.dispose()
+    assert.ok(!phononRt.tools.list().some(t => t.name === 'analysis.phonon.thermo'), '工具随卸载回收')
+    await coreFiber.dispose()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

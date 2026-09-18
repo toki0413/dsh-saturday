@@ -10,9 +10,11 @@ import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
 import {
   runPhononAnalysis, displacedGraph, displacementJobs, buildSupercell,
+  runForceConstants,
   SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV, MASS_AMU,
   phononError,
 } from './phonon.mjs'
+import { runPhononThermo } from './phonon-bz.mjs'
 
 export {
   runPhononAnalysis, displacedGraph, displacementJobs, buildSupercell,
@@ -180,6 +182,70 @@ export default {
           stableTolOmegaSq: args.stableTolOmegaSq,
           supercellRep: args.supercellRep ?? DEFAULT_SUPERCELL_REP,
         }, rt)
+      },
+    })
+
+    rt.registerTool({
+      name: 'analysis.phonon.thermo',
+      description: '全布里渊区声子热力学：从超胞有限位移提取实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 + 牛顿第三对称 + ASR），'
+        + '经 Born–von Kármán 外推 q 网格得声子谱，交付每原胞 C_v(T)/熵/振动自由能/态密度与 Debye 温度（θ_D=ħω_max/k_B，显式声明）+'
+        + ' Debye 模型对照。需 material/potential 服务；力引擎忽略周期性时用超胞（默认 3×3×3，须覆盖力程）。'
+        + '诚实：有虚频 → valid=false，不假装热力学可信；声学零模（Γ 三支）q→0 测度为零已剔除并报告计数。',
+      parameters: {
+        materialId: { type: 'string', description: '材料 ID（需已弛豫到平衡附近）' },
+        engine: { type: 'string', default: 'auto' },
+        displacement: { type: 'number', default: DEFAULT_DISPLACEMENT, description: '位移步长（Å）' },
+        supercellRep: { type: 'array', items: { type: 'integer' }, default: DEFAULT_SUPERCELL_REP, description: '实空间力常数超胞 [nx,ny,nz]（至少一轴>1）' },
+        mesh: { type: 'integer', default: 12, description: 'Γ 心 q 网格每轴点数（n³ 个 q 点）' },
+        temperatures: { type: 'array', items: { type: 'number' }, default: [50, 100, 150, 200, 300], description: '温度网格（K，均 >0）' },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const materialService = rt.getService('material')
+        const potential = rt.getService('potential')
+        if (!args.materialId || !materialService || !potential) {
+          throw phononError('ANALYSIS_INPUT_MISSING',
+            'analysis.phonon.thermo requires materialId with services "material" and "potential" (mount the saturday core plugin first)')
+        }
+        const material = await materialService.get(args.materialId)
+        const provider = potential.resolveProvider(
+          { engine: args.engine },
+          { type: 'calculate', nAtoms: material.nAtoms },
+        )
+        const forceProvider = async (variantGraph) => {
+          const variant = new Material(
+            { modalities: { graph: variantGraph, formula: material.formula } },
+            variantGraph,
+          )
+          const r = await provider.calculate(variant)
+          if (!Array.isArray(r?.forces)) {
+            throw phononError('PHONON_FORCE_MISSING',
+              `engine "${provider.name}" returned no forces; phonon thermo requires forces`)
+          }
+          return { forces: r.forces, calculator: provider.name }
+        }
+        const supercellRep = args.supercellRep ?? DEFAULT_SUPERCELL_REP
+        const { fc, diagnostics } = await runForceConstants(material.graph, forceProvider, {
+          displacement: args.displacement, supercellRep,
+        })
+        const result = runPhononThermo(fc, { mesh: args.mesh, temperatureGrid: args.temperatures })
+        if (rt?.appendTrajectory) {
+          await rt.appendTrajectory({
+            type: 'analysis_complete', analysis: 'phonon-thermo',
+            result: {
+              calculator: diagnostics.calculator, mesh: result.mesh,
+              maxFrequencyTHz: result.summary.maxFrequencyTHz, thetaDK: result.summary.thetaDK,
+              imaginaryModes: result.summary.imaginaryModes, valid: result.summary.valid,
+            },
+          })
+        }
+        if (rt?.emit) {
+          await rt.emit('saturday/analysis/complete', {
+            type: 'saturday/analysis/complete',
+            payload: { analysis: 'phonon-thermo', valid: result.summary.valid, imaginaryModes: result.summary.imaginaryModes },
+          })
+        }
+        return { ...result, fcDiagnostics: diagnostics }
       },
     })
 

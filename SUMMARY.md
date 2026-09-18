@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-11T19:16:42.388Z
+生成时间：2026-09-18T16:26:56.043Z
 
-**回归基线：447/447**（25 个包，其中 24 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：456/456**（25 个包，其中 24 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -24,7 +24,7 @@
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。 | 19/19 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
 | `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 8/8 |
-| `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 14/14 |
+| `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 23/23 |
 | `@toki0413/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@toki0413/plugin-rss` | Saturday RSS 随机结构搜索采样器（契约 §4.5 sampler seam 第二个生成式实现，非 flow 路线）：成分/原子数/晶胞约束下的均匀随机结构生成，最小间距门禁，种子确定性，候选可回算验证。 | 13/13 |
 | `@toki0413/plugin-sampler-flow` | Saturday sampler 插件（契约 §4.5 sampler seam 第三实证）：仿射耦合流采样。双射输运映射（invertible: true 首实证，encode 严格逆）+ 换元公式精确似然（likelihood: exact）、候选可回算验证。 | 16/16 |
@@ -32,7 +32,7 @@
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 
-## 实证条款（契约文档附录 A，95 条）
+## 实证条款（契约文档附录 A，96 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -129,6 +129,7 @@
 - **#93** 引擎源标识与热替换状态连续性（G2 修复）：engineSourceId=engine:<name>@sha256(software|method|version|model)前8位——engine:<name> 仍是稳定失效手柄，源标识承载指纹变化；同名引擎换 checkpoint 档位 → 源标识必异；stampFingerprint 变异步：实测盖章使 sourceId 变化时广播 saturday/potential/refingerprinted，bridge 订阅沿 engine:<name> 传播失效（盖章升级不再对下游隐身）；盖同值幂等不广播（不制造假失效）；同名重注册 PROVIDE_COLLISION 显式拒绝（attach 不静默替换已在池引擎）（证据：core jobs 测试 5-6 + potential.test 测试 5 异步化 + bridge runtime-tools 测试 3-4（碰撞防护/盖章→derivation 下游自动 invalid 端到端））
 - **#94** 运行时动词面（自我演化的 Agent 入口，bridge 三工具）：runtime.capability.list（声明能力+properties/实测指纹/源标识/粒度/在途作业数/可用性探针）；runtime.engine.attach（动态 import + apply 到当前 Context，新引擎即时入 autoRoute 候选池——注册即生效无握手缓存；挂载即验证 available() 探针随交付；providersGained 为空=走了插件自己的挂载门禁，如实报告不假成功）；runtime.engine.detach（先查台账再拆，经 attach 挂载的连 fiber 回收，宿主挂载的不越权回收）；attach/detach 决策动作全部落 Trajectory（可回放可撤销——可逆的是决策上下文）（证据：bridge runtime-tools 测试 1-4（清单/attach 即时入池/detach 经台账/Trajectory 双事件/失效端到端）+ mcp-server 测试 1（36 工具在册））
 - **#95** 运行期可用性探针全引擎补齐（capability.list/attach 冒烟把坏没坏变成可查询事实）：外部依赖引擎以真实握手/探测为据——emt-mock/ase 向常驻 sidecar 发 hello（死透即 false，布尔语义不抛）、lammps 复用 probeAvailability 布尔投影、mace 常驻=连接健康/一次性=模块可导入（探针自身抛异常也归约 false，不向外泄）；lj-js 显式声明恒 true（零外部依赖是设计事实非未探测）；探针缺失仍为 null=未知（与指纹 unknown 同语义，不冒充）（证据：plugin-mace resident 测试 5b（连接成/败/一次性/异常归约四态）+ bridge runtime-tools 测试 1（activeProvider.available 必为布尔）+ lammps 测试 8-9 向后兼容）
+- **#96** 全布里渊区声子热力学（analysis seam 扩展，phonon-bz）：从超胞有限位移提取保留格矢的实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 R=Rr−rep·round(Rr/rep)、牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称、ASR 改自作用块，asr/newton 残余如实报告）→ Born–von Kármán D(q)=Σ_R Φ(R)e^{iq·R}/√(m_i·m_j) 在 Γ 心 q 网格对角化（复 Hermitian 用 2n×2n 实对称嵌入求解）→ 每原胞 C_v(T)/熵/振动自由能/态密度 + Debye θ_D=ħω_max/k_B 对照；声学零模 q→0 测度为零剔除并计数、虚频>0 置 valid=false 不假装热力学可信（诚实纪律同 Γ 法）；units 随交付声明、Debye 显式标注为连续介质对照非格点结果冒充（证据：plugin-phonon phonon-bz 测试（闭式：Hermitian 本征 1和4、1D 链 ω(q)=2√(K/m)·abs(sinπq) 与 Γ 零模、Einstein 热容闭式与高低温极限/热三律、Debye T³ 与 Dulong-Petit、模数可加）+ phonon-fc 集成（合成 1D 链提取 Φ_xx(R) 为 2K 与 −K、ASR 与牛顿残余≈0 → BvK ω(q) 对闭式）+ 工具层 test 15（Cu → analysis.phonon.thermo 每原胞 12 支、C_v(T) 单调、ASR 牛顿受控、谱系落盘、无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 36→37）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

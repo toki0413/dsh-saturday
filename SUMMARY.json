@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T19:16:42.392Z",
-  "totalPass": 447,
+  "generatedAt": "2026-09-18T16:26:56.043Z",
+  "totalPass": 456,
   "totalFail": 0,
   "packageCount": 25,
   "testedCount": 24,
@@ -8,175 +8,175 @@
     {
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 60,
       "fail": 0
     },
     {
       "dir": "packages\\contract-tests",
       "name": "@toki0413/contract-tests",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 31,
       "fail": 0
     },
     {
       "dir": "packages\\core",
       "name": "@toki0413/core",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 34,
       "fail": 0
     },
     {
       "dir": "packages\\kernel",
       "name": "@toki0413/kernel",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": null,
       "fail": null
     },
     {
       "dir": "packages\\mcp-server",
       "name": "@toki0413/mcp-server",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "packages\\python-bridge",
       "name": "@toki0413/python-bridge",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 10,
       "fail": 0
     },
     {
       "dir": "plugins\\ase",
       "name": "@toki0413/plugin-ase",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\derivation",
       "name": "@toki0413/plugin-derivation",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\elasticity",
       "name": "@toki0413/plugin-elasticity",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\eos",
       "name": "@toki0413/plugin-eos",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\ergodic",
       "name": "@toki0413/plugin-ergodic",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 9,
       "fail": 0
     },
     {
       "dir": "plugins\\free-energy",
       "name": "@toki0413/plugin-free-energy",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 12,
       "fail": 0
     },
     {
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 14,
       "fail": 0
     },
     {
       "dir": "plugins\\lennard-jones",
       "name": "@toki0413/plugin-lj",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 15,
       "fail": 0
     },
     {
       "dir": "plugins\\mace",
       "name": "@toki0413/plugin-mace",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 19,
       "fail": 0
     },
     {
       "dir": "plugins\\mp-structure-source",
       "name": "@toki0413/plugin-mp",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 9,
       "fail": 0
     },
     {
       "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 8,
       "fail": 0
     },
     {
       "dir": "plugins\\phonon",
       "name": "@toki0413/plugin-phonon",
-      "version": "0.3.6",
-      "pass": 14,
+      "version": "0.3.7",
+      "pass": 23,
       "fail": 0
     },
     {
       "dir": "plugins\\replay",
       "name": "@toki0413/plugin-replay",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 5,
       "fail": 0
     },
     {
       "dir": "plugins\\rss",
       "name": "@toki0413/plugin-rss",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 13,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-flow",
       "name": "@toki0413/plugin-sampler-flow",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 16,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-ou",
       "name": "@toki0413/plugin-sampler-ou",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 67,
       "fail": 0
     },
     {
       "dir": "plugins\\sampler-perturb",
       "name": "@toki0413/plugin-sampler-perturb",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 11,
       "fail": 0
     },
     {
       "dir": "plugins\\screening",
       "name": "@toki0413/plugin-screening",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "pass": 38,
       "fail": 0
     }
@@ -656,6 +656,11 @@
       "index": 95,
       "clause": "运行期可用性探针全引擎补齐（capability.list/attach 冒烟把坏没坏变成可查询事实）：外部依赖引擎以真实握手/探测为据——emt-mock/ase 向常驻 sidecar 发 hello（死透即 false，布尔语义不抛）、lammps 复用 probeAvailability 布尔投影、mace 常驻=连接健康/一次性=模块可导入（探针自身抛异常也归约 false，不向外泄）；lj-js 显式声明恒 true（零外部依赖是设计事实非未探测）；探针缺失仍为 null=未知（与指纹 unknown 同语义，不冒充）",
       "evidence": "plugin-mace resident 测试 5b（连接成/败/一次性/异常归约四态）+ bridge runtime-tools 测试 1（activeProvider.available 必为布尔）+ lammps 测试 8-9 向后兼容"
+    },
+    {
+      "index": 96,
+      "clause": "全布里渊区声子热力学（analysis seam 扩展，phonon-bz）：从超胞有限位移提取保留格矢的实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 R=Rr−rep·round(Rr/rep)、牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称、ASR 改自作用块，asr/newton 残余如实报告）→ Born–von Kármán D(q)=Σ_R Φ(R)e^{iq·R}/√(m_i·m_j) 在 Γ 心 q 网格对角化（复 Hermitian 用 2n×2n 实对称嵌入求解）→ 每原胞 C_v(T)/熵/振动自由能/态密度 + Debye θ_D=ħω_max/k_B 对照；声学零模 q→0 测度为零剔除并计数、虚频>0 置 valid=false 不假装热力学可信（诚实纪律同 Γ 法）；units 随交付声明、Debye 显式标注为连续介质对照非格点结果冒充",
+      "evidence": "plugin-phonon phonon-bz 测试（闭式：Hermitian 本征 1和4、1D 链 ω(q)=2√(K/m)·abs(sinπq) 与 Γ 零模、Einstein 热容闭式与高低温极限/热三律、Debye T³ 与 Dulong-Petit、模数可加）+ phonon-fc 集成（合成 1D 链提取 Φ_xx(R) 为 2K 与 −K、ASR 与牛顿残余≈0 → BvK ω(q) 对闭式）+ 工具层 test 15（Cu → analysis.phonon.thermo 每原胞 12 支、C_v(T) 单调、ASR 牛顿受控、谱系落盘、无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 36→37"
     }
   ]
 }
