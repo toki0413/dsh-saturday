@@ -97,12 +97,23 @@ export function buildSupercell(graph, rep) {
     cell[1].map(x => x * ny),
     cell[2].map(x => x * nz),
   ]
+  // imageCell[k] = 超胞第 k 个原子所在平移像的格矢 [ix,iy,iz]（供实空间力常数 Φ_{ij}(R) 分桶）
+  const imageCell = []
+  for (let ix = 0; ix < nx; ix++) {
+    for (let iy = 0; iy < ny; iy++) {
+      for (let iz = 0; iz < nz; iz++) {
+        for (let k = 0; k < nodes.length; k++) imageCell.push([ix, iy, iz])
+      }
+    }
+  }
   return {
     graph: {
       cell: superCell,
       nodes: positions.map((p, k) => ({ number: nodes[cellIndex[k]].number, position: p })),
     },
     cellIndex,
+    imageCell,
+    rep: [nx, ny, nz],
   }
 }
 
