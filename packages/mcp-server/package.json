@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
-    "start": "node src/cli.mjs"
+    "start": "node src/cli.mjs",
+    "demo": "node demo-agent-chain.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
