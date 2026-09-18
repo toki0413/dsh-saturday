@@ -34,6 +34,7 @@ import pluginSamplerFlow from '@toki0413/plugin-sampler-flow'
 import pluginSamplerOu from '@toki0413/plugin-sampler-ou'
 import pluginSamplerPerturb from '@toki0413/plugin-sampler-perturb'
 import pluginScreening from '@toki0413/plugin-screening'
+import pluginXrd from '@toki0413/plugin-xrd'
 
 /** 全量插件清单（bridge = core 运行时先行，其余按字母序） */
 export const PLUGIN_MANIFEST = [
@@ -57,6 +58,7 @@ export const PLUGIN_MANIFEST = [
   { name: 'plugin-sampler-ou', apply: pluginSamplerOu.apply },
   { name: 'plugin-sampler-perturb', apply: pluginSamplerPerturb.apply },
   { name: 'plugin-screening', apply: pluginScreening.apply },
+  { name: 'plugin-xrd', apply: pluginXrd.apply },
 ]
 
 const SERVER_INFO = { name: 'saturday', version: '0.3.0' }

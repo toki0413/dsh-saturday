@@ -1,0 +1,31 @@
+{
+  "name": "@toki0413/plugin-xrd",
+  "version": "0.3.7",
+  "description": "Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@toki0413/kernel": "^0.3.0",
+    "@toki0413/core": "^0.3.0"
+  },
+  "devDependencies": {
+    "@toki0413/bridge": "^0.3.0"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toki0413/dsh-saturday.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toki0413/dsh-saturday/issues"
+  }
+}

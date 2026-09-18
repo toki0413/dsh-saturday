@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-18T16:26:56.043Z",
-  "totalPass": 456,
+  "generatedAt": "2026-09-18T16:54:13.011Z",
+  "totalPass": 464,
   "totalFail": 0,
-  "packageCount": 25,
-  "testedCount": 24,
+  "packageCount": 26,
+  "testedCount": 25,
   "packages": [
     {
       "dir": "packages\\bridge",
@@ -178,6 +178,13 @@
       "name": "@toki0413/plugin-screening",
       "version": "0.3.7",
       "pass": 38,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\xrd",
+      "name": "@toki0413/plugin-xrd",
+      "version": "0.3.7",
+      "pass": 8,
       "fail": 0
     }
   ],
@@ -661,6 +668,11 @@
       "index": 96,
       "clause": "全布里渊区声子热力学（analysis seam 扩展，phonon-bz）：从超胞有限位移提取保留格矢的实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 R=Rr−rep·round(Rr/rep)、牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称、ASR 改自作用块，asr/newton 残余如实报告）→ Born–von Kármán D(q)=Σ_R Φ(R)e^{iq·R}/√(m_i·m_j) 在 Γ 心 q 网格对角化（复 Hermitian 用 2n×2n 实对称嵌入求解）→ 每原胞 C_v(T)/熵/振动自由能/态密度 + Debye θ_D=ħω_max/k_B 对照；声学零模 q→0 测度为零剔除并计数、虚频>0 置 valid=false 不假装热力学可信（诚实纪律同 Γ 法）；units 随交付声明、Debye 显式标注为连续介质对照非格点结果冒充",
       "evidence": "plugin-phonon phonon-bz 测试（闭式：Hermitian 本征 1和4、1D 链 ω(q)=2√(K/m)·abs(sinπq) 与 Γ 零模、Einstein 热容闭式与高低温极限/热三律、Debye T³ 与 Dulong-Petit、模数可加）+ phonon-fc 集成（合成 1D 链提取 Φ_xx(R) 为 2K 与 −K、ASR 与牛顿残余≈0 → BvK ω(q) 对闭式）+ 工具层 test 15（Cu → analysis.phonon.thermo 每原胞 12 支、C_v(T) 单调、ASR 牛顿受控、谱系落盘、无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 36→37"
+    },
+    {
+      "index": 97,
+      "clause": "X 射线粉末衍射分析（analysis seam 第四实证，plugin-xrd）：纯几何运动学衍射——倒格度规 G*=g⁻¹ 给 d(hkl)、几何结构因子 F(hkl)=Σ_j f_j·exp(2πi H·r_j) 定系统消光、Bragg 2θ、粉末峰按等 d 分组合并多极数；仅需 material 服务（引擎无关、零依赖、任何环境可跑）。诚实边界写死：峰位与消光精确（只依赖点阵中心化几何，与 f 数值无关），强度为 abs(F)² 相对值取 f≈Z 前向近似、未含 Cromer-Mann/Debye-Waller/偏振/吸收/织构因子，随交付 note 声明不冒充实验定量强度；奇异胞/非法入参显式抛错",
+      "evidence": "plugin-xrd xrd 测试（闭式：立方 d-spacing、bcc/fcc/金刚石/NaCl 系统消光与结构因子幅度、粉末首峰 {110} 多极 12、同种 Z 使 NaCl 111 消失证相位效应非巧合、奇异胞/非法入参显式错）+ 工具层集成（Cu→analysis.xrd 峰按 2θ 升序 + fcc {100} 消光 + 谱系落盘 + 缺料显式报错）+ mcp 工具面 37→38"
     }
   ]
 }

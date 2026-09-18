@@ -38,6 +38,7 @@
     "@toki0413/plugin-sampler-ou": "^0.3.0",
     "@toki0413/plugin-sampler-perturb": "^0.3.0",
     "@toki0413/plugin-screening": "^0.3.0",
+    "@toki0413/plugin-xrd": "^0.3.0",
     "zod": "^3.25.76"
   },
   "files": [
