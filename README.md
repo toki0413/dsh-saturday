@@ -84,6 +84,7 @@ Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 
 ```bash
 npx @toki0413/mcp-server        # stdio；SATURDAY_DISABLE 可排除插件
+npx @toki0413/mcp-server --http # 或 SATURDAY_MCP_TRANSPORT=http：streamable-http 远程端点（默认 127.0.0.1:3000/mcp，/health 探活）
 ```
 
 宿主配置（Claude Desktop / Cursor / Cherry Studio 等通用 `mcpServers` 格式）：

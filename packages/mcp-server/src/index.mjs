@@ -11,6 +11,9 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { createServer } from 'node:http'
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { bootstrapPlugins } from '@toki0413/kernel/bootstrap'
 
@@ -108,6 +111,13 @@ export function jsonToZodShape(parameters) {
  * @returns {{ mcp: McpServer, boot: object, toolNames: string[] }}
  */
 export async function createSaturdayMcpServer(options = {}) {
+  const boot = await bootSaturday(options)
+  const { mcp, toolNames } = buildMcpServer(boot)
+  return { mcp, boot, toolNames }
+}
+
+/** 引导全部插件（宽容挂载）——stdio 一次性；http 全局一次多会话共享 */
+export async function bootSaturday(options = {}) {
   const plugins = options.plugins ?? PLUGIN_MANIFEST
   const boot = await bootstrapPlugins(
     plugins.map(p => ({ name: p.name, apply: p.apply, config: { trajectoryPath: options.trajectoryPath } })),
@@ -115,7 +125,11 @@ export async function createSaturdayMcpServer(options = {}) {
     // 报告并跳过，工具面相应收缩——server 整体可用性优先于单插件强求
     { onMountError: (name, err) => process.stderr.write(`[saturday-mcp] plugin "${name}" not mounted: ${err.message}\n`) },
   )
+  return boot
+}
 
+/** 已 boot 的工具面 → 一个 McpServer 实例（http 每会话新建，共享同一 boot） */
+export function buildMcpServer(boot) {
   const mcp = new McpServer(SERVER_INFO)
   const toolNames = []
   for (const tool of boot.tools.describe()) {
@@ -134,7 +148,7 @@ export async function createSaturdayMcpServer(options = {}) {
     })
     toolNames.push(tool.name)
   }
-  return { mcp, boot, toolNames }
+  return { mcp, toolNames }
 }
 
 /** stdio 入口：连接 StdioServerTransport，SIGINT/SIGTERM 优雅卸载（sidecar 先于进程退出收尸） */
@@ -153,4 +167,85 @@ export async function startStdio(options = {}) {
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)
   return { shutdown }
+}
+
+/** 读 POST 体为 JSON（node:http 无内置 body parser，不引 express） */
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = ''
+    req.on('data', (c) => { data += c })
+    req.on('end', () => { try { resolve(data ? JSON.parse(data) : undefined) } catch (e) { reject(e) } })
+    req.on('error', reject)
+  })
+}
+
+/**
+ * streamable-http 入口：让任意远程 MCP 宿主（无需本地安装）经 HTTP 接入同一工具面。
+ * 会话态：全局只 boot 一次（多会话共享 boot，避免每会话重起 Python sidecar），每 session 新建一个
+ * McpServer + StreamableHTTPServerTransport。仅用 node 内置 http（零外部依赖）。
+ * 诚实：无 Python 的部署上工具面同样收缩到 lj-js 演示档（同 ModelScope 判定）。
+ * @param {{ port?:number, host?:string, path?:string } & object} options
+ */
+export async function startHttp(options = {}) {
+  const { port = 3000, host = '127.0.0.1', path = '/mcp' } = options
+  const boot = await bootSaturday(options)
+  const sessions = new Map() // sessionId -> { mcp, transport }
+  const server = createServer(async (req, res) => {
+    try {
+      const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+      if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({
+          ok: true, server: SERVER_INFO.name, transport: 'streamable-http',
+          endpoint: path, tools: boot.tools.describe().length,
+        }))
+        return
+      }
+      if (url.pathname !== path) { res.writeHead(404, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'not found' })); return }
+      const sid = req.headers['mcp-session-id']
+      if (req.method === 'POST') {
+        const body = await readJsonBody(req)
+        if (!sid) {
+          // 无 session → 视为 initialize：新建一个会话的 mcp + transport
+          const { mcp } = buildMcpServer(boot)
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (id) => { sessions.set(id, { mcp, transport }) },
+          })
+          transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId); mcp.close().catch(() => {}) }
+          await mcp.connect(transport)
+          await transport.handleRequest(req, res, body)
+          return
+        }
+        const s = sessions.get(sid)
+        if (!s) { res.writeHead(404, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'no such session' })); return }
+        await s.transport.handleRequest(req, res, body)
+        return
+      }
+      if (req.method === 'GET' || req.method === 'DELETE') {
+        const s = sid && sessions.get(sid)
+        if (!s) { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'missing or invalid mcp-session-id' })); return }
+        await s.transport.handleRequest(req, res)
+        if (req.method === 'DELETE') sessions.delete(sid)
+        return
+      }
+      res.writeHead(405, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'method not allowed' }))
+    } catch (err) {
+      if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ error: String(err?.message || err) }))
+    }
+  })
+  await new Promise((resolve) => server.listen(port, host, resolve))
+  const addr = server.address()
+  const shutdown = async () => {
+    for (const { mcp, transport } of sessions.values()) {
+      try { await transport.close() } catch { /* 已断 */ }
+      try { await mcp.close() } catch { /* 已断 */ }
+    }
+    sessions.clear()
+    await new Promise((r) => server.close(r))
+    await boot.dispose()
+  }
+  process.stderr.write(`[saturday-mcp] streamable-http ready on http://${host}:${addr?.port ?? port}${path}\n`)
+  return { host, port: addr?.port ?? port, path, url: `http://${host}:${addr?.port ?? port}${path}`, sessions, shutdown }
 }

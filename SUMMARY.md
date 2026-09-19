@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-18T16:54:13.011Z
+生成时间：2026-09-19T00:00:29.290Z
 
-**回归基线：464/464**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：465/465**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -10,7 +10,7 @@
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 34/34 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
-| `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 8/8 |
+| `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 9/9 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
@@ -33,7 +33,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 8/8 |
 
-## 实证条款（契约文档附录 A，97 条）
+## 实证条款（契约文档附录 A，98 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -132,6 +132,7 @@
 - **#95** 运行期可用性探针全引擎补齐（capability.list/attach 冒烟把坏没坏变成可查询事实）：外部依赖引擎以真实握手/探测为据——emt-mock/ase 向常驻 sidecar 发 hello（死透即 false，布尔语义不抛）、lammps 复用 probeAvailability 布尔投影、mace 常驻=连接健康/一次性=模块可导入（探针自身抛异常也归约 false，不向外泄）；lj-js 显式声明恒 true（零外部依赖是设计事实非未探测）；探针缺失仍为 null=未知（与指纹 unknown 同语义，不冒充）（证据：plugin-mace resident 测试 5b（连接成/败/一次性/异常归约四态）+ bridge runtime-tools 测试 1（activeProvider.available 必为布尔）+ lammps 测试 8-9 向后兼容）
 - **#96** 全布里渊区声子热力学（analysis seam 扩展，phonon-bz）：从超胞有限位移提取保留格矢的实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 R=Rr−rep·round(Rr/rep)、牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称、ASR 改自作用块，asr/newton 残余如实报告）→ Born–von Kármán D(q)=Σ_R Φ(R)e^{iq·R}/√(m_i·m_j) 在 Γ 心 q 网格对角化（复 Hermitian 用 2n×2n 实对称嵌入求解）→ 每原胞 C_v(T)/熵/振动自由能/态密度 + Debye θ_D=ħω_max/k_B 对照；声学零模 q→0 测度为零剔除并计数、虚频>0 置 valid=false 不假装热力学可信（诚实纪律同 Γ 法）；units 随交付声明、Debye 显式标注为连续介质对照非格点结果冒充（证据：plugin-phonon phonon-bz 测试（闭式：Hermitian 本征 1和4、1D 链 ω(q)=2√(K/m)·abs(sinπq) 与 Γ 零模、Einstein 热容闭式与高低温极限/热三律、Debye T³ 与 Dulong-Petit、模数可加）+ phonon-fc 集成（合成 1D 链提取 Φ_xx(R) 为 2K 与 −K、ASR 与牛顿残余≈0 → BvK ω(q) 对闭式）+ 工具层 test 15（Cu → analysis.phonon.thermo 每原胞 12 支、C_v(T) 单调、ASR 牛顿受控、谱系落盘、无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 36→37）
 - **#97** X 射线粉末衍射分析（analysis seam 第四实证，plugin-xrd）：纯几何运动学衍射——倒格度规 G*=g⁻¹ 给 d(hkl)、几何结构因子 F(hkl)=Σ_j f_j·exp(2πi H·r_j) 定系统消光、Bragg 2θ、粉末峰按等 d 分组合并多极数；仅需 material 服务（引擎无关、零依赖、任何环境可跑）。诚实边界写死：峰位与消光精确（只依赖点阵中心化几何，与 f 数值无关），强度为 abs(F)² 相对值取 f≈Z 前向近似、未含 Cromer-Mann/Debye-Waller/偏振/吸收/织构因子，随交付 note 声明不冒充实验定量强度；奇异胞/非法入参显式抛错（证据：plugin-xrd xrd 测试（闭式：立方 d-spacing、bcc/fcc/金刚石/NaCl 系统消光与结构因子幅度、粉末首峰 {110} 多极 12、同种 Z 使 NaCl 111 消失证相位效应非巧合、奇异胞/非法入参显式错）+ 工具层集成（Cu→analysis.xrd 峰按 2θ 升序 + fcc {100} 消光 + 谱系落盘 + 缺料显式报错）+ mcp 工具面 37→38）
+- **#98** streamable-http 传输入口（server 能力，不新增工具）：startHttp 以 node 内置 http + SDK StreamableHTTPServerTransport 暴露同一工具面，会话态多路复用——全局只 boot 一次、每 mcp-session-id 建一个 McpServer + transport（避免每会话重起 Python sidecar），附 /health 健康端点，CLI 以 --http 或 SATURDAY_MCP_TRANSPORT=http 切换（缺省仍 stdio，零外部依赖）；让任意远程 MCP 宿主无需本地安装即可接入。诚实边界：无 Python 的部署上工具面同样收缩至 lj-js 演示档（与 ModelScope 仅本地可用判定同源），远程端点不承诺 EMT/MACE 全物理（证据：packages/mcp-server http 测试（进程内起 startHttp + SDK StreamableHTTPClientTransport 经真 HTTP 完成 initialize、tools/list、tools/call material.load Cu，断言按能力含 analysis.xrd 与工具数下限而非绝对值——无 MP_API_KEY 双档一致通过；再验 /health 与 shutdown 后端口关闭）+ stdio 路径回归不变（38 工具））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
