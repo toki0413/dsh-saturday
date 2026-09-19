@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T02:23:52.462Z",
-  "totalPass": 484,
+  "generatedAt": "2026-09-19T02:44:26.691Z",
+  "totalPass": 493,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -184,7 +184,7 @@
       "dir": "plugins\\xrd",
       "name": "@toki0413/plugin-xrd",
       "version": "0.3.7",
-      "pass": 8,
+      "pass": 17,
       "fail": 0
     }
   ],
@@ -693,6 +693,11 @@
       "index": 101,
       "clause": "准谐近似热膨胀 analysis.quasiharmonic（A1，phonon-bz + eos 拼接）：对各向同性体变标度逐点算静态能 E_static 与振动自由能 F_vib(V,T)（runForceConstants 提 Φ(R)→runPhononThermo 出逐温 freeMeV），合成 F(V,T) 在体积网格上求极小、网格间三点抛物线插值（V∝scale³）→ V(T) 与 α=(1/V)dV/dT；模式 Grüneisen γ=-dlnω/dlnV 最小二乘拟合。诚实边界：准谐=ω随体积变但不含本征非谐（声子衰移/寿命），数值随网格密疏而定、非解析平衡态，落网格边界以 parabolaFitOk=false 如实报告",
       "evidence": "plugin-phonon phonon-qha 测试（闭式：parabolaVertex 过三点命中顶点/开口向下判 false、合成模型 s*(T)=1+cT/2k 精确复现 + V(T)升 α>0 + volume=base·scale³、T→0 回静态平衡、ω∝V^-γ 拟合回 γ、非法输入显式错）+ 工具集成（真桥 Cu 极小网格跑通交付形态 + 两次调用确定性复现 + 轨迹落盘 + 无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 40→41"
+    },
+    {
+      "index": 102,
+      "clause": "XRD 相鉴定 analysis.xrd.phaseIdentify（A2，plugin-xrd phase-match）：给实测粉末峰与一组候选材料 ID，各自算理论粉末峰后做几何峰位加权匹配打分——相对强度归一、弱峰阈值过滤、角窗口匹配（abs(Δ2θ)≤tolDeg），对称 recall+precision（precision 只统计落在实测覆盖角窗内的候选峰，仪器未测角区不冤枉候选为“多余峰”），score 降序判读最吻合相。诚实边界：几何峰位匹配、非 Rietveld 全谱精修、不含择优取向/织构/峰形拟合/零点位移校正，score 是相对吻合度非概率",
+      "evidence": "plugin-xrd phase-match 测试（闭式：完全吻合 score=1、区间内多余候选峰降 precision、窗外候选峰不罚 precision、缺峰降 recall、容差边界匹配/不匹配、弱峰阈值过滤、identifyPhase 排序选对相、非法输入显式错）+ 工具集成（Cu 计算峰当实测在 Cu/Al 候选判回 Cu self-match≈1 + 轨迹落盘 + 缺入参显式错）+ mcp 工具面 41→42"
     }
   ]
 }

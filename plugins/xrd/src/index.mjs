@@ -7,8 +7,10 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { powderPeaks, xrdError, CU_KA_A } from './xrd.mjs'
+import { identifyPhase } from './phase-match.mjs'
 
 export { powderPeaks, structureFactor, dSpacing, toFractional, realMetric, reciprocalMetric, braggTheta, xrdError, CU_KA_A } from './xrd.mjs'
+export { identifyPhase, matchPattern, normalizePeaks } from './phase-match.mjs'
 
 /** §4.4 AnalysisPlugin 形态：name + inputs/outputs 类型声明 + describe + run */
 export const xrdAnalysis = {
@@ -86,6 +88,45 @@ export default {
           graph: material.graph,
           lambdaA: args.lambdaA, hmax: args.hmax, twoThetaMaxDeg: args.twoThetaMaxDeg,
         }, rt)
+      },
+    })
+
+    rt.registerTool({
+      name: 'analysis.xrd.phaseIdentify',
+      description: 'XRD 相鉴定：给实测粉末峰（measuredPeaks=[{twoTheta,intensity}]）与一组候选材料 ID，'
+        + '各自算理论粉末峰后做几何峰位加权匹配（recall+precision 对称、相对强度归一、弱峰阈值过滤、'
+        + '角容差 tolDeg），按 score 降序排。非 Rietveld 全谱精修、不含择优取向/织构/峰形拟合。'
+        + '需 material 服务。',
+      parameters: {
+        measuredPeaks: { type: 'array', items: { type: 'object' }, description: '实测峰 [{twoTheta,intensity}]' },
+        candidateIds: { type: 'array', items: { type: 'string' }, description: '候选材料 ID 列表' },
+        tolDeg: { type: 'number', default: 0.5, description: '峰位角容差（度）' },
+        minRelativeIntensity: { type: 'number', default: 0.2, description: '弱峰过滤阈值（相对最强峰）' },
+        lambdaA: { type: 'number', default: CU_KA_A, description: '候选理论峰波长' },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const materialService = rt.getService('material')
+        if (!Array.isArray(args.measuredPeaks) || !Array.isArray(args.candidateIds) || args.candidateIds.length === 0 || !materialService) {
+          throw xrdError('ANALYSIS_INPUT_MISSING',
+            'analysis.xrd.phaseIdentify requires measuredPeaks + non-empty candidateIds with service "material"')
+        }
+        const candidates = []
+        for (const id of args.candidateIds) {
+          const m = await materialService.get(id)
+          const pat = powderPeaks(m.graph, { lambdaA: args.lambdaA, twoThetaMaxDeg: 150 })
+          candidates.push({ id, label: m.formula, peaks: pat.peaks.map(p => ({ twoTheta: p.twoThetaDeg, intensity: p.intensityRel })) })
+        }
+        const result = identifyPhase({
+          measuredPeaks: args.measuredPeaks, candidates,
+          tolDeg: args.tolDeg, minRelativeIntensity: args.minRelativeIntensity,
+        })
+        await rt.appendTrajectory?.({
+          type: 'analysis_complete', analysis: 'xrd-phase-identify',
+          result: { best: result.best, nCandidates: candidates.length, topScore: result.ranked[0]?.score ?? null, tolDeg: result.params.tolDeg },
+        })
+        await rt.emit?.('saturday/analysis/complete', { type: 'saturday/analysis/complete', payload: { analysis: 'xrd-phase-identify', best: result.best } })
+        return result
       },
     })
 

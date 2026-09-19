@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T02:23:52.458Z
+生成时间：2026-09-19T02:44:26.690Z
 
-**回归基线：484/484**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：493/493**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -31,9 +31,9 @@
 | `@toki0413/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 67/67 |
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
-| `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 8/8 |
+| `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，101 条）
+## 实证条款（契约文档附录 A，102 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -136,6 +136,7 @@
 - **#99** 主动学习闭环 basin-hopping（workflow seam 扩展，plugin-explore）：把单轮"采样→回算"升级成多轮"从当前最优结构微扰产候选→引擎 relax 回算→能量更低则更新中心与最优"的随机爬山；引擎是唯一 oracle（无 GP 代理、非贝叶斯优化——方案2另议），候选是采样分布点非唯一解，history 最优能量按构造单调不升（贪心接受下界），不声明全局最优；复用 material/potential/sampler-reference-perturbation 三服务不新引依赖，逐轮回算落 Trajectory（含 round 与 sampled-candidate 谱系）；缺服务或非法参数显式报错不静默降级（证据：plugin-explore active-learning 测试（合成 oracle E=sum of pos squared + 真 reference-perturbation sampler：贪心最优单调不升、评估数 1+rounds*cands 对账、同种子确定性复现、多轮确有降能、缺 sampler/potential 或非法 rounds 显式错）+ 工具层集成（workflow.activeLearning 端到端 + 每条事件标 active-learning + 卸载回收 + 缺服务报错）+ explore 工具名集更新 + mcp 工具面 38→39）
 - **#100** GP 代理贝叶斯优化 workflow.bayesOptimize（#4 方案2，plugin-explore gp.mjs）：零依赖高斯过程回归（RBF 核 + 自带 Cholesky 分解与前后回代）+ LCB 采集（mu−kappa·sigma，极小化版 UCB）做 1D 昂贵黑箱极小化——对种子材料各向同性体变标度 x、引擎 calculate 回算 E(x)/原子作 oracle，3 冷启动点 + iterations 次 LCB 采集逼近平衡体积。不声明全局最优（启发式，平滑单峰经验少评估逼近）；缺 material/potential 显式报错、非正定核显式抛错不静默加抖掩盖（证据：plugin-explore gp 测试（闭式：Cholesky LLᵀ=A 还原 + 回代命中 A⁻¹z、GP 插值训练点均值≈观测/方差≈0 远处方差→sf²、二次目标 boMinimize bestX 近真极小、多峰目标不劣于冷启动、越界/空输入/非正定显式错）+ 工具集成（stub calculate energy=(scale−s*)² 经 cell-scaled 谱系取标度，BO 逼近 s*±0.02 + 评估数 3+iterations + 卸载回收 + 缺服务报错）+ mcp 工具面 39→40）
 - **#101** 准谐近似热膨胀 analysis.quasiharmonic（A1，phonon-bz + eos 拼接）：对各向同性体变标度逐点算静态能 E_static 与振动自由能 F_vib(V,T)（runForceConstants 提 Φ(R)→runPhononThermo 出逐温 freeMeV），合成 F(V,T) 在体积网格上求极小、网格间三点抛物线插值（V∝scale³）→ V(T) 与 α=(1/V)dV/dT；模式 Grüneisen γ=-dlnω/dlnV 最小二乘拟合。诚实边界：准谐=ω随体积变但不含本征非谐（声子衰移/寿命），数值随网格密疏而定、非解析平衡态，落网格边界以 parabolaFitOk=false 如实报告（证据：plugin-phonon phonon-qha 测试（闭式：parabolaVertex 过三点命中顶点/开口向下判 false、合成模型 s*(T)=1+cT/2k 精确复现 + V(T)升 α>0 + volume=base·scale³、T→0 回静态平衡、ω∝V^-γ 拟合回 γ、非法输入显式错）+ 工具集成（真桥 Cu 极小网格跑通交付形态 + 两次调用确定性复现 + 轨迹落盘 + 无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 40→41）
+- **#102** XRD 相鉴定 analysis.xrd.phaseIdentify（A2，plugin-xrd phase-match）：给实测粉末峰与一组候选材料 ID，各自算理论粉末峰后做几何峰位加权匹配打分——相对强度归一、弱峰阈值过滤、角窗口匹配（abs(Δ2θ)≤tolDeg），对称 recall+precision（precision 只统计落在实测覆盖角窗内的候选峰，仪器未测角区不冤枉候选为“多余峰”），score 降序判读最吻合相。诚实边界：几何峰位匹配、非 Rietveld 全谱精修、不含择优取向/织构/峰形拟合/零点位移校正，score 是相对吻合度非概率（证据：plugin-xrd phase-match 测试（闭式：完全吻合 score=1、区间内多余候选峰降 precision、窗外候选峰不罚 precision、缺峰降 recall、容差边界匹配/不匹配、弱峰阈值过滤、identifyPhase 排序选对相、非法输入显式错）+ 工具集成（Cu 计算峰当实测在 Cu/Al 候选判回 Cu self-match≈1 + 轨迹落盘 + 缺入参显式错）+ mcp 工具面 41→42）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
