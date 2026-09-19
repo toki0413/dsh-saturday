@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-19T08:58:46.599Z",
-  "totalPass": 537,
-  "totalFail": 1,
-  "packageCount": 27,
-  "testedCount": 26,
+  "generatedAt": "2026-09-19T15:18:50.691Z",
+  "totalPass": 546,
+  "totalFail": 0,
+  "packageCount": 28,
+  "testedCount": 27,
   "packages": [
     {
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.8",
       "pass": 60,
-      "fail": 1
+      "fail": 0
     },
     {
       "dir": "packages\\contract-tests",
@@ -45,6 +45,13 @@
       "name": "@toki0413/python-bridge",
       "version": "0.3.8",
       "pass": 10,
+      "fail": 0
+    },
+    {
+      "dir": "packages\\sdk",
+      "name": "@toki0413/plugin-sdk",
+      "version": "0.3.8",
+      "pass": 9,
       "fail": 0
     },
     {
@@ -735,6 +742,11 @@
       "index": 108,
       "clause": "会话分支账本 plugin-branch（把\"模拟是可回退的规划树\"落成受约束原语，A5 延伸）：五动词 session.fork（起一条决策线，只登记父子与分叉点序号，不复制/改动状态、不重跑计算）/ record（某支算得的数值挂到 subject-key，add-only，同键最新生效旧记录不覆盖）/ compare（只读沿祖先链取每支最新可见值并列差与分歧，不合并）/ trunk（选主干仅移指针+审计，绝不删他支与其记录）/ status（分支树快照）。语义钉死对齐可逆性边界：结果不可变、可见性沿祖先链（fork 前共享、fork 后兄弟支隔离）、无破坏式合并（这是 git 式历史但只用于读侧对照）。纯账本 branch-ledger.mjs 独立闭式测，插件层只接线，不碰 attach/detach 与 Trajectory 高危路径；fork/trunk 决策落 Trajectory 可溯源",
       "evidence": "plugin-branch branch-ledger 测试（共享历史后分叉各走各的、兄弟隔离、add-only 同键最新生效不覆盖、compare 只读并列报分歧与数值跨度、markTrunk 非破坏他支与记录仍全在场、未知支/重复id/非法入参显式抛错、同操作序列确定性同快照）+ 工具集成（五工具在册端到端 + 缺 subject 经工具出口显式失败 + 卸载回收）+ mcp 工具面 43→48（新增 session.* 五工具，PLUGIN_MANIFEST 22）"
+    },
+    {
+      "index": 109,
+      "clause": "引擎插件脚手架 @toki0413/plugin-sdk（SDK#2 create-saturday-plugin）：把已验证的 descriptor+codec+conformance+契约套件收成作者可用的脚手架——engineDescriptorTemplate 起步描述符、enginePluginFiles 生成 package.json/descriptor.mjs/index.mjs（用 makeDescriptorProvider 装配）/开箱即过的静态形状+conformance 测试、writePluginScaffold 落盘 + CLI create-saturday-plugin；作者只填 descriptor.mjs（命令/模板/输出正则/单位/codec 名），不写 provider 代码。端到端证明：模板描述符装配的 provider 过同一份 potentialProviderContract（runnable + ENGINE_UNAVAILABLE 分支）与 conformanceReport。诚实边界：覆盖常见 CLI 一进一出 + 已注册 codec（lammps-data/xyz）格式，复杂引擎仍自写 provider；描述符 JS/JSON 非 YAML（零依赖）；plugin-sdk 是开发工具包不计入运行时工具面（mcp 仍 48）",
+      "evidence": "packages/sdk scaffold 测试（生成器产四文件且 package/descriptor 合法、name 非法 SDK_BAD_NAME、descriptor.name≠name SDK_NAME_MISMATCH、模板 provider 过 conformance、端到端过 potentialProviderContract、writePluginScaffold 落盘四文件）+ 新 workspace 包 packages/sdk 纳入全量回归（28 包）+ 工具面不变 48"
     }
   ]
 }

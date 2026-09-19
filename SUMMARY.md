@@ -1,17 +1,18 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T08:58:46.594Z
+生成时间：2026-09-19T15:18:50.688Z
 
-**回归基线：537/538**（27 个包，其中 26 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：546/546**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 60/61 **FAIL 1** |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 60/60 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 49/49 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 9/9 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
+| `@toki0413/plugin-sdk` | Saturday 引擎插件脚手架：给一份引擎描述符，生成过契约（potentialProviderContract）+ 过 conformance 的引擎插件包（descriptor + codec 装配，作者不写 provider 代码）。 | 9/9 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-branch` | Saturday 会话分支账本插件：fork/record/compare/trunk——把模拟当可回退的规划树，add-only 对照分叉决策线，非破坏式合并。 | 9/9 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
@@ -34,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，108 条）
+## 实证条款（契约文档附录 A，109 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -144,6 +145,7 @@
 - **#106** 一致性合规报告 conformanceReport（#4 信任层，@toki0413/core/conformance）：对一个 provider（手写或 descriptor 装配）跑静态契约不变量核验，产出机器可读报告——单位三元组、指纹可追溯、能力良构（accuracy/speed/cost 属于闭区间 0-1 + maxAtoms 正数）、事件粒度 iteration 或 job、声明能力是否真有对应方法、金标准折入（声明且失败即挂，未声明 declared=false 但不算失败）。是"发布不合规模块即被拒"的门禁依据与作者合规凭证。与 contract-tests 分工：后者运行时行为套件，本模块不依赖执行的静态核验（对只写配置的 descriptor 引擎尤其有用），互补。真相源：单位/指纹复用 units.mjs 的 validateEngineUnits/validateEngineFingerprint 不另立白名单（证据：core/conformance 测试（合规格 passed 且 units 归一 Angstrom→Å、单位越白名单 UNITS 挂带 UNIT_UNKNOWN、缺指纹/能力值越界/粒度非法/声明 relax 无方法 各自精确挂、金标准声明失败挂 GOLDENS 未声明仍通过、无 provider passed=false 不崩）+ lammps 真 provider 过 conformance 门禁（descriptor 装配引擎 units eV/Å/fs + eventGranularity job 全绿）+ mcp 工具面不变（仍 43））
 - **#107** SDK 声明式引擎泛化验证（第二引擎 + 第二格式，证零 provider 代码接入通用）：给 @toki0413/core/codecs 加第二个格式 writer writeXyz（XYZ，与 lammps-data 不同），另立一个读 XYZ 的引擎描述符 xyzcli，纯用 makeDescriptorProvider 装配（新代码只有描述符对象 + 一个 codec 函数，provider 装配逻辑一字不改），过同一份 potentialProviderContract（§4.2 manifest 形状/relax 真实执行/幂等/显式失败/§5.2 粒度）与 conformanceReport。证明"接新引擎 = 描述符 + 选 codec、零 provider 代码"不是只对 lammps 一家成立——格式 writer 横向可扩、descriptor-provider 复用。诚实边界：xyzcli 是验证用的合成引擎（假二进制注入），非可发布真引擎；真实外部引擎仍待接来验 schema 覆盖度（证据：plugins/lammps descriptor-engine 测试（writeXyz 忠实 XYZ 格式行数/符号行、xyzcli 描述符引擎在模块顶层过同一份 potentialProviderContract 五断言含 unavailable ENGINE_UNAVAILABLE 分支、conformanceReport passed 且 subject xyzcli、relax 解析注入能量）+ core codecs 既有测试不变 + mcp 工具面不变（仍 43））
 - **#108** 会话分支账本 plugin-branch（把"模拟是可回退的规划树"落成受约束原语，A5 延伸）：五动词 session.fork（起一条决策线，只登记父子与分叉点序号，不复制/改动状态、不重跑计算）/ record（某支算得的数值挂到 subject-key，add-only，同键最新生效旧记录不覆盖）/ compare（只读沿祖先链取每支最新可见值并列差与分歧，不合并）/ trunk（选主干仅移指针+审计，绝不删他支与其记录）/ status（分支树快照）。语义钉死对齐可逆性边界：结果不可变、可见性沿祖先链（fork 前共享、fork 后兄弟支隔离）、无破坏式合并（这是 git 式历史但只用于读侧对照）。纯账本 branch-ledger.mjs 独立闭式测，插件层只接线，不碰 attach/detach 与 Trajectory 高危路径；fork/trunk 决策落 Trajectory 可溯源（证据：plugin-branch branch-ledger 测试（共享历史后分叉各走各的、兄弟隔离、add-only 同键最新生效不覆盖、compare 只读并列报分歧与数值跨度、markTrunk 非破坏他支与记录仍全在场、未知支/重复id/非法入参显式抛错、同操作序列确定性同快照）+ 工具集成（五工具在册端到端 + 缺 subject 经工具出口显式失败 + 卸载回收）+ mcp 工具面 43→48（新增 session.* 五工具，PLUGIN_MANIFEST 22））
+- **#109** 引擎插件脚手架 @toki0413/plugin-sdk（SDK#2 create-saturday-plugin）：把已验证的 descriptor+codec+conformance+契约套件收成作者可用的脚手架——engineDescriptorTemplate 起步描述符、enginePluginFiles 生成 package.json/descriptor.mjs/index.mjs（用 makeDescriptorProvider 装配）/开箱即过的静态形状+conformance 测试、writePluginScaffold 落盘 + CLI create-saturday-plugin；作者只填 descriptor.mjs（命令/模板/输出正则/单位/codec 名），不写 provider 代码。端到端证明：模板描述符装配的 provider 过同一份 potentialProviderContract（runnable + ENGINE_UNAVAILABLE 分支）与 conformanceReport。诚实边界：覆盖常见 CLI 一进一出 + 已注册 codec（lammps-data/xyz）格式，复杂引擎仍自写 provider；描述符 JS/JSON 非 YAML（零依赖）；plugin-sdk 是开发工具包不计入运行时工具面（mcp 仍 48）（证据：packages/sdk scaffold 测试（生成器产四文件且 package/descriptor 合法、name 非法 SDK_BAD_NAME、descriptor.name≠name SDK_NAME_MISMATCH、模板 provider 过 conformance、端到端过 potentialProviderContract、writePluginScaffold 落盘四文件）+ 新 workspace 包 packages/sdk 纳入全量回归（28 包）+ 工具面不变 48）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

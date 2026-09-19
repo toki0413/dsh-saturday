@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：108 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：109 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 108, '附录 A 当前应为 108 条实证映射')
+  assert.equal(rows.length, 109, '附录 A 当前应为 109 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(109).clause.includes('plugin-sdk') && at(109).evidence.includes('potentialProviderContract'),
+      '第 109 条证据指向引擎插件脚手架 plugin-sdk')
   assert.ok(at(108).clause.includes('会话分支账本') && at(108).evidence.includes('branch-ledger'),
       '第 108 条证据指向会话分支账本')
   assert.ok(at(107).clause.includes('泛化验证') && at(107).evidence.includes('writeXyz'),

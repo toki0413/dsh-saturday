@@ -1,0 +1,34 @@
+{
+  "name": "@toki0413/plugin-sdk",
+  "version": "0.3.8",
+  "description": "Saturday 引擎插件脚手架：给一份引擎描述符，生成过契约（potentialProviderContract）+ 过 conformance 的引擎插件包（descriptor + codec 装配，作者不写 provider 代码）。",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./scaffold": "./src/scaffold.mjs"
+  },
+  "bin": {
+    "create-saturday-plugin": "src/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@toki0413/core": "^0.3.0"
+  },
+  "devDependencies": {
+    "@toki0413/contract-tests": "^0.3.0"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toki0413/dsh-saturday.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toki0413/dsh-saturday/issues"
+  }
+}
