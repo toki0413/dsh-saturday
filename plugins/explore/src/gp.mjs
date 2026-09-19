@@ -125,3 +125,92 @@ export async function boMinimize({
       '不声明全局最优（启发式，平滑单峰经验少评估逼近），ls 缺省 (hi−lo)/4。',
   }
 }
+
+// ── 多目标（Pareto）贝叶斯优化：目标向量均最小化，2D 超体积扫掠精确 ─────────
+/** 非支配集（minimize 所有目标）：去掉被任一点支配者；保持输入序。 */
+export function paretoFront(points) {
+  const objs = points.length ? points[0].obj.length : 0
+  const dom = (a, b) => { // a 支配 b：a 每目标 ≤ b 且至少一个严格 <
+    let anyStrict = false
+    for (let k = 0; k < objs; k++) {
+      if (a.obj[k] > b.obj[k]) return false
+      if (a.obj[k] < b.obj[k]) anyStrict = true
+    }
+    return anyStrict
+  }
+  return points.filter(p => !points.some(q => q !== p && dom(q, p)))
+}
+
+/**
+ * 2D 超体积（最小化，ref 支配所有点）：按 obj0 升序扫掠，取运行 obj1 下降的前沿。
+ * 只统计 obj0<ref0 且 obj1<ref1 的点。闭式可验证。
+ */
+export function hypervolume2d(points, ref) {
+  const pts = points.filter(p => p.obj[0] < ref[0] && p.obj[1] < ref[1])
+    .map(p => p.obj).sort((a, b) => a[0] - b[0])
+  if (!pts.length) return 0
+  // 取 obj1 严格下降的 Pareto 前沿（obj0 升序下）
+  const front = []
+  let best1 = Infinity
+  for (const [f0, f1] of pts) { if (f1 < best1) { front.push([f0, f1]); best1 = f1 } }
+  let hv = 0
+  for (let i = 0; i < front.length; i++) {
+    const xNext = i + 1 < front.length ? front[i + 1][0] : ref[0]
+    hv += (xNext - front[i][0]) * (ref[1] - front[i][1])
+  }
+  return hv
+}
+
+/**
+ * 多目标 1D 贝叶斯优化：每目标独立 GP，采集用"后验均值点加入前沿的超体积增益"（贪心，
+ * 非完整 EHVI 积分，诚实声明）。async objectives:[(x)→f0,(x)→f1]。
+ * @returns {Promise<{ pareto, hypervolume, evaluations, history, note }>}
+ */
+export async function boMinimizePareto({
+  lo, hi, objectives, init, iterations = 8, ref, ls, sf = 1.0, noise = 1e-6, gridN = 121,
+} = {}) {
+  if (!(hi > lo)) throw gpError('GP_BAD_BOUNDS', `require hi>lo; got lo=${lo} hi=${hi}`)
+  if (!Array.isArray(objectives) || objectives.length !== 2 || objectives.some(f => typeof f !== 'function')) {
+    throw gpError('GP_BAD_OBJECTIVE', 'boMinimizePareto requires objectives=[f0,f1] (2 objectives, v1)')
+  }
+  const span = hi - lo
+  const _ls = ls ?? span / 4
+  const xs = [], ys0 = [], ys1 = []
+  const history = []
+  const starts = init && init.length ? init : [lo + 0.15 * span, lo + 0.5 * span, lo + 0.85 * span]
+  for (const x of starts) { await evalAdd(x, 'init') }
+  // ref 缺省：由 init 观测的最大目标加 20%+小边距推出（保证支配所有已知点）
+  let refFinal = ref
+  if (!Array.isArray(refFinal) || refFinal.length !== 2) {
+    const m0 = Math.max(...ys0, 0), m1 = Math.max(...ys1, 0)
+    refFinal = [m0 + Math.abs(m0) * 0.2 + 1e-6, m1 + Math.abs(m1) * 0.2 + 1e-6]
+  }
+  void ref
+  function evalAdd(x, via) {
+    return Promise.all(objectives.map(f => f(x))).then(([f0, f1]) => {
+      xs.push(x); ys0.push(f0); ys1.push(f1); history.push({ x, obj: [f0, f1], via })
+    })
+  }
+  const allPoints = () => xs.map((x, i) => ({ x, obj: [ys0[i], ys1[i]] }))
+  for (let it = 0; it < iterations; it++) {
+    const m0 = gpTrain(xs, ys0, { ls: _ls, sf, noise }), m1 = gpTrain(xs, ys1, { ls: _ls, sf, noise })
+    const front = paretoFront(allPoints())
+    const hv0 = hypervolume2d(front, refFinal)
+    let bx = null, bGain = -Infinity
+    for (let g = 0; g < gridN; g++) {
+      const x = lo + (span * g) / (gridN - 1)
+      const cand = { x, obj: [gpPredict(m0, x).mean, gpPredict(m1, x).mean] }
+      const gain = hypervolume2d(paretoFront([...front, cand]), refFinal) - hv0
+      if (gain > bGain) { bGain = gain; bx = x }
+    }
+    await evalAdd(bx, 'hv-gain')
+  }
+  const pareto = paretoFront(allPoints())
+  return {
+    pareto, hypervolume: hypervolume2d(pareto, refFinal),
+    referencePoint: refFinal,
+    evaluations: xs.length, history,
+    note: '多目标(2)贝叶斯优化：逐目标独立 GP，采集用后验均值加入前沿的超体积增益（贪心，'
+      + '非完整 EHVI 积分/不含采集中的不确定性）；不声明收敛到真实 Pareto 前沿。',
+  }
+}

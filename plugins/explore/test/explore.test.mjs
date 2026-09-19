@@ -81,7 +81,7 @@ after(async () => {
 })
 
 test('1. 工作流插件独立挂载：工具注册且归属本插件，卸载回收', async () => {
-  assert.deepEqual(exploreRt.tools.list().map(t => t.name), ['workflow.explore', 'workflow.activeLearning', 'workflow.bayesOptimize'])
+  assert.deepEqual(exploreRt.tools.list().map(t => t.name), ['workflow.explore', 'workflow.activeLearning', 'workflow.bayesOptimize', 'workflow.bayesOptimizePareto'])
 })
 
 test('2. 缺核心服务必须显式报错，不得静默降级（契约 §2）', async () => {

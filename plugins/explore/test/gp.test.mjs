@@ -2,6 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { cholesky, gpTrain, gpPredict, rbf, boMinimize } from '../src/gp.mjs'
+import { paretoFront, hypervolume2d, boMinimizePareto } from '../src/gp.mjs'
 
 const close = (a, b, eps, msg = '') => assert.ok(Number.isFinite(a) && Math.abs(a - b) <= eps, `expected ${a} ≈ ${b} (±${eps}) ${msg}`)
 
@@ -61,4 +62,40 @@ test('5. 越界/非正定等病态显式抛错，不静默', async () => {
   assert.throws(() => gpTrain([], []), e => e.code === 'GP_BAD_INPUT')
   // rbf 自相关 = sf²
   close(rbf(2, 2, { ls: 0.7, sf: 3 }), 9, 1e-12)
+})
+
+test('6. paretoFront 去支配点（保留非支配）', () => {
+  const pts = [{ obj: [1, 3] }, { obj: [2, 2] }, { obj: [3, 1] }, { obj: [2, 3] }, { obj: [5, 5] }]
+  const front = paretoFront(pts)
+  // (2,3) 被 (1,3) 支配、(5,5) 被所有支配 → 剔除
+  assert.deepEqual(front.map(p => p.obj), [[1, 3], [2, 2], [3, 1]])
+})
+
+test('7. hypervolume2d 已知前沿扫掠精确', () => {
+  // {(0,2),(1,1),(2,0)} ref(3,3) → 1*1 + 1*2 + 1*3 = 6
+  const hv = hypervolume2d([{ obj: [0, 2] }, { obj: [1, 1] }, { obj: [2, 0] }], [3, 3])
+  close(hv, 6, 1e-9)
+  // 被支配点不影响 HV
+  const hv2 = hypervolume2d([{ obj: [0, 2] }, { obj: [1, 1] }, { obj: [2, 0] }, { obj: [1.5, 1.5] }], [3, 3])
+  close(hv2, 6, 1e-9)
+  assert.equal(hypervolume2d([{ obj: [4, 4] }], [3, 3]), 0, '支配 ref 的点不计')
+})
+
+test('8. boMinimizePareto 双目标：出非支配前沿 + HV>0 + 评估数对账', async () => {
+  // f0=x²（递增最优在0），f1=(x-2)²（最优在2）→ 前沿为 x∈[0,2] 权衡曲线
+  const out = await boMinimizePareto({
+    lo: 0, hi: 2, objectives: [(x) => x * x, (x) => (x - 2) ** 2],
+    iterations: 6, ref: [4.5, 4.5], gridN: 45,
+  })
+  assert.equal(out.evaluations, 3 + 6)
+  assert.ok(out.pareto.length >= 3, `Pareto 前沿应含多点，got ${out.pareto.length}`)
+  // 返回的 pareto 集确为非支配（自反）
+  assert.equal(paretoFront(out.pareto).length, out.pareto.length)
+  assert.ok(out.hypervolume > 0)
+  assert.ok(out.note.includes('EHVI'), '诚实声明非完整 EHVI')
+})
+
+test('9. boMinimizePareto 目标数≠2 或越界显式报错', async () => {
+  await assert.rejects(() => boMinimizePareto({ lo: 2, hi: 1, objectives: [x => x, x => x], ref: [1, 1] }), e => e.code === 'GP_BAD_BOUNDS')
+  await assert.rejects(() => boMinimizePareto({ lo: 0, hi: 1, objectives: [x => x], ref: [1, 1] }), e => e.code === 'GP_BAD_OBJECTIVE')
 })

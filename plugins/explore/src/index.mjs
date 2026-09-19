@@ -7,9 +7,9 @@ import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
 import { exploreCandidates } from './explore.mjs'
 import { runActiveLearning } from './active-learning.mjs'
-import { boMinimize } from './gp.mjs'
+import { boMinimize, boMinimizePareto } from './gp.mjs'
 
-export { exploreCandidates, runActiveLearning, boMinimize }
+export { exploreCandidates, runActiveLearning, boMinimize, boMinimizePareto }
 
 export default {
   name: 'saturday-explore',
@@ -139,6 +139,53 @@ export default {
           result: { provider: provider.name, bestScale: out.bestX, bestEnergyPerAtom: out.bestY, evaluations: out.evaluations },
         })
         return { ...out, provider: provider.name, materialId: material.id, formula: material.formula, lo, hi }
+      },
+    })
+
+    rt.registerTool({
+      name: 'workflow.bayesOptimizePareto',
+      description: '多目标（2）GP 贝叶斯优化：对种子材料体变标度 x，两目标 = [每原子能量 E/n, 最大残余力范数 max|F|]（均最小化）'
+        + '——低能与“平衡附近小力”常不在同一 x，构成权衡。逐目标独立 GP + 超体积增益采集，返回观测非支配前沿与超体积。'
+        + '引擎为唯一 oracle；不声明收敛到真实 Pareto 前沿（后验均值贪心采集）。需 material/potential（引擎需回能量与力）。',
+      parameters: {
+        materialId: { type: 'string', required: true, description: '种子材料 ID' },
+        scaleRange: { type: 'array', items: { type: 'number' }, description: '体变标度区间 [lo,hi]（缺省 [0.92,1.08]）' },
+        iterations: { type: 'integer', default: 8, description: '采集迭代数（另加 3 个冷启动点）' },
+        engine: { type: 'string', default: 'auto' },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const materialService = rt.getService('material')
+        const potential = rt.getService('potential')
+        if (!args.materialId || !materialService || !potential) {
+          throw new Error('workflow.bayesOptimizePareto requires materialId with services "material" and "potential" '
+            + '(mount the saturday core plugin first)')
+        }
+        const material = await materialService.get(args.materialId)
+        const [lo, hi] = args.scaleRange ?? [0.92, 1.08]
+        const provider = potential.resolveProvider({ engine: args.engine }, { type: 'calculate', nAtoms: material.nAtoms })
+        const objectiveFor = (which) => async (scale) => {
+          const graph = structuredClone(material.graph)
+          graph.cell = graph.cell.map(row => row.map(v => v * scale))
+          graph.nodes = graph.nodes.map(n => ({ ...n, position: n.position.map(v => v * scale) }))
+          const variant = await Material.create({
+            modalities: { graph, formula: material.formula },
+            lineage: [{ operation: 'cell-scaled', detail: { parent: material.id, scale }, timestamp: Date.now() }],
+          })
+          const r = await provider.calculate(variant)
+          if (which === 0) {
+            if (!Number.isFinite(r?.energy)) throw new Error('non-finite energy at scale ' + scale)
+            return r.energy / material.nAtoms
+          }
+          if (!Array.isArray(r?.forces)) throw new Error('engine returned no forces at scale ' + scale)
+          return Math.max(...r.forces.map(f => Math.hypot(...f)))
+        }
+        const out = await boMinimizePareto({ lo, hi, objectives: [objectiveFor(0), objectiveFor(1)], iterations: args.iterations })
+        await rt.appendTrajectory?.({
+          type: 'analysis_complete', analysis: 'bayes-optimize-pareto',
+          result: { provider: provider.name, paretoSize: out.pareto.length, hypervolume: out.hypervolume, evaluations: out.evaluations },
+        })
+        return { ...out, provider: provider.name, materialId: material.id, formula: material.formula, objectives: ['energyPerAtom', 'maxForce'], lo, hi }
       },
     })
 

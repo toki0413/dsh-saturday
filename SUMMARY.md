@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T02:44:26.690Z
+生成时间：2026-09-19T02:58:25.025Z
 
-**回归基线：493/493**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：499/499**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -17,7 +17,7 @@
 | `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 5/5 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
-| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 22/22 |
+| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 28/28 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
 | `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 14/14 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
@@ -33,7 +33,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，102 条）
+## 实证条款（契约文档附录 A，103 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -137,6 +137,7 @@
 - **#100** GP 代理贝叶斯优化 workflow.bayesOptimize（#4 方案2，plugin-explore gp.mjs）：零依赖高斯过程回归（RBF 核 + 自带 Cholesky 分解与前后回代）+ LCB 采集（mu−kappa·sigma，极小化版 UCB）做 1D 昂贵黑箱极小化——对种子材料各向同性体变标度 x、引擎 calculate 回算 E(x)/原子作 oracle，3 冷启动点 + iterations 次 LCB 采集逼近平衡体积。不声明全局最优（启发式，平滑单峰经验少评估逼近）；缺 material/potential 显式报错、非正定核显式抛错不静默加抖掩盖（证据：plugin-explore gp 测试（闭式：Cholesky LLᵀ=A 还原 + 回代命中 A⁻¹z、GP 插值训练点均值≈观测/方差≈0 远处方差→sf²、二次目标 boMinimize bestX 近真极小、多峰目标不劣于冷启动、越界/空输入/非正定显式错）+ 工具集成（stub calculate energy=(scale−s*)² 经 cell-scaled 谱系取标度，BO 逼近 s*±0.02 + 评估数 3+iterations + 卸载回收 + 缺服务报错）+ mcp 工具面 39→40）
 - **#101** 准谐近似热膨胀 analysis.quasiharmonic（A1，phonon-bz + eos 拼接）：对各向同性体变标度逐点算静态能 E_static 与振动自由能 F_vib(V,T)（runForceConstants 提 Φ(R)→runPhononThermo 出逐温 freeMeV），合成 F(V,T) 在体积网格上求极小、网格间三点抛物线插值（V∝scale³）→ V(T) 与 α=(1/V)dV/dT；模式 Grüneisen γ=-dlnω/dlnV 最小二乘拟合。诚实边界：准谐=ω随体积变但不含本征非谐（声子衰移/寿命），数值随网格密疏而定、非解析平衡态，落网格边界以 parabolaFitOk=false 如实报告（证据：plugin-phonon phonon-qha 测试（闭式：parabolaVertex 过三点命中顶点/开口向下判 false、合成模型 s*(T)=1+cT/2k 精确复现 + V(T)升 α>0 + volume=base·scale³、T→0 回静态平衡、ω∝V^-γ 拟合回 γ、非法输入显式错）+ 工具集成（真桥 Cu 极小网格跑通交付形态 + 两次调用确定性复现 + 轨迹落盘 + 无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 40→41）
 - **#102** XRD 相鉴定 analysis.xrd.phaseIdentify（A2，plugin-xrd phase-match）：给实测粉末峰与一组候选材料 ID，各自算理论粉末峰后做几何峰位加权匹配打分——相对强度归一、弱峰阈值过滤、角窗口匹配（abs(Δ2θ)≤tolDeg），对称 recall+precision（precision 只统计落在实测覆盖角窗内的候选峰，仪器未测角区不冤枉候选为“多余峰”），score 降序判读最吻合相。诚实边界：几何峰位匹配、非 Rietveld 全谱精修、不含择优取向/织构/峰形拟合/零点位移校正，score 是相对吻合度非概率（证据：plugin-xrd phase-match 测试（闭式：完全吻合 score=1、区间内多余候选峰降 precision、窗外候选峰不罚 precision、缺峰降 recall、容差边界匹配/不匹配、弱峰阈值过滤、identifyPhase 排序选对相、非法输入显式错）+ 工具集成（Cu 计算峰当实测在 Cu/Al 候选判回 Cu self-match≈1 + 轨迹落盘 + 缺入参显式错）+ mcp 工具面 41→42）
+- **#103** 多目标贝叶斯优化 workflow.bayesOptimizePareto（A3，gp.mjs Pareto 扩展）：逐目标独立 GP（RBF+Cholesky）+ 2D 超体积扫掠 + 后验均值超体积增益采集，对体变标度 x 同时最小化 [每原子能量, 最大残余力范数] 出观测非支配前沿与超体积（低能与平衡小力常不同 x → 权衡）。诚实：采集用后验均值贪心、非完整 EHVI 积分/不含采集不确定性；不声明收敛到真实 Pareto 前沿；ref 缺省由 init 观测最大加边距推出。paretoFront 支配过滤、hypervolume2d 扫掠闭式可验（证据：plugin-explore gp 测试新增（paretoFront 去支配、hypervolume2d 已知前沿精确=6 且支配点不影响、boMinimizePareto 双目标出非支配前沿+HV>0+评估数 3+iters+自反性+目标数≠2/越界显式错）+ 工具集成（stub calculate 能量极小0.9/最大力极小1.1 真权衡→前沿≥2 非支配 + 卸载回收 + 缺服务报错）+ explore 工具名集 + mcp 工具面 42→43）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
