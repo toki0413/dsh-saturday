@@ -6,8 +6,9 @@ export const Z = {
 
 export const SYMBOL = Object.fromEntries(Object.entries(Z).map(([s, z]) => [z, s]))
 
-/** Pauling 电负性（无机化学式书写惯例：电正性元素在前，如 TiO2、Cu3Ni） */
-const EN = {
+/** Pauling 电负性（无机化学式书写惯例：电正性元素在前，如 TiO2、Cu3Ni）。
+ *  导出供通用组成特征化（compositionFeatureVector）与证据源复用；缺数据的元素显式报错不默认。 */
+export const EN = {
   H: 2.20, Li: 0.98, C: 2.55, O: 3.44, Al: 1.61, Si: 1.90, Ar: 0.0,
   Ti: 1.54, Fe: 1.83, Ni: 1.91, Cu: 1.90, Pd: 2.20, Ag: 1.93, Pt: 2.28, Au: 2.54,
 }
@@ -23,4 +24,27 @@ export function composeFormula(numbers) {
     })
     .map(([z, n]) => `${SYMBOL[z] ?? `X${z}`}${n > 1 ? n : ''}`)
     .join('')
+}
+
+/**
+ * 通用组成特征向量（定长、与具体元素集无关）：分数加权电负性均值、加权标准差、平均原子序数。
+ * 供 GP 代理/证据源等消费；仅用本表既有权威数据（EN + Z），不引入未经核对的新常数。
+ * @param {Object<string,number>} composition 元素符号→计数（如 {Cu:3, Ag:1}）
+ * @returns {number[]} [meanEN, stdEN, meanZ]
+ */
+export function compositionFeatureVector(composition) {
+  const entries = Object.entries(composition ?? {}).filter(([, n]) => n > 0)
+  if (entries.length === 0) throw new Error('compositionFeatureVector requires a non-empty composition (COMPOSITION_EMPTY)')
+  const total = entries.reduce((s, [, n]) => s + n, 0)
+  const feats = entries.map(([sym, n]) => {
+    const en = EN[sym], z = Z[sym]
+    if (!Number.isFinite(en) || !Number.isFinite(z)) {
+      throw new Error(`no electronegativity/atomic-number data for element "${sym}"; extend core/elements explicitly (ELEMENT_DATA_MISSING)`)
+    }
+    return { f: n / total, en, z }
+  })
+  const meanEN = feats.reduce((s, x) => s + x.f * x.en, 0)
+  const meanZ = feats.reduce((s, x) => s + x.f * x.z, 0)
+  const varEN = feats.reduce((s, x) => s + x.f * (x.en - meanEN) ** 2, 0)
+  return [meanEN, Math.sqrt(varEN), meanZ]
 }

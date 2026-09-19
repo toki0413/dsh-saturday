@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：103 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：104 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 103, '附录 A 当前应为 103 条实证映射')
+  assert.equal(rows.length, 104, '附录 A 当前应为 104 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(104).clause.includes('筛选证据源') && at(104).evidence.includes('compositionFeatureVector'),
+      '第 104 条证据指向 GP 能量证据源（泛化通用）')
   assert.ok(at(103).clause.includes('多目标贝叶斯优化') && at(103).evidence.includes('pareto'),
       '第 103 条证据指向多目标贝叶斯优化')
   assert.ok(at(102).clause.includes('相鉴定') && at(102).evidence.includes('phase-match'),

@@ -13,6 +13,8 @@
 //  - independenceNote 必须如实声明该源与既有证据源的（条件）独立性或退化关联。
 
 import { evidenceError } from './evidence.mjs'
+import { gpTrain, gpPredict } from '@toki0413/core/gp'
+import { compositionFeatureVector } from '@toki0413/core/elements'
 
 /** 凸包距离证据：逐候选稳定性证据，−β·max(0, energyAboveHull) */
 export const hullEvidenceSource = {
@@ -69,10 +71,64 @@ export const mixingEntropyEvidenceSource = {
   variables: ['组分'],           // 机器审计：只消费组分——与焓证据机械不交，与凸包共享组分如实检出
 }
 
+/**
+ * GP 能量证据（注册表内置源，通用·闭环·estimated）：用本批已回算候选的（组成特征→energyPerAtom）
+ * 做 leave-one-out 高斯过程回归，给每个候选一个“组成近邻预测它多少能量”的平滑代理，
+ * logWeight = −β·(looPred − min looPred)。特征先按列标准化消除 EN/均值Z 量纲差。
+ * 诚实：是对同一批引擎能量的 learned/estimated 近似（非 exact）；候选过少/缺能量/缺元素数据/
+ * 协方差退化均显式抛错，不静默近似。
+ */
+export const gpEnergyEvidenceSource = {
+  name: 'gp-energy',
+  requires({ ranked }) {
+    if (!Array.isArray(ranked) || ranked.length < 6) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT',
+        `gp-energy evidence requires >=6 candidates for a leave-one-out GP over composition features; got ${ranked?.length ?? 0}`)
+    }
+    for (const r of ranked) {
+      if (!r.composition || Object.keys(r.composition).length === 0) {
+        throw evidenceError('EVIDENCE_INVALID_INPUT',
+          'gp-energy evidence requires candidates to carry composition (候选缺组分，无法特征化)')
+      }
+    }
+  },
+  logWeights({ ranked, betaEVInv }) {
+    let feats
+    try { feats = ranked.map(r => compositionFeatureVector(r.composition)) } catch (e) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT', `gp-energy featurization failed: ${e.message}`)
+    }
+    const labels = ranked.map(r => r.energyPerAtom)
+    if (labels.some(l => !Number.isFinite(l))) {
+      throw evidenceError('EVIDENCE_INVALID_INPUT', 'gp-energy requires finite energyPerAtom on all candidates (labels)')
+    }
+    const n = feats.length, nDim = feats[0].length
+    // 按列标准化（消除 meanEN/stdEN/meanZ 量纲差，否则大尺度列主导距离）
+    const mu = new Array(nDim).fill(0), sd = new Array(nDim).fill(0)
+    for (let d = 0; d < nDim; d++) mu[d] = feats.reduce((s, f) => s + f[d], 0) / n
+    for (let d = 0; d < nDim; d++) sd[d] = Math.sqrt(feats.reduce((s, f) => s + (f[d] - mu[d]) ** 2, 0) / n) || 1
+    const X = feats.map(f => f.map((v, d) => (v - mu[d]) / sd[d]))
+    const ls = Math.sqrt(nDim) / 2
+    // leave-one-out：每个候选由其余候选拟合的 GP 预测（不自证，避免与自身真能量完全共线）
+    const loo = X.map((_, i) => {
+      const idx = [...Array(n).keys()].filter(j => j !== i)
+      const m = gpTrain(idx.map(j => X[j]), idx.map(j => labels[j]), { ls, sf: 1.0, noise: 1e-4 })
+      return gpPredict(m, X[i]).mean
+    })
+    const min = Math.min(...loo)
+    return loo.map(p => -betaEVInv * (p - min))
+  },
+  independenceNote:
+    'gp-energy 是本批引擎 energyPerAtom 经 leave-one-out 高斯过程（组成特征）得到的 learned/estimated 平滑代理，'
+    + '非独立观测：由同一批 能量 与 组分 派生，与焓证据（共享 能量）和混合熵/凸包（共享 组分）存在退化关联，'
+    + '仅在“组成近邻一致性”维度提供额外梯度，不冒充与既有源条件独立',
+  variables: ['组分', '能量'],   // 机器审计：与焓共享能量、与混合熵/凸包共享组分——均需在独立性声明中被解释（本 note 已含）
+}
+
 /** 内置证据源注册表（名字 → 描述符）；第三方插件可构造自己的注册表传入筛选 */
 export const builtinEvidenceSources = {
   hull: hullEvidenceSource,
   'mixing-entropy': mixingEntropyEvidenceSource,
+  'gp-energy': gpEnergyEvidenceSource,
 }
 
 /**

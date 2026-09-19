@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T02:58:25.025Z
+生成时间：2026-09-19T03:19:45.520Z
 
-**回归基线：499/499**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：507/507**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
 | `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 60/60 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 34/34 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 37/37 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 9/9 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -30,10 +30,10 @@
 | `@toki0413/plugin-sampler-flow` | Saturday sampler 插件（契约 §4.5 sampler seam 第三实证）：仿射耦合流采样。双射输运映射（invertible: true 首实证，encode 严格逆）+ 换元公式精确似然（likelihood: exact）、候选可回算验证。 | 16/16 |
 | `@toki0413/plugin-sampler-ou` | Saturday sampler 插件（契约 §4.5 sampler seam 第二实证）：OU（Ornstein-Uhlenbeck）参考结构采样。闭式转移核 + 精确提议似然（likelihood: exact 升档实证）、候选可回算验证。 | 67/67 |
 | `@toki0413/plugin-sampler-perturb` | Saturday 首个薄 sampler 插件（契约 §4.5 sampler seam 首个实证）：参考结构微扰采样。采样语义强制声明、似然诚实声明（none）、候选可回算验证。 | 11/11 |
-| `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
+| `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，103 条）
+## 实证条款（契约文档附录 A，104 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -138,6 +138,7 @@
 - **#101** 准谐近似热膨胀 analysis.quasiharmonic（A1，phonon-bz + eos 拼接）：对各向同性体变标度逐点算静态能 E_static 与振动自由能 F_vib(V,T)（runForceConstants 提 Φ(R)→runPhononThermo 出逐温 freeMeV），合成 F(V,T) 在体积网格上求极小、网格间三点抛物线插值（V∝scale³）→ V(T) 与 α=(1/V)dV/dT；模式 Grüneisen γ=-dlnω/dlnV 最小二乘拟合。诚实边界：准谐=ω随体积变但不含本征非谐（声子衰移/寿命），数值随网格密疏而定、非解析平衡态，落网格边界以 parabolaFitOk=false 如实报告（证据：plugin-phonon phonon-qha 测试（闭式：parabolaVertex 过三点命中顶点/开口向下判 false、合成模型 s*(T)=1+cT/2k 精确复现 + V(T)升 α>0 + volume=base·scale³、T→0 回静态平衡、ω∝V^-γ 拟合回 γ、非法输入显式错）+ 工具集成（真桥 Cu 极小网格跑通交付形态 + 两次调用确定性复现 + 轨迹落盘 + 无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 40→41）
 - **#102** XRD 相鉴定 analysis.xrd.phaseIdentify（A2，plugin-xrd phase-match）：给实测粉末峰与一组候选材料 ID，各自算理论粉末峰后做几何峰位加权匹配打分——相对强度归一、弱峰阈值过滤、角窗口匹配（abs(Δ2θ)≤tolDeg），对称 recall+precision（precision 只统计落在实测覆盖角窗内的候选峰，仪器未测角区不冤枉候选为“多余峰”），score 降序判读最吻合相。诚实边界：几何峰位匹配、非 Rietveld 全谱精修、不含择优取向/织构/峰形拟合/零点位移校正，score 是相对吻合度非概率（证据：plugin-xrd phase-match 测试（闭式：完全吻合 score=1、区间内多余候选峰降 precision、窗外候选峰不罚 precision、缺峰降 recall、容差边界匹配/不匹配、弱峰阈值过滤、identifyPhase 排序选对相、非法输入显式错）+ 工具集成（Cu 计算峰当实测在 Cu/Al 候选判回 Cu self-match≈1 + 轨迹落盘 + 缺入参显式错）+ mcp 工具面 41→42）
 - **#103** 多目标贝叶斯优化 workflow.bayesOptimizePareto（A3，gp.mjs Pareto 扩展）：逐目标独立 GP（RBF+Cholesky）+ 2D 超体积扫掠 + 后验均值超体积增益采集，对体变标度 x 同时最小化 [每原子能量, 最大残余力范数] 出观测非支配前沿与超体积（低能与平衡小力常不同 x → 权衡）。诚实：采集用后验均值贪心、非完整 EHVI 积分/不含采集不确定性；不声明收敛到真实 Pareto 前沿；ref 缺省由 init 观测最大加边距推出。paretoFront 支配过滤、hypervolume2d 扫掠闭式可验（证据：plugin-explore gp 测试新增（paretoFront 去支配、hypervolume2d 已知前沿精确=6 且支配点不影响、boMinimizePareto 双目标出非支配前沿+HV>0+评估数 3+iters+自反性+目标数≠2/越界显式错）+ 工具集成（stub calculate 能量极小0.9/最大力极小1.1 真权衡→前沿≥2 非支配 + 卸载回收 + 缺服务报错）+ explore 工具名集 + mcp 工具面 42→43）
+- **#104** GP 势能面进筛选证据源 gp-energy（A4，泛化通用）：GP 数学上移 @toki0413/core/gp（rbf 泛化到向量输入、explore 的 gp.mjs 改薄 re-export 无损），core/elements 导出电负性表并加通用 compositionFeatureVector（[meanEN,stdEN,meanZ]，仅用既有权威 EN+Z 不编新常数，缺元素显式报错），screening 注册第三内置证据源 gp-energy——对本批已回算候选的 组成特征→energyPerAtom 做 leave-one-out 高斯过程，出“组成近邻平滑能量代理”证据 −β(pred−min)（新源不改筛选代码，注册描述符即接入）。estimated 档、与焓共享能量、与混合熵/凸包共享组分级退化关联由 independenceNote 如实声明并过机器变量审计；候选过少/缺元素数据/缺能量/协方差退化均显式抛错不静默；特征先按列标准化消除 EN/Z 量纲差（证据：core/gp 测试（向量 rbf 与标量退化一致 + 各向同性欧氏 + 维度不符报错、GP 向量特征插值训练点≈观测/远处→sf²、pareto/hypervolume 通用）+ screening gp-evidence 测试（compositionFeatureVector 闭式命中、缺元素 ELEMENT_DATA_MISSING/空组分显式错、gp-energy LOO 权重有限且最低能候选权重最高、候选过少/缺能量显式抛错、与焓+混合熵 combineEvidence 机器审计共享变量通过）+ explore gp/工具经 re-export 回归不变（工具面仍 43，无新增工具））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

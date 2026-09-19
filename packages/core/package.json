@@ -10,7 +10,8 @@
     "./potential": "./src/potential.mjs",
     "./structure-resolver": "./src/structure-resolver.mjs",
     "./elements": "./src/elements.mjs",
-    "./thermo": "./src/thermo.mjs"
+    "./thermo": "./src/thermo.mjs",
+    "./gp": "./src/gp.mjs"
   },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\""
