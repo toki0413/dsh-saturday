@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T07:15:17.685Z",
-  "totalPass": 521,
+  "generatedAt": "2026-09-19T07:38:02.279Z",
+  "totalPass": 528,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -100,7 +100,7 @@
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
       "version": "0.3.7",
-      "pass": 16,
+      "pass": 23,
       "fail": 0
     },
     {
@@ -718,6 +718,11 @@
       "index": 106,
       "clause": "一致性合规报告 conformanceReport（#4 信任层，@toki0413/core/conformance）：对一个 provider（手写或 descriptor 装配）跑静态契约不变量核验，产出机器可读报告——单位三元组、指纹可追溯、能力良构（accuracy/speed/cost 属于闭区间 0-1 + maxAtoms 正数）、事件粒度 iteration 或 job、声明能力是否真有对应方法、金标准折入（声明且失败即挂，未声明 declared=false 但不算失败）。是\"发布不合规模块即被拒\"的门禁依据与作者合规凭证。与 contract-tests 分工：后者运行时行为套件，本模块不依赖执行的静态核验（对只写配置的 descriptor 引擎尤其有用），互补。真相源：单位/指纹复用 units.mjs 的 validateEngineUnits/validateEngineFingerprint 不另立白名单",
       "evidence": "core/conformance 测试（合规格 passed 且 units 归一 Angstrom→Å、单位越白名单 UNITS 挂带 UNIT_UNKNOWN、缺指纹/能力值越界/粒度非法/声明 relax 无方法 各自精确挂、金标准声明失败挂 GOLDENS 未声明仍通过、无 provider passed=false 不崩）+ lammps 真 provider 过 conformance 门禁（descriptor 装配引擎 units eV/Å/fs + eventGranularity job 全绿）+ mcp 工具面不变（仍 43）"
+    },
+    {
+      "index": 107,
+      "clause": "SDK 声明式引擎泛化验证（第二引擎 + 第二格式，证零 provider 代码接入通用）：给 @toki0413/core/codecs 加第二个格式 writer writeXyz（XYZ，与 lammps-data 不同），另立一个读 XYZ 的引擎描述符 xyzcli，纯用 makeDescriptorProvider 装配（新代码只有描述符对象 + 一个 codec 函数，provider 装配逻辑一字不改），过同一份 potentialProviderContract（§4.2 manifest 形状/relax 真实执行/幂等/显式失败/§5.2 粒度）与 conformanceReport。证明\"接新引擎 = 描述符 + 选 codec、零 provider 代码\"不是只对 lammps 一家成立——格式 writer 横向可扩、descriptor-provider 复用。诚实边界：xyzcli 是验证用的合成引擎（假二进制注入），非可发布真引擎；真实外部引擎仍待接来验 schema 覆盖度",
+      "evidence": "plugins/lammps descriptor-engine 测试（writeXyz 忠实 XYZ 格式行数/符号行、xyzcli 描述符引擎在模块顶层过同一份 potentialProviderContract 五断言含 unavailable ENGINE_UNAVAILABLE 分支、conformanceReport passed 且 subject xyzcli、relax 解析注入能量）+ core codecs 既有测试不变 + mcp 工具面不变（仍 43）"
     }
   ]
 }

@@ -54,9 +54,27 @@ export function writeLammpsData(graph, { masses = ATOMIC_MASS } = {}) {
   return lines.join('\n')
 }
 
+/**
+ * XYZ 分子/周期文件格式（element/number 通用）：行数=N、comment、每行 "符号 x y z"。
+ * 与 lammps-data 不同格式——证明格式 writer 可横向新增，而 descriptor-provider 不改。
+ */
+export function writeXyz(graph, { comment = 'generated-by-saturday' } = {}) {
+  const nodes = graph.nodes ?? []
+  const sym = (n) => {
+    if (typeof n.symbol === 'string') return n.symbol
+    const s = SYMBOL[n.number]
+    if (!s) throw codecError('CODEC_SYMBOL_MISSING', `no element symbol for atom ${JSON.stringify(n)}`)
+    return s
+  }
+  const lines = [String(nodes.length), comment,
+    ...nodes.map(n => `${sym(n)} ${n.position.map(x => x.toFixed(6)).join(' ')}`)]
+  return lines.join('\n') + '\n'
+}
+
 /** 格式名 → codec。描述符用 structure.inputFormat 选它。 */
 export const CODECS = {
   'lammps-data': { name: 'lammps-data', write: writeLammpsData },
+  'xyz': { name: 'xyz', write: writeXyz },
 }
 
 /** 按名取 codec；未知格式显式报错（不猜序列化方式）。 */

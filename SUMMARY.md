@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T07:15:17.681Z
+生成时间：2026-09-19T07:38:02.276Z
 
-**回归基线：521/521**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：528/528**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -19,7 +19,7 @@
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 28/28 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
-| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 16/16 |
+| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 23/23 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。 | 19/19 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
@@ -33,7 +33,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，106 条）
+## 实证条款（契约文档附录 A，107 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -141,6 +141,7 @@
 - **#104** GP 势能面进筛选证据源 gp-energy（A4，泛化通用）：GP 数学上移 @toki0413/core/gp（rbf 泛化到向量输入、explore 的 gp.mjs 改薄 re-export 无损），core/elements 导出电负性表并加通用 compositionFeatureVector（[meanEN,stdEN,meanZ]，仅用既有权威 EN+Z 不编新常数，缺元素显式报错），screening 注册第三内置证据源 gp-energy——对本批已回算候选的 组成特征→energyPerAtom 做 leave-one-out 高斯过程，出“组成近邻平滑能量代理”证据 −β(pred−min)（新源不改筛选代码，注册描述符即接入）。estimated 档、与焓共享能量、与混合熵/凸包共享组分级退化关联由 independenceNote 如实声明并过机器变量审计；候选过少/缺元素数据/缺能量/协方差退化均显式抛错不静默；特征先按列标准化消除 EN/Z 量纲差（证据：core/gp 测试（向量 rbf 与标量退化一致 + 各向同性欧氏 + 维度不符报错、GP 向量特征插值训练点≈观测/远处→sf²、pareto/hypervolume 通用）+ screening gp-evidence 测试（compositionFeatureVector 闭式命中、缺元素 ELEMENT_DATA_MISSING/空组分显式错、gp-energy LOO 权重有限且最低能候选权重最高、候选过少/缺能量显式抛错、与焓+混合熵 combineEvidence 机器审计共享变量通过）+ explore gp/工具经 re-export 回归不变（工具面仍 43，无新增工具））
 - **#105** SDK 化第一层 dogfood：声明式引擎描述符 + 共享 codec + 金标准机制（@toki0413/core/descriptor-provider + codecs，拿 lammps 当靶子）：把"包一个读某结构文件格式、CLI 一进一出的批处理引擎"从手写 provider 降为"写一份 JS 描述符（命令/版本探测/可用性前置/脚本模板/输出解析/能力指纹）+ 选共享 codec"；结构序列化抽进 core/codecs 的 lammps-data codec（质量改引 core 共享 ATOMIC_MASS，消除 lammps 自带 MASSES 的重复），provider 由 makeDescriptorProvider 装配。诚实边界：只覆盖常见 CLI 一进一出 + 已有 codec 支持的格式，复杂引擎仍自写 provider；checkGoldens 只做机制、真实参考值须作者从有据可查的运行填入不臆造、无声明如实标 declared=false；描述符用 JS 对象非 YAML（js-yaml 属外部依赖违反零运行时依赖）（证据：等价护栏：lammps 现有 9 测试 + potentialProviderContract 一字不改全过（改写前后行为一致，14→15）；core/descriptor 测试（writeLammpsData 忠实格式 + 非正交/未知格式显式报错、makeDescriptorProvider relax/probeVersion/probeAvailability/ENGINE_UNAVAILABLE 注入错误工厂、renderTemplate 缺变量/parseByRegex 无标记显式错、checkGoldens 命中/超容差/未声明三态）+ lammps goldens 回环注入测试 + mcp 工具面不变（仍 43，无新工具））
 - **#106** 一致性合规报告 conformanceReport（#4 信任层，@toki0413/core/conformance）：对一个 provider（手写或 descriptor 装配）跑静态契约不变量核验，产出机器可读报告——单位三元组、指纹可追溯、能力良构（accuracy/speed/cost 属于闭区间 0-1 + maxAtoms 正数）、事件粒度 iteration 或 job、声明能力是否真有对应方法、金标准折入（声明且失败即挂，未声明 declared=false 但不算失败）。是"发布不合规模块即被拒"的门禁依据与作者合规凭证。与 contract-tests 分工：后者运行时行为套件，本模块不依赖执行的静态核验（对只写配置的 descriptor 引擎尤其有用），互补。真相源：单位/指纹复用 units.mjs 的 validateEngineUnits/validateEngineFingerprint 不另立白名单（证据：core/conformance 测试（合规格 passed 且 units 归一 Angstrom→Å、单位越白名单 UNITS 挂带 UNIT_UNKNOWN、缺指纹/能力值越界/粒度非法/声明 relax 无方法 各自精确挂、金标准声明失败挂 GOLDENS 未声明仍通过、无 provider passed=false 不崩）+ lammps 真 provider 过 conformance 门禁（descriptor 装配引擎 units eV/Å/fs + eventGranularity job 全绿）+ mcp 工具面不变（仍 43））
+- **#107** SDK 声明式引擎泛化验证（第二引擎 + 第二格式，证零 provider 代码接入通用）：给 @toki0413/core/codecs 加第二个格式 writer writeXyz（XYZ，与 lammps-data 不同），另立一个读 XYZ 的引擎描述符 xyzcli，纯用 makeDescriptorProvider 装配（新代码只有描述符对象 + 一个 codec 函数，provider 装配逻辑一字不改），过同一份 potentialProviderContract（§4.2 manifest 形状/relax 真实执行/幂等/显式失败/§5.2 粒度）与 conformanceReport。证明"接新引擎 = 描述符 + 选 codec、零 provider 代码"不是只对 lammps 一家成立——格式 writer 横向可扩、descriptor-provider 复用。诚实边界：xyzcli 是验证用的合成引擎（假二进制注入），非可发布真引擎；真实外部引擎仍待接来验 schema 覆盖度（证据：plugins/lammps descriptor-engine 测试（writeXyz 忠实 XYZ 格式行数/符号行、xyzcli 描述符引擎在模块顶层过同一份 potentialProviderContract 五断言含 unavailable ENGINE_UNAVAILABLE 分支、conformanceReport passed 且 subject xyzcli、relax 解析注入能量）+ core codecs 既有测试不变 + mcp 工具面不变（仍 43））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
