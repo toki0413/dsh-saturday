@@ -9,6 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
 import { LammpsProvider, toLammpsData, parseFinalEnergy, DESCRIPTOR } from '../src/lammps-provider.mjs'
 import { checkGoldens } from '@toki0413/core/descriptor-provider'
+import { conformanceReport } from '@toki0413/core/conformance'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import { potentialProviderContract } from '@toki0413/contract-tests'
 
@@ -229,4 +230,12 @@ test('10. 金标准机制接得上：注入二进制能量回一环（真实参�
   })
   assert.equal(res.passed, true, '注入回环值命中容差')
   assert.equal(res.results[0].ok, true)
+})
+
+test('11. conformance 门禁：descriptor 装配的真 provider 过静态一致性核验', () => {
+  const p = new LammpsProvider({ potentialFile: 'Cu.eam.alloy' })
+  const rep = conformanceReport({ provider: p, goldens: { declared: false, passed: false, results: [] } })
+  assert.equal(rep.passed, true, rep.checks.filter(c => !c.ok).map(c => `${c.id}:${c.detail}`).join(' | '))
+  assert.equal(rep.units.energy, 'eV'); assert.equal(rep.eventGranularity, 'job')
+  assert.equal(rep.subject, 'lammps')
 })

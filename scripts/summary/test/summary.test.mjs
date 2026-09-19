@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：105 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：106 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 105, '附录 A 当前应为 105 条实证映射')
+  assert.equal(rows.length, 106, '附录 A 当前应为 106 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(106).clause.includes('一致性合规') && at(106).evidence.includes('conformance'),
+      '第 106 条证据指向一致性合规报告')
   assert.ok(at(105).clause.includes('声明式引擎描述符') && at(105).evidence.includes('makeDescriptorProvider'),
       '第 105 条证据指向 SDK 声明式引擎描述符 + 共享 codec')
   assert.ok(at(104).clause.includes('筛选证据源') && at(104).evidence.includes('compositionFeatureVector'),

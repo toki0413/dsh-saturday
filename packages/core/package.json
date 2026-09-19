@@ -13,7 +13,8 @@
     "./thermo": "./src/thermo.mjs",
     "./gp": "./src/gp.mjs",
     "./codecs": "./src/codecs.mjs",
-    "./descriptor-provider": "./src/descriptor-provider.mjs"
+    "./descriptor-provider": "./src/descriptor-provider.mjs",
+    "./conformance": "./src/conformance.mjs"
   },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\""

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T06:46:15.121Z",
-  "totalPass": 514,
+  "generatedAt": "2026-09-19T07:15:17.685Z",
+  "totalPass": 521,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@toki0413/core",
       "version": "0.3.7",
-      "pass": 43,
+      "pass": 49,
       "fail": 0
     },
     {
@@ -100,7 +100,7 @@
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
       "version": "0.3.7",
-      "pass": 15,
+      "pass": 16,
       "fail": 0
     },
     {
@@ -713,6 +713,11 @@
       "index": 105,
       "clause": "SDK 化第一层 dogfood：声明式引擎描述符 + 共享 codec + 金标准机制（@toki0413/core/descriptor-provider + codecs，拿 lammps 当靶子）：把\"包一个读某结构文件格式、CLI 一进一出的批处理引擎\"从手写 provider 降为\"写一份 JS 描述符（命令/版本探测/可用性前置/脚本模板/输出解析/能力指纹）+ 选共享 codec\"；结构序列化抽进 core/codecs 的 lammps-data codec（质量改引 core 共享 ATOMIC_MASS，消除 lammps 自带 MASSES 的重复），provider 由 makeDescriptorProvider 装配。诚实边界：只覆盖常见 CLI 一进一出 + 已有 codec 支持的格式，复杂引擎仍自写 provider；checkGoldens 只做机制、真实参考值须作者从有据可查的运行填入不臆造、无声明如实标 declared=false；描述符用 JS 对象非 YAML（js-yaml 属外部依赖违反零运行时依赖）",
       "evidence": "等价护栏：lammps 现有 9 测试 + potentialProviderContract 一字不改全过（改写前后行为一致，14→15）；core/descriptor 测试（writeLammpsData 忠实格式 + 非正交/未知格式显式报错、makeDescriptorProvider relax/probeVersion/probeAvailability/ENGINE_UNAVAILABLE 注入错误工厂、renderTemplate 缺变量/parseByRegex 无标记显式错、checkGoldens 命中/超容差/未声明三态）+ lammps goldens 回环注入测试 + mcp 工具面不变（仍 43，无新工具）"
+    },
+    {
+      "index": 106,
+      "clause": "一致性合规报告 conformanceReport（#4 信任层，@toki0413/core/conformance）：对一个 provider（手写或 descriptor 装配）跑静态契约不变量核验，产出机器可读报告——单位三元组、指纹可追溯、能力良构（accuracy/speed/cost 属于闭区间 0-1 + maxAtoms 正数）、事件粒度 iteration 或 job、声明能力是否真有对应方法、金标准折入（声明且失败即挂，未声明 declared=false 但不算失败）。是\"发布不合规模块即被拒\"的门禁依据与作者合规凭证。与 contract-tests 分工：后者运行时行为套件，本模块不依赖执行的静态核验（对只写配置的 descriptor 引擎尤其有用），互补。真相源：单位/指纹复用 units.mjs 的 validateEngineUnits/validateEngineFingerprint 不另立白名单",
+      "evidence": "core/conformance 测试（合规格 passed 且 units 归一 Angstrom→Å、单位越白名单 UNITS 挂带 UNIT_UNKNOWN、缺指纹/能力值越界/粒度非法/声明 relax 无方法 各自精确挂、金标准声明失败挂 GOLDENS 未声明仍通过、无 provider passed=false 不崩）+ lammps 真 provider 过 conformance 门禁（descriptor 装配引擎 units eV/Å/fs + eventGranularity job 全绿）+ mcp 工具面不变（仍 43）"
     }
   ]
 }
