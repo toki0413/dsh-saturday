@@ -22,7 +22,7 @@ npx create-saturday-plugin myengine ./plugin-myengine
 | `manifest.units` | 引擎实际单位三元组 `{energy,length,time}`，须在白名单内（eV/Ry/…、Å/Bohr/…、fs/ps/s） |
 | `manifest.fingerprint` | `{software, method, version?}`；version 拿不到就留 `unknown`（诚实降级） |
 | `manifest.capabilities` | 每项 `type` + `accuracy/speed/cost∈[0,1]` + 可选 `maxAtoms` |
-| `structure.inputFormat` | 结构序列化用的**已注册 codec**：`lammps-data` 或 `xyz`（没有就先给 core 加一个 codec） |
+| `structure.inputFormat` | 结构序列化用的**已注册 codec**：`lammps-data` / `xyz` / `poscar`（没有就先给 core 加一个 codec） |
 | `run.template` / `run.args` | 输入脚本模板（`{{dataFile}}`/`{{potentialFile}}` 占位）与命令行参数 |
 | `output.energy.regex` | 从引擎 stdout 解析终态能量的正则（第 1 捕获组） |
 | `versionProbe` | 运行时版本回读命令 + 解析正则（探测失败自动保持 unknown） |

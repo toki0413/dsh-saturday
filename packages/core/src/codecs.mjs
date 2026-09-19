@@ -6,7 +6,7 @@
 // 每个 codec = { name, write(graph, opts) → string, [read] }。write 产出的文本形态是契约的一部分
 //   （引擎靠它喂数据），改动须带金标准回归（descriptor.goldens）。
 
-import { SYMBOL, ATOMIC_MASS } from './elements.mjs'
+import { SYMBOL, Z as Z_BY_SYMBOL, ATOMIC_MASS } from './elements.mjs'
 
 function codecError(code, msg) { const e = new Error(`${msg} (${code})`); e.code = code; return e }
 
@@ -71,10 +71,76 @@ export function writeXyz(graph, { comment = 'generated-by-saturday' } = {}) {
   return lines.join('\n') + '\n'
 }
 
+/** 3×3 逆矩阵（行向量约定），奇异即报错。 */
+function invert3(m) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = m
+  const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+  if (Math.abs(det) < 1e-12) throw codecError('CODEC_SINGULAR_CELL', 'cell matrix singular; cannot convert to fractional')
+  const id = 1 / det
+  return [
+    [(e * i - f * h) * id, (c * h - b * i) * id, (b * f - c * e) * id],
+    [(f * g - d * i) * id, (a * i - c * g) * id, (c * d - a * f) * id],
+    [(d * h - e * g) * id, (b * g - a * h) * id, (a * e - b * d) * id],
+  ]
+}
+const rowTimes = (v, M) => [0, 1, 2].map(k => v[0] * M[0][k] + v[1] * M[1][k] + v[2] * M[2][k])
+
+/**
+ * VASP POSCAR 写入（Direct/分数坐标，按元素分组——canonical，能喂真 VASP；支持非正交胞）。
+ * positions 为绝对 Å（行向量约定 pos=f·cell）。
+ */
+export function writePoscar(graph, { comment = 'generated-by-saturday', scale = 1 } = {}) {
+  const nodes = graph.nodes ?? []
+  if (nodes.length === 0) throw codecError('CODEC_EMPTY', 'writePoscar requires at least one atom')
+  const species = [...new Set(nodes.map(n => n.number))]
+  const order = []
+  for (const z of species) nodes.forEach((n, i) => { if (n.number === z) order.push(i) })
+  const counts = species.map(z => nodes.filter(n => n.number === z).length)
+  const inv = invert3(graph.cell)
+  const lines = [comment, String(scale)]
+  for (const row of graph.cell) lines.push(row.map(v => v.toFixed(10)).join(' '))
+  lines.push(species.map(z => SYMBOL[z] ?? (() => { throw codecError('CODEC_SYMBOL_MISSING', `no symbol for Z=${z}`) })()).join(' '))
+  lines.push(counts.join(' '))
+  lines.push('Direct')
+  for (const idx of order) {
+    const f = rowTimes(nodes[idx].position, inv)
+    lines.push(f.map(v => v.toFixed(8)).join(' '))
+  }
+  return lines.join('\n') + '\n'
+}
+
+/**
+ * VASP POSCAR 读取 → {cell, nodes:[{number, position(Å)}]}。支持 Direct/Cartesian、scale、按元素分组。
+ * 要求现代含元素符号行；未知元素/奇异胞显式报错。
+ */
+export function readPoscar(text) {
+  const L = String(text).split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0)
+  if (L.length < 8) throw codecError('POSCAR_TRUNCATED', 'POSCAR needs >=8 lines (comment/scale/3 cell/symbols/counts/mode/coords)')
+  const scale = Number(L[1]) || 1
+  const cell = [2, 3, 4].map(i => L[i].split(/\s+/).map(Number)).map(r => r.map(v => v * scale))
+  const symTokens = L[5].split(/\s+/)
+  const counts = L[6].split(/\s+/).map(Number)
+  if (!symTokens.every(t => t in Z_BY_SYMBOL)) {
+    throw codecError('POSCAR_NO_SYMBOLS', 'POSCAR element-symbol line required (legacy count-only POSCAR not supported)')
+  }
+  const numbers = []
+  symTokens.forEach((s, k) => { const z = Z_BY_SYMBOL[s]; if (!Number.isFinite(z)) throw codecError('ELEMENT_DATA_MISSING', `unknown element "${s}"`); for (let c = 0; c < (counts[k] || 0); c++) numbers.push(z) })
+  const cartesian = /^c/i.test(L[7])
+  const coordLines = L.slice(8).filter(s => s.length > 0)
+  if (coordLines.length < numbers.length) throw codecError('POSCAR_TRUNCATED', `expected ${numbers.length} coord lines, got ${coordLines.length}`)
+  const nodes = numbers.map((z, i) => {
+    const raw = coordLines[i].split(/\s+/).slice(0, 3).map(Number)
+    const position = cartesian ? raw : rowTimes(raw, cell)
+    return { number: z, position }
+  })
+  return { cell, nodes }
+}
+
 /** 格式名 → codec。描述符用 structure.inputFormat 选它。 */
 export const CODECS = {
   'lammps-data': { name: 'lammps-data', write: writeLammpsData },
   'xyz': { name: 'xyz', write: writeXyz },
+  'poscar': { name: 'poscar', write: writePoscar, read: readPoscar },
 }
 
 /** 按名取 codec；未知格式显式报错（不猜序列化方式）。 */

@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T16:01:43.823Z
+生成时间：2026-09-19T20:13:13.122Z
 
-**回归基线：546/546**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：549/549**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
 | `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 60/60 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 49/49 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 52/52 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 9/9 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，109 条）
+## 实证条款（契约文档附录 A，110 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -146,6 +146,7 @@
 - **#107** SDK 声明式引擎泛化验证（第二引擎 + 第二格式，证零 provider 代码接入通用）：给 @toki0413/core/codecs 加第二个格式 writer writeXyz（XYZ，与 lammps-data 不同），另立一个读 XYZ 的引擎描述符 xyzcli，纯用 makeDescriptorProvider 装配（新代码只有描述符对象 + 一个 codec 函数，provider 装配逻辑一字不改），过同一份 potentialProviderContract（§4.2 manifest 形状/relax 真实执行/幂等/显式失败/§5.2 粒度）与 conformanceReport。证明"接新引擎 = 描述符 + 选 codec、零 provider 代码"不是只对 lammps 一家成立——格式 writer 横向可扩、descriptor-provider 复用。诚实边界：xyzcli 是验证用的合成引擎（假二进制注入），非可发布真引擎；真实外部引擎仍待接来验 schema 覆盖度（证据：plugins/lammps descriptor-engine 测试（writeXyz 忠实 XYZ 格式行数/符号行、xyzcli 描述符引擎在模块顶层过同一份 potentialProviderContract 五断言含 unavailable ENGINE_UNAVAILABLE 分支、conformanceReport passed 且 subject xyzcli、relax 解析注入能量）+ core codecs 既有测试不变 + mcp 工具面不变（仍 43））
 - **#108** 会话分支账本 plugin-branch（把"模拟是可回退的规划树"落成受约束原语，A5 延伸）：五动词 session.fork（起一条决策线，只登记父子与分叉点序号，不复制/改动状态、不重跑计算）/ record（某支算得的数值挂到 subject-key，add-only，同键最新生效旧记录不覆盖）/ compare（只读沿祖先链取每支最新可见值并列差与分歧，不合并）/ trunk（选主干仅移指针+审计，绝不删他支与其记录）/ status（分支树快照）。语义钉死对齐可逆性边界：结果不可变、可见性沿祖先链（fork 前共享、fork 后兄弟支隔离）、无破坏式合并（这是 git 式历史但只用于读侧对照）。纯账本 branch-ledger.mjs 独立闭式测，插件层只接线，不碰 attach/detach 与 Trajectory 高危路径；fork/trunk 决策落 Trajectory 可溯源（证据：plugin-branch branch-ledger 测试（共享历史后分叉各走各的、兄弟隔离、add-only 同键最新生效不覆盖、compare 只读并列报分歧与数值跨度、markTrunk 非破坏他支与记录仍全在场、未知支/重复id/非法入参显式抛错、同操作序列确定性同快照）+ 工具集成（五工具在册端到端 + 缺 subject 经工具出口显式失败 + 卸载回收）+ mcp 工具面 43→48（新增 session.* 五工具，PLUGIN_MANIFEST 22））
 - **#109** 引擎插件脚手架 @toki0413/plugin-sdk（SDK#2 create-saturday-plugin）：把已验证的 descriptor+codec+conformance+契约套件收成作者可用的脚手架——engineDescriptorTemplate 起步描述符、enginePluginFiles 生成 package.json/descriptor.mjs/index.mjs（用 makeDescriptorProvider 装配）/开箱即过的静态形状+conformance 测试、writePluginScaffold 落盘 + CLI create-saturday-plugin；作者只填 descriptor.mjs（命令/模板/输出正则/单位/codec 名），不写 provider 代码。端到端证明：模板描述符装配的 provider 过同一份 potentialProviderContract（runnable + ENGINE_UNAVAILABLE 分支）与 conformanceReport。诚实边界：覆盖常见 CLI 一进一出 + 已注册 codec（lammps-data/xyz）格式，复杂引擎仍自写 provider；描述符 JS/JSON 非 YAML（零依赖）；plugin-sdk 是开发工具包不计入运行时工具面（mcp 仍 48）（证据：packages/sdk scaffold 测试（生成器产四文件且 package/descriptor 合法、name 非法 SDK_BAD_NAME、descriptor.name≠name SDK_NAME_MISMATCH、模板 provider 过 conformance、端到端过 potentialProviderContract、writePluginScaffold 落盘四文件）+ 新 workspace 包 packages/sdk 纳入全量回归（28 包）+ 工具面不变 48）
+- **#110** POSCAR（VASP）结构 codec 扩 SDK 覆盖面（core/codecs）：加 writePoscar/readPoscar 注册为 poscar codec，把“可零代码接入的引擎”从 lammps-data/xyz 扩到 VASP 系。writePoscar 出 canonical POSCAR（分数坐标 Direct、按元素分组、支持非正交胞、行向量 pos=f·cell 经 3×3 逆矩阵换算），readPoscar 支持 Direct/Cartesian、scale、按元素分组展开为 AtomGraph；未知元素 POSCAR_NO_SYMBOLS/ELEMENT_DATA_MISSING、截断/奇异胞显式报错不猜。descriptor-provider 按 structure.inputFormat 选它即装配 VASP 系引擎，作者只填描述符。纯 core 能力（无新 MCP 工具），直接乘数放大 SDK 的“填描述符即接引擎”覆盖面（证据：packages/core descriptor 测试新增（POSCAR 立方胞写入→读取往返、分数↔笛卡尔互逆；按元素分组读 Cu2Ag→numbers[29,29,47] 坐标经胞换算；Cartesian 模式直读；未知元素 POSCAR_NO_SYMBOLS；非正交 fcc 原胞往返；getCodec poscar 有 write+read）+ 既有 codec/descriptor/goldens/契约测试不变 + mcp 工具面不变（仍 48））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

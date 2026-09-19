@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T16:01:43.824Z",
-  "totalPass": 546,
+  "generatedAt": "2026-09-19T20:13:13.123Z",
+  "totalPass": 549,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@toki0413/core",
       "version": "0.3.9",
-      "pass": 49,
+      "pass": 52,
       "fail": 0
     },
     {
@@ -747,6 +747,11 @@
       "index": 109,
       "clause": "引擎插件脚手架 @toki0413/plugin-sdk（SDK#2 create-saturday-plugin）：把已验证的 descriptor+codec+conformance+契约套件收成作者可用的脚手架——engineDescriptorTemplate 起步描述符、enginePluginFiles 生成 package.json/descriptor.mjs/index.mjs（用 makeDescriptorProvider 装配）/开箱即过的静态形状+conformance 测试、writePluginScaffold 落盘 + CLI create-saturday-plugin；作者只填 descriptor.mjs（命令/模板/输出正则/单位/codec 名），不写 provider 代码。端到端证明：模板描述符装配的 provider 过同一份 potentialProviderContract（runnable + ENGINE_UNAVAILABLE 分支）与 conformanceReport。诚实边界：覆盖常见 CLI 一进一出 + 已注册 codec（lammps-data/xyz）格式，复杂引擎仍自写 provider；描述符 JS/JSON 非 YAML（零依赖）；plugin-sdk 是开发工具包不计入运行时工具面（mcp 仍 48）",
       "evidence": "packages/sdk scaffold 测试（生成器产四文件且 package/descriptor 合法、name 非法 SDK_BAD_NAME、descriptor.name≠name SDK_NAME_MISMATCH、模板 provider 过 conformance、端到端过 potentialProviderContract、writePluginScaffold 落盘四文件）+ 新 workspace 包 packages/sdk 纳入全量回归（28 包）+ 工具面不变 48"
+    },
+    {
+      "index": 110,
+      "clause": "POSCAR（VASP）结构 codec 扩 SDK 覆盖面（core/codecs）：加 writePoscar/readPoscar 注册为 poscar codec，把“可零代码接入的引擎”从 lammps-data/xyz 扩到 VASP 系。writePoscar 出 canonical POSCAR（分数坐标 Direct、按元素分组、支持非正交胞、行向量 pos=f·cell 经 3×3 逆矩阵换算），readPoscar 支持 Direct/Cartesian、scale、按元素分组展开为 AtomGraph；未知元素 POSCAR_NO_SYMBOLS/ELEMENT_DATA_MISSING、截断/奇异胞显式报错不猜。descriptor-provider 按 structure.inputFormat 选它即装配 VASP 系引擎，作者只填描述符。纯 core 能力（无新 MCP 工具），直接乘数放大 SDK 的“填描述符即接引擎”覆盖面",
+      "evidence": "packages/core descriptor 测试新增（POSCAR 立方胞写入→读取往返、分数↔笛卡尔互逆；按元素分组读 Cu2Ag→numbers[29,29,47] 坐标经胞换算；Cartesian 模式直读；未知元素 POSCAR_NO_SYMBOLS；非正交 fcc 原胞往返；getCodec poscar 有 write+read）+ 既有 codec/descriptor/goldens/契约测试不变 + mcp 工具面不变（仍 48）"
     }
   ]
 }

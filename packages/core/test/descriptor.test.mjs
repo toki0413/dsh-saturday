@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { writeLammpsData, getCodec } from '../src/codecs.mjs'
+import { writeLammpsData, writePoscar, readPoscar, getCodec } from '../src/codecs.mjs'
 import { ATOMIC_MASS, SYMBOL } from '../src/elements.mjs'
 import { makeDescriptorProvider, renderTemplate, parseByRegex, checkGoldens } from '../src/descriptor-provider.mjs'
 
@@ -91,4 +91,33 @@ test('6. checkGoldens 机制：命中容差通过、超容差失败、未声明�
   const none = await checkGoldens({ descriptor: DESCRIPTOR, relaxOne: () => Promise.resolve(0) })
   assert.equal(none.declared, false); assert.match(none.note, /未声明金标准/)
   await assert.rejects(() => checkGoldens({ descriptor: { goldens: [{ label: 'x', expectEnergy: 0 }] }, relaxOne: () => Promise.resolve(0) }), e => e.code === 'GOLDEN_BAD_TOL')
+})
+
+test('7. POSCAR 写入→读取往返（立方胞 Direct，分数↔笛卡尔互逆）', () => {
+  const a = 3.615
+  const graph = { cell: [[a, 0, 0], [0, a, 0], [0, 0, a]], nodes: [{ number: 29, position: [0, 0, 0] }, { number: 29, position: [a / 2, a / 2, a / 2] }] }
+  const back = readPoscar(writePoscar(graph))
+  assert.equal(back.nodes.length, 2)
+  for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) close(back.nodes[i].position[k], graph.nodes[i].position[k], 1e-6)
+  assert.equal(back.nodes[0].number, 29)
+})
+
+test('8. POSCAR 读取：按元素分组 Direct + Cartesian + 未知元素报错', () => {
+  const txt = ['Cu2Ag', '1', '4 0 0', '0 4 0', '0 0 4', 'Cu Ag', '2 1', 'Direct', '0 0 0', '0.5 0.5 0.5', '0.25 0.25 0.25'].join('\n')
+  const g = readPoscar(txt)
+  assert.deepEqual(g.nodes.map(n => n.number), [29, 29, 47])
+  close(g.nodes[1].position[0], 2, 1e-9); close(g.nodes[2].position[0], 1, 1e-9)
+  const cart = ['x', '1', '2 0 0', '0 2 0', '0 0 2', 'Cu', '1', 'Cartesian', '1 1 1'].join('\n')
+  close(readPoscar(cart).nodes[0].position[0], 1, 1e-9)
+  assert.throws(() => readPoscar(['x', '1', '1 0 0', '0 1 0', '0 0 1', 'Cu Zz', '1 1', 'Direct', '0 0 0', '0 0 0'].join('\n')), e => e.code === 'POSCAR_NO_SYMBOLS')
+})
+
+test('9. 非正交胞 POSCAR 往返 + poscar codec 可被 provider 用', () => {
+  const getCodec2 = getCodec('poscar')
+  assert.ok(getCodec2 && typeof getCodec2.write === 'function' && typeof getCodec2.read === 'function', 'poscar codec 有 write+read')
+  const s = 1.8075
+  const cell = [[0, s, s], [s, 0, s], [s, s, 0]] // fcc 原胞（非正交）
+  const graph = { cell, nodes: [{ number: 29, position: [0, 0, 0] }, { number: 29, position: [s * 1.5, s * 1.5, s * 0.5] }] }
+  const back = readPoscar(writePoscar(graph))
+  for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) close(back.nodes[i].position[k], graph.nodes[i].position[k], 1e-6, `atom${i}.${k}`)
 })
