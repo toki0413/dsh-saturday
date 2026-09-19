@@ -7,7 +7,8 @@ import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import plugin from '../src/index.mjs'
-import { LammpsProvider, toLammpsData, parseFinalEnergy } from '../src/lammps-provider.mjs'
+import { LammpsProvider, toLammpsData, parseFinalEnergy, DESCRIPTOR } from '../src/lammps-provider.mjs'
+import { checkGoldens } from '@toki0413/core/descriptor-provider'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import { potentialProviderContract } from '@toki0413/contract-tests'
 
@@ -211,4 +212,21 @@ test('9. 挂载探测失败 → 不注册 + registered:false（auto 路由不再
   assert.equal(fiber.store.saturdayLammps.registered, false, '挂载记录如实呈报未注册')
   await fiber.dispose()
   await coreFiber.dispose()
+})
+
+test('10. 金标准机制接得上：注入二进制能量回一环（真实参考值须作者填，不臆造）', async () => {
+  // 证明 描述符 + 声明式 provider + checkGoldens 三者组合可用；
+  // 用一个回环注入值（非物理参考），真实 goldens 数值需从有据可查的 LAMMPS 运行填入后挂到 DESCRIPTOR.goldens。
+  assert.deepEqual(DESCRIPTOR.goldens ?? [], [], 'v0 未内置真实金标准（不臆造物理数值）')
+  const p = new LammpsProvider({
+    potentialFile: 'Cu.eam.alloy',
+    spawnImpl: () => fakeChild({ stdout: 'LAMMPS out\nSATURDAY_ENERGY -14.0832\n' }),
+  })
+  const cu = await Material.create({ modalities: { formula: 'Cu' } }, new PrototypeLibResolver())
+  const res = await checkGoldens({
+    descriptor: { ...DESCRIPTOR, goldens: [{ label: 'roundtrip-Cu', expectEnergy: -14.0832, tol: 1e-6 }] },
+    relaxOne: () => p.relax(cu).then(r => r.energy),
+  })
+  assert.equal(res.passed, true, '注入回环值命中容差')
+  assert.equal(res.results[0].ok, true)
 })

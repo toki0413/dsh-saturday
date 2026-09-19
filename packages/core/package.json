@@ -11,7 +11,9 @@
     "./structure-resolver": "./src/structure-resolver.mjs",
     "./elements": "./src/elements.mjs",
     "./thermo": "./src/thermo.mjs",
-    "./gp": "./src/gp.mjs"
+    "./gp": "./src/gp.mjs",
+    "./codecs": "./src/codecs.mjs",
+    "./descriptor-provider": "./src/descriptor-provider.mjs"
   },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\""

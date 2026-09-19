@@ -2,15 +2,16 @@
 // 形态：批处理二进制（非 sidecar 常驻进程），事件粒度只能是 'job'——
 // 细粒度监听请求必须被显式拒绝（契约 §5.2），这正是本插件要压测的契约点。
 //
+// 本文件是 SDK"声明式引擎描述符 + 共享 codec"的第一次 dogfood：
+//   provider 不再是手写命令/解析，而是由 @toki0413/core/descriptor-provider 读一份描述符装配，
+//   结构序列化复用 @toki0413/core/codecs 的 lammps-data codec（质量走 core 共享表）。
+//   外部计算组接一个读已支持格式的引擎，照此写描述符即可，不必手写 provider。
 // 可测试性：二进制名与执行器可注入；无 LAMMPS 环境下 relax 显式报
 // ENGINE_UNAVAILABLE，绝不静默降级到别的引擎（契约 §4.2 路由契约）。
 
 import { spawn } from 'node:child_process'
-import { mkdtemp, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
-import { SYMBOL } from '@toki0413/core/elements'
+import { writeLammpsData } from '@toki0413/core/codecs'
+import { makeDescriptorProvider } from '@toki0413/core/descriptor-provider'
 
 export class EngineUnavailableError extends Error {
   constructor(binary, cause) {
@@ -20,177 +21,79 @@ export class EngineUnavailableError extends Error {
   }
 }
 
-/** v0 支持元素的原子量（g/mol）；未覆盖元素显式报错 */
-const MASSES = {
-  Al: 26.982, Cu: 63.546, Ag: 107.868, Au: 196.967,
-  Ni: 58.693, Pd: 106.42, Pt: 195.084, Fe: 55.845, Si: 28.085,
-}
-
-/** AtomGraph → LAMMPS data file（atom_style atomic，v0 仅支持正交盒） */
+/** AtomGraph → LAMMPS data file（委托共享 codec；保留此导出兼容既有引用） */
 export function toLammpsData(graph) {
-  const cell = graph.cell
-  const offDiag = [0, 1, 2].some(i => [0, 1, 2].some(j => i !== j && Math.abs(cell[i][j]) > 1e-9))
-  if (offDiag) throw new Error('LAMMPS provider v0: only orthogonal cells supported')
-
-  const numbers = graph.nodes.map(n => n.number)
-  const species = [...new Set(numbers)].sort((a, b) => a - b)
-  const typeOf = new Map(species.map((z, i) => [z, i + 1]))
-
-  const lines = [
-    '# Saturday → LAMMPS data file (atom_style atomic)',
-    '',
-    `${graph.nodes.length} atoms`,
-    `${species.length} atom types`,
-    '',
-    `0.0 ${cell[0][0]} xlo xhi`,
-    `0.0 ${cell[1][1]} ylo yhi`,
-    `0.0 ${cell[2][2]} zlo zhi`,
-    '',
-    'Masses',
-    '',
-    ...species.map((z, i) => {
-      const el = SYMBOL[z]
-      if (!MASSES[el]) throw new Error(`No atomic mass registered for element "${el}" (add to MASSES)`)
-      return `${i + 1} ${MASSES[el]}   # ${el}`
-    }),
-    '',
-    'Atoms',
-    '',
-    ...graph.nodes.map((n, i) =>
-      `${i + 1} ${typeOf.get(n.number)} ${n.position.map(x => x.toFixed(6)).join(' ')}`),
-    '',
-  ]
-  return lines.join('\n')
+  return writeLammpsData(graph)
 }
 
-/** 最小弛豫输入脚本（势文件由调用方提供） */
+/** 最小弛豫输入脚本（委托渲染；保留导出兼容）。势文件由调用方提供。 */
 export function buildInputScript({ potentialFile }) {
-  return [
-    'units metal',
-    'atom_style atomic',
-    'boundary p p p',
-    `read_data data.lammps`,
-    `pair_style eam/alloy`,
-    `pair_coeff * * ${potentialFile}`,
-    'fix 1 all box/relax iso 0.0',
-    'minimize 1.0e-8 1.0e-8 1000 10000',
-    'variable pe equal pe',
-    'print "SATURDAY_ENERGY ${pe}"',
-  ].join('\n') + '\n'
+  return DESCRIPTOR.run.template.replace(/\{\{dataFile\}\}/g, DESCRIPTOR.run.dataFile)
+    .replace(/\{\{potentialFile\}\}/g, potentialFile)
 }
 
-export class LammpsProvider {
-  name = 'lammps'
-  version = '0.1.0'
-  manifest = {
-    capabilities: [
-      // 经典势的典型定位：快、便宜、百万原子级；精度低于 DFT（对比值见契约 §4.2）
-      { type: 'relax', accuracy: 0.7, speed: 0.85, cost: 0.15, maxAtoms: 1_000_000 },
-    ],
-    constraints: { requiresLicense: false },
-    eventGranularity: 'job',   // 批处理二进制：只有任务级事件，无逐迭代回调
-    // M1（单位与指纹）：输入脚本走 metal 单位制（eV/Å/fs）；势函数类型随配势
-    // 变化（默认 EAM），运行时版本未探测 → unknown（诚实降级）
-    units: { energy: 'eV', length: 'Å', time: 'fs' },
-    fingerprint: { software: 'lammps', method: 'metal-EAM', version: 'unknown' },
-  }
-
-  /**
-   * @param {Object}  opts
-   * @param {string} [opts.binary]        LAMMPS 可执行文件名/路径（默认 'lmp'）
-   * @param {string} [opts.potentialFile] EAM 势文件路径（relax 必需）
-   * @param {Function}[opts.spawnImpl]    执行器注入（测试用伪二进制）
-   */
-  constructor({ binary = 'lmp', potentialFile, spawnImpl } = {}) {
-    this.binary = binary
-    this.potentialFile = potentialFile
-    this.spawnImpl = spawnImpl ?? spawn
-  }
-
-  /**
-   * 挂载可用性探测（plugin-mace 同款先例）：势文件未配置或二进制不可达即判不可用——
-   * 注册一个环境损坏的引擎会让 auto 路由在全量共置场景永远选中它然后失败。
-   * 返回 { ok, reason }：不可用时 reason 进显式日志，不静默。
-   */
-  async probeAvailability() {
-    if (!this.potentialFile) {
-      return { ok: false, reason: 'no potential file configured (config.potentialFile)' }
-    }
-    const version = await this.probeVersion()
-    if (!version) {
-      return { ok: false, reason: `binary "${this.binary}" not runnable (probe -h failed)` }
-    }
-    return { ok: true, reason: `LAMMPS ${version}` }
-  }
-
-  /** 运行期可用性探针（capability.list / attach 冒烟消费）：复用挂载探测的布尔投影 */
-  async available() {
-    return (await this.probeAvailability()).ok
-  }
-
-  /**
-   * 运行时版本回读（实测态）：`binary -h` 解析横幅行（LAMMPS (2 Aug 2023) …）。
-   * 探测失败（无二进制/启动异常/无横幅）返回 null——诚实降级保持 'unknown'，
-   * 绝不拿非实测值盖章（与 M1 诚实降级同款纪律）。
-   */
-  probeVersion() {
-    return new Promise(resolve => {
-      let out = ''
-      let child
-      try {
-        child = this.spawnImpl(this.binary, ['-h'])
-      } catch {
-        return resolve(null)
-      }
-      child.stdout.on('data', d => out += d)
-      child.on('error', () => resolve(null))
-      child.on('close', code => {
-        const m = out.match(/LAMMPS\s*\(([^)]+)\)/)
-        resolve(code === 0 && m ? m[1].trim() : null)
-      })
-    })
-  }
-
-  async relax(material, params = {}) {
-    if (!this.potentialFile) {
-      throw new EngineUnavailableError(this.binary, 'no potential file configured (config.potentialFile)')
-    }
-    const jobId = randomUUID()
-    const dir = await mkdtemp(join(tmpdir(), 'saturday-lammps-'))
-    await writeFile(join(dir, 'data.lammps'), toLammpsData(material.graph))
-    await writeFile(join(dir, 'input.lammps'), buildInputScript({ potentialFile: this.potentialFile }))
-
-    const t0 = Date.now()
-    const log = await this.run(dir)
-    const energy = parseFinalEnergy(log)
-    return {
-      jobId,
-      engine: this.name,
-      converged: true,
-      energy,
-      n_steps: 0,               // v0：批处理形态不回传步数（事件粒度 'job' 的直接后果）
-      calculator: 'lammps',
-      wall_seconds: (Date.now() - t0) / 1000,
-    }
-  }
-
-  run(dir) {
-    return new Promise((resolve, reject) => {
-      const child = this.spawnImpl(this.binary, ['-in', 'input.lammps'], { cwd: dir })
-      let out = '', err = ''
-      child.stdout.on('data', d => out += d)
-      child.stderr.on('data', d => err += d)
-      child.on('error', e => reject(new EngineUnavailableError(this.binary, e.message)))
-      child.on('close', code => code === 0
-        ? resolve(out)
-        : reject(new Error(`LAMMPS exited with code ${code}: ${err.slice(0, 200)}`)))
-    })
-  }
-}
-
-/** 解析日志中的终态能量（脚本末行 print "SATURDAY_ENERGY ..."） */
+/** 解析日志中的终态能量（脚本末行 print "SATURDAY_ENERGY ..."）；保留导出兼容。 */
 export function parseFinalEnergy(log) {
   const m = [...log.matchAll(/SATURDAY_ENERGY\s+(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)/g)].pop()
   if (!m) throw new Error('LAMMPS log missing SATURDAY_ENERGY marker')
   return parseFloat(m[1])
+}
+
+/**
+ * LAMMPS 引擎描述符（数据）：命令/版本探测/可用性前置/输入格式/脚本模板/输出解析/能力指纹。
+ * 手写 provider 的六项职责里，除结构序列化（交给共享 codec）外全部落到这里。
+ */
+export const DESCRIPTOR = {
+  name: 'lammps',
+  version: '0.1.0',
+  displayName: 'LAMMPS',
+  binaryDefault: 'lmp',
+  manifest: {
+    capabilities: [
+      // 经典势典型定位：快、便宜、百万原子级；精度低于 DFT（对比值见契约 §4.2）
+      { type: 'relax', accuracy: 0.7, speed: 0.85, cost: 0.15, maxAtoms: 1_000_000 },
+    ],
+    constraints: { requiresLicense: false },
+    eventGranularity: 'job',   // 批处理二进制：只有任务级事件，无逐迭代回调
+    units: { energy: 'eV', length: 'Å', time: 'fs' },   // metal 单位制
+    fingerprint: { software: 'lammps', method: 'metal-EAM', version: 'unknown' },
+  },
+  versionProbe: { args: ['-h'], regex: String.raw`LAMMPS\s*\(([^)]+)\)` },
+  availability: { requireConfig: [{ key: 'potentialFile', label: 'potential file' }] },
+  structure: { inputFormat: 'lammps-data' },
+  run: {
+    dataFile: 'data.lammps',
+    inputFile: 'input.lammps',
+    args: ['-in', 'input.lammps'],
+    template: [
+      'units metal',
+      'atom_style atomic',
+      'boundary p p p',
+      'read_data {{dataFile}}',
+      'pair_style eam/alloy',
+      'pair_coeff * * {{potentialFile}}',
+      'fix 1 all box/relax iso 0.0',
+      'minimize 1.0e-8 1.0e-8 1000 10000',
+      'variable pe equal pe',
+      'print "SATURDAY_ENERGY ${pe}"',
+    ].join('\n') + '\n',
+  },
+  output: { energy: { name: 'SATURDAY_ENERGY', regex: String.raw`SATURDAY_ENERGY\s+(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)` } },
+  result: { converged: true, nSteps: 0 },   // job 粒度：批处理不回传步数
+}
+
+export class LammpsProvider {
+  constructor({ binary, potentialFile, spawnImpl } = {}) {
+    this._p = makeDescriptorProvider(DESCRIPTOR, {
+      binary, potentialFile, spawnImpl: spawnImpl ?? spawn,
+      EngineUnavailableError: (b, cause) => new EngineUnavailableError(b, cause),
+    })
+  }
+  get name() { return this._p.name }
+  get version() { return this._p.version }
+  get manifest() { return this._p.manifest }
+  probeVersion() { return this._p.probeVersion() }
+  probeAvailability() { return this._p.probeAvailability() }
+  available() { return this._p.available() }
+  relax(material, params) { return this._p.relax(material, params) }
 }

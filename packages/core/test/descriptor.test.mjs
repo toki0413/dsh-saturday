@@ -1,0 +1,94 @@
+// core：声明式引擎描述符装配 + 共享 codec + 金标准机制测试（零外部依赖、注入伪二进制）。
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { EventEmitter } from 'node:events'
+import { writeLammpsData, getCodec } from '../src/codecs.mjs'
+import { ATOMIC_MASS, SYMBOL } from '../src/elements.mjs'
+import { makeDescriptorProvider, renderTemplate, parseByRegex, checkGoldens } from '../src/descriptor-provider.mjs'
+
+const close = (a, b, eps, msg = '') => assert.ok(Math.abs(a - b) <= eps, `expected ${a} ≈ ${b} (±${eps}) ${msg}`)
+
+function fakeChild({ stdout = '', exitCode = 0, spawnError = null } = {}) {
+  const child = new EventEmitter()
+  child.stdout = new EventEmitter()
+  child.stderr = new EventEmitter()
+  setImmediate(() => {
+    if (spawnError) return child.emit('error', spawnError)
+    if (stdout) child.stdout.emit('data', Buffer.from(stdout))
+    child.emit('close', exitCode)
+  })
+  return child
+}
+const cuGraph = { cell: [[3.615, 0, 0], [0, 3.615, 0], [0, 0, 3.615]], nodes: [{ number: 29, position: [0, 0, 0] }] }
+
+const DESCRIPTOR = {
+  name: 'eng', version: '0.0.1', displayName: 'ENG', binaryDefault: 'e',
+  manifest: { capabilities: [{ type: 'relax', accuracy: 0.5, speed: 0.5, cost: 0.5, maxAtoms: 10 }],
+    constraints: {}, eventGranularity: 'job',
+    units: { energy: 'eV', length: 'Å', time: 'fs' }, fingerprint: { software: 'eng', method: 'm', version: 'unknown' } },
+  versionProbe: { args: ['-v'], regex: 'VER\\s+(\\S+)' },
+  availability: { requireConfig: [{ key: 'potentialFile', label: 'potential file' }] },
+  structure: { inputFormat: 'lammps-data' },
+  run: { dataFile: 'd.in', inputFile: 'i.in', args: ['-in', 'i.in'], template: 'pair {{potentialFile}} read {{dataFile}}\nprint E=@@ {{e}}\n' },
+  output: { energy: { name: 'E', regex: 'E=@@\\s+(-?\\d+(?:\\.\\d+)?)' } },
+  result: { converged: true, nSteps: 0 },
+}
+
+test('1. codec：writeLammpsData 忠实格式 + 质量走共享表 + 非正交/未知格式报错', () => {
+  const data = writeLammpsData(cuGraph)
+  assert.match(data, /^1 atoms$/m)
+  assert.match(data, new RegExp(`1 ${ATOMIC_MASS[SYMBOL[29]]}\\s+# Cu`))
+  assert.match(data, /0\.0 3\.615 xlo xhi/)
+  assert.throws(() => writeLammpsData({ cell: [[1, 0.5, 0], [0, 1, 0], [0, 0, 1]], nodes: [{ number: 29, position: [0, 0, 0] }] }), e => e.code === 'CODEC_NONORTHOGONAL')
+  assert.throws(() => getCodec('nope'), e => e.code === 'CODEC_UNKNOWN')
+})
+
+test('2. makeDescriptorProvider：relax 写结构→渲染→spawn→解析能量，字段齐', async () => {
+  const p = makeDescriptorProvider(DESCRIPTOR, {
+    potentialFile: 'P.ep', vars: { e: 'x' },
+    spawnImpl: () => fakeChild({ stdout: 'blah\nE=@@ -2.71\n' }),
+  })
+  assert.equal(p.name, 'eng')
+  assert.equal(p.manifest.eventGranularity, 'job')
+  const r = await p.relax({ graph: cuGraph })
+  close(r.energy, -2.71, 1e-12)
+  assert.equal(r.engine, 'eng'); assert.equal(r.calculator, 'eng')
+  assert.equal(r.n_steps, 0); assert.equal(r.converged, true); assert.ok(r.jobId)
+})
+
+test('3. probeVersion / probeAvailability：横幅解析、缺配置/不可达分支', async () => {
+  const ok = makeDescriptorProvider(DESCRIPTOR, { potentialFile: 'P', spawnImpl: () => fakeChild({ stdout: 'VER 1.2.3' }) })
+  assert.equal(await ok.probeVersion(), '1.2.3')
+  assert.deepEqual(await ok.probeAvailability(), { ok: true, reason: 'ENG 1.2.3' })
+  const noPot = makeDescriptorProvider(DESCRIPTOR, { spawnImpl: () => fakeChild() })
+  assert.equal((await noPot.probeAvailability()).ok, false)
+  assert.match((await noPot.probeAvailability()).reason, /potential file/)
+  const noBin = makeDescriptorProvider(DESCRIPTOR, { potentialFile: 'P', spawnImpl: () => fakeChild({ spawnError: Object.assign(new Error('ENOENT'), { code: 'ENOENT' }) }) })
+  assert.equal(await noBin.probeVersion(), null)
+  assert.match((await noBin.probeAvailability()).reason, /not runnable/)
+})
+
+test('4. relax 缺二进制显式 ENGINE_UNAVAILABLE（注入错误工厂），不静默降级', async () => {
+  const p = makeDescriptorProvider(DESCRIPTOR, {
+    potentialFile: 'P', vars: { e: 'x' },
+    spawnImpl: () => fakeChild({ spawnError: Object.assign(new Error('ENOENT'), { code: 'ENOENT' }) }),
+    EngineUnavailableError: (b, c) => Object.assign(new Error(`unavail ${b}: ${c}; never substitutes`), { code: 'ENGINE_UNAVAILABLE' }),
+  })
+  await assert.rejects(() => p.relax({ graph: cuGraph }), e => e.code === 'ENGINE_UNAVAILABLE' && /never substitutes/.test(e.message))
+})
+
+test('5. renderTemplate 缺变量报错 / parseByRegex 无标记报错', () => {
+  assert.equal(renderTemplate('a {{x}}', { x: 1 }), 'a 1')
+  assert.throws(() => renderTemplate('a {{y}}', { x: 1 }), e => e.code === 'DESCRIPTOR_MISSING_VAR')
+  assert.throws(() => parseByRegex('no marker', { regex: 'V (\\d+)', name: 'v' }), e => e.code === 'DESCRIPTOR_OUTPUT_UNPARSED')
+})
+
+test('6. checkGoldens 机制：命中容差通过、超容差失败、未声明如实标 declared=false', async () => {
+  const g = { ...DESCRIPTOR, goldens: [{ label: 'Cu', expectEnergy: -2.71, tol: 1e-3 }] }
+  assert.equal((await checkGoldens({ descriptor: g, relaxOne: () => Promise.resolve(-2.71) })).passed, true)
+  const bad = await checkGoldens({ descriptor: g, relaxOne: () => Promise.resolve(-9.9) })
+  assert.equal(bad.passed, false); assert.equal(bad.results[0].ok, false)
+  const none = await checkGoldens({ descriptor: DESCRIPTOR, relaxOne: () => Promise.resolve(0) })
+  assert.equal(none.declared, false); assert.match(none.note, /未声明金标准/)
+  await assert.rejects(() => checkGoldens({ descriptor: { goldens: [{ label: 'x', expectEnergy: 0 }] }, relaxOne: () => Promise.resolve(0) }), e => e.code === 'GOLDEN_BAD_TOL')
+})

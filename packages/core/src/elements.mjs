@@ -13,6 +13,14 @@ export const EN = {
   Ti: 1.54, Fe: 1.83, Ni: 1.91, Cu: 1.90, Pd: 2.20, Ag: 1.93, Pt: 2.28, Au: 2.54,
 }
 
+/** 标准原子量（g/mol，IUPAC 2021），按元素符号索引。
+ *  共享质量表：LAMMPS 数据文件 codec、将来的引擎描述符等均引此表，
+ *  不再各自自带 MASSES（消除“多张质量表各自漂移”）。未覆盖元素显式报错不默认。 */
+export const ATOMIC_MASS = {
+  H: 1.008, Li: 6.94, C: 12.011, O: 15.999, Al: 26.982, Si: 28.085, Ar: 39.948,
+  Ti: 47.867, Fe: 55.845, Ni: 58.693, Cu: 63.546, Pd: 106.42, Ag: 107.868, Pt: 195.084, Au: 196.967,
+}
+
 /** 由原子序数数组合成化学式字符串（如 Cu3Ni、Cu3Ag） */
 export function composeFormula(numbers) {
   const count = new Map()

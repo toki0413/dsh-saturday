@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T03:19:45.521Z",
-  "totalPass": 507,
+  "generatedAt": "2026-09-19T06:46:15.121Z",
+  "totalPass": 514,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@toki0413/core",
       "version": "0.3.7",
-      "pass": 37,
+      "pass": 43,
       "fail": 0
     },
     {
@@ -100,7 +100,7 @@
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
       "version": "0.3.7",
-      "pass": 14,
+      "pass": 15,
       "fail": 0
     },
     {
@@ -708,6 +708,11 @@
       "index": 104,
       "clause": "GP 势能面进筛选证据源 gp-energy（A4，泛化通用）：GP 数学上移 @toki0413/core/gp（rbf 泛化到向量输入、explore 的 gp.mjs 改薄 re-export 无损），core/elements 导出电负性表并加通用 compositionFeatureVector（[meanEN,stdEN,meanZ]，仅用既有权威 EN+Z 不编新常数，缺元素显式报错），screening 注册第三内置证据源 gp-energy——对本批已回算候选的 组成特征→energyPerAtom 做 leave-one-out 高斯过程，出“组成近邻平滑能量代理”证据 −β(pred−min)（新源不改筛选代码，注册描述符即接入）。estimated 档、与焓共享能量、与混合熵/凸包共享组分级退化关联由 independenceNote 如实声明并过机器变量审计；候选过少/缺元素数据/缺能量/协方差退化均显式抛错不静默；特征先按列标准化消除 EN/Z 量纲差",
       "evidence": "core/gp 测试（向量 rbf 与标量退化一致 + 各向同性欧氏 + 维度不符报错、GP 向量特征插值训练点≈观测/远处→sf²、pareto/hypervolume 通用）+ screening gp-evidence 测试（compositionFeatureVector 闭式命中、缺元素 ELEMENT_DATA_MISSING/空组分显式错、gp-energy LOO 权重有限且最低能候选权重最高、候选过少/缺能量显式抛错、与焓+混合熵 combineEvidence 机器审计共享变量通过）+ explore gp/工具经 re-export 回归不变（工具面仍 43，无新增工具）"
+    },
+    {
+      "index": 105,
+      "clause": "SDK 化第一层 dogfood：声明式引擎描述符 + 共享 codec + 金标准机制（@toki0413/core/descriptor-provider + codecs，拿 lammps 当靶子）：把\"包一个读某结构文件格式、CLI 一进一出的批处理引擎\"从手写 provider 降为\"写一份 JS 描述符（命令/版本探测/可用性前置/脚本模板/输出解析/能力指纹）+ 选共享 codec\"；结构序列化抽进 core/codecs 的 lammps-data codec（质量改引 core 共享 ATOMIC_MASS，消除 lammps 自带 MASSES 的重复），provider 由 makeDescriptorProvider 装配。诚实边界：只覆盖常见 CLI 一进一出 + 已有 codec 支持的格式，复杂引擎仍自写 provider；checkGoldens 只做机制、真实参考值须作者从有据可查的运行填入不臆造、无声明如实标 declared=false；描述符用 JS 对象非 YAML（js-yaml 属外部依赖违反零运行时依赖）",
+      "evidence": "等价护栏：lammps 现有 9 测试 + potentialProviderContract 一字不改全过（改写前后行为一致，14→15）；core/descriptor 测试（writeLammpsData 忠实格式 + 非正交/未知格式显式报错、makeDescriptorProvider relax/probeVersion/probeAvailability/ENGINE_UNAVAILABLE 注入错误工厂、renderTemplate 缺变量/parseByRegex 无标记显式错、checkGoldens 命中/超容差/未声明三态）+ lammps goldens 回环注入测试 + mcp 工具面不变（仍 43，无新工具）"
     }
   ]
 }
