@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-branch",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Saturday 会话分支账本插件：fork/record/compare/trunk——把模拟当可回退的规划树，add-only 对照分叉决策线，非破坏式合并。",
   "type": "module",
   "main": "src/index.mjs",
