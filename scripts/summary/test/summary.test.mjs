@@ -43,7 +43,7 @@ test('3. parseMilestoneTable（真实契约文档）：105 条且摘要层条款
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
-  assert.ok(at(105).clause.includes('声明式引擎描述符') && at(105).evidence.includes('descriptor-provider'),
+  assert.ok(at(105).clause.includes('声明式引擎描述符') && at(105).evidence.includes('makeDescriptorProvider'),
       '第 105 条证据指向 SDK 声明式引擎描述符 + 共享 codec')
   assert.ok(at(104).clause.includes('筛选证据源') && at(104).evidence.includes('compositionFeatureVector'),
       '第 104 条证据指向 GP 能量证据源（泛化通用）')
