@@ -34,18 +34,18 @@ async function withServer(fn, options = {}) {
   }
 }
 
-test('1. 全量插件挂载：43 工具、无重名、seam 前缀齐全', async () => {
-  assert.equal(PLUGIN_MANIFEST.length, 21, 'bridge + 20 插件')
+test('1. 全量插件挂载：48 工具、无重名、seam 前缀齐全', async () => {
+  assert.equal(PLUGIN_MANIFEST.length, 22, 'bridge + 21 插件')
   await withServer(async (client) => {
     const { tools } = await client.listTools()
-    assert.equal(tools.length, 43)
+    assert.equal(tools.length, 48)
     const names = tools.map(t => t.name)
     assert.equal(new Set(names).size, names.length, '工具名无冲突（冲突即污染）')
     for (const t of tools) {
       assert.ok(t.description && t.description.length > 0, `${t.name} 缺 description`)
       assert.equal(t.inputSchema.type, 'object')
     }
-    for (const expected of ['material.load', 'structure.fromSmiles', 'potential.relax', 'analysis.phonon', 'analysis.phonon.thermo', 'analysis.quasiharmonic', 'analysis.xrd', 'analysis.xrd.phaseIdentify', 'analysis.elasticity', 'sampler.flow', 'sampler.rss', 'workflow.screen', 'workflow.activeLearning', 'workflow.bayesOptimize', 'workflow.bayesOptimizePareto', 'derivation.record', 'runtime.capability.list', 'runtime.engine.attach', 'runtime.engine.detach']) {
+    for (const expected of ['material.load', 'structure.fromSmiles', 'potential.relax', 'analysis.phonon', 'analysis.phonon.thermo', 'analysis.quasiharmonic', 'analysis.xrd', 'analysis.xrd.phaseIdentify', 'analysis.elasticity', 'sampler.flow', 'sampler.rss', 'workflow.screen', 'workflow.activeLearning', 'workflow.bayesOptimize', 'workflow.bayesOptimizePareto', 'session.fork', 'session.record', 'session.compare', 'session.trunk', 'session.status', 'derivation.record', 'runtime.capability.list', 'runtime.engine.attach', 'runtime.engine.detach']) {
       assert.ok(names.includes(expected), `旗舰工具 ${expected} 应在册`)
     }
   })

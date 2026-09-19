@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-19T07:59:07.890Z",
-  "totalPass": 528,
-  "totalFail": 0,
-  "packageCount": 26,
-  "testedCount": 25,
+  "generatedAt": "2026-09-19T08:58:46.599Z",
+  "totalPass": 537,
+  "totalFail": 1,
+  "packageCount": 27,
+  "testedCount": 26,
   "packages": [
     {
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.8",
       "pass": 60,
-      "fail": 0
+      "fail": 1
     },
     {
       "dir": "packages\\contract-tests",
@@ -52,6 +52,13 @@
       "name": "@toki0413/plugin-ase",
       "version": "0.3.8",
       "pass": 12,
+      "fail": 0
+    },
+    {
+      "dir": "plugins\\branch",
+      "name": "@toki0413/plugin-branch",
+      "version": "0.3.8",
+      "pass": 9,
       "fail": 0
     },
     {
@@ -723,6 +730,11 @@
       "index": 107,
       "clause": "SDK 声明式引擎泛化验证（第二引擎 + 第二格式，证零 provider 代码接入通用）：给 @toki0413/core/codecs 加第二个格式 writer writeXyz（XYZ，与 lammps-data 不同），另立一个读 XYZ 的引擎描述符 xyzcli，纯用 makeDescriptorProvider 装配（新代码只有描述符对象 + 一个 codec 函数，provider 装配逻辑一字不改），过同一份 potentialProviderContract（§4.2 manifest 形状/relax 真实执行/幂等/显式失败/§5.2 粒度）与 conformanceReport。证明\"接新引擎 = 描述符 + 选 codec、零 provider 代码\"不是只对 lammps 一家成立——格式 writer 横向可扩、descriptor-provider 复用。诚实边界：xyzcli 是验证用的合成引擎（假二进制注入），非可发布真引擎；真实外部引擎仍待接来验 schema 覆盖度",
       "evidence": "plugins/lammps descriptor-engine 测试（writeXyz 忠实 XYZ 格式行数/符号行、xyzcli 描述符引擎在模块顶层过同一份 potentialProviderContract 五断言含 unavailable ENGINE_UNAVAILABLE 分支、conformanceReport passed 且 subject xyzcli、relax 解析注入能量）+ core codecs 既有测试不变 + mcp 工具面不变（仍 43）"
+    },
+    {
+      "index": 108,
+      "clause": "会话分支账本 plugin-branch（把\"模拟是可回退的规划树\"落成受约束原语，A5 延伸）：五动词 session.fork（起一条决策线，只登记父子与分叉点序号，不复制/改动状态、不重跑计算）/ record（某支算得的数值挂到 subject-key，add-only，同键最新生效旧记录不覆盖）/ compare（只读沿祖先链取每支最新可见值并列差与分歧，不合并）/ trunk（选主干仅移指针+审计，绝不删他支与其记录）/ status（分支树快照）。语义钉死对齐可逆性边界：结果不可变、可见性沿祖先链（fork 前共享、fork 后兄弟支隔离）、无破坏式合并（这是 git 式历史但只用于读侧对照）。纯账本 branch-ledger.mjs 独立闭式测，插件层只接线，不碰 attach/detach 与 Trajectory 高危路径；fork/trunk 决策落 Trajectory 可溯源",
+      "evidence": "plugin-branch branch-ledger 测试（共享历史后分叉各走各的、兄弟隔离、add-only 同键最新生效不覆盖、compare 只读并列报分歧与数值跨度、markTrunk 非破坏他支与记录仍全在场、未知支/重复id/非法入参显式抛错、同操作序列确定性同快照）+ 工具集成（五工具在册端到端 + 缺 subject 经工具出口显式失败 + 卸载回收）+ mcp 工具面 43→48（新增 session.* 五工具，PLUGIN_MANIFEST 22）"
     }
   ]
 }
