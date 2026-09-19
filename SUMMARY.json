@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T01:41:51.185Z",
-  "totalPass": 471,
+  "generatedAt": "2026-09-19T02:04:59.812Z",
+  "totalPass": 478,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -86,7 +86,7 @@
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
       "version": "0.3.7",
-      "pass": 15,
+      "pass": 22,
       "fail": 0
     },
     {
@@ -683,6 +683,11 @@
       "index": 99,
       "clause": "主动学习闭环 basin-hopping（workflow seam 扩展，plugin-explore）：把单轮\"采样→回算\"升级成多轮\"从当前最优结构微扰产候选→引擎 relax 回算→能量更低则更新中心与最优\"的随机爬山；引擎是唯一 oracle（无 GP 代理、非贝叶斯优化——方案2另议），候选是采样分布点非唯一解，history 最优能量按构造单调不升（贪心接受下界），不声明全局最优；复用 material/potential/sampler-reference-perturbation 三服务不新引依赖，逐轮回算落 Trajectory（含 round 与 sampled-candidate 谱系）；缺服务或非法参数显式报错不静默降级",
       "evidence": "plugin-explore active-learning 测试（合成 oracle E=sum of pos squared + 真 reference-perturbation sampler：贪心最优单调不升、评估数 1+rounds*cands 对账、同种子确定性复现、多轮确有降能、缺 sampler/potential 或非法 rounds 显式错）+ 工具层集成（workflow.activeLearning 端到端 + 每条事件标 active-learning + 卸载回收 + 缺服务报错）+ explore 工具名集更新 + mcp 工具面 38→39"
+    },
+    {
+      "index": 100,
+      "clause": "GP 代理贝叶斯优化 workflow.bayesOptimize（#4 方案2，plugin-explore gp.mjs）：零依赖高斯过程回归（RBF 核 + 自带 Cholesky 分解与前后回代）+ LCB 采集（mu−kappa·sigma，极小化版 UCB）做 1D 昂贵黑箱极小化——对种子材料各向同性体变标度 x、引擎 calculate 回算 E(x)/原子作 oracle，3 冷启动点 + iterations 次 LCB 采集逼近平衡体积。不声明全局最优（启发式，平滑单峰经验少评估逼近）；缺 material/potential 显式报错、非正定核显式抛错不静默加抖掩盖",
+      "evidence": "plugin-explore gp 测试（闭式：Cholesky LLᵀ=A 还原 + 回代命中 A⁻¹z、GP 插值训练点均值≈观测/方差≈0 远处方差→sf²、二次目标 boMinimize bestX 近真极小、多峰目标不劣于冷启动、越界/空输入/非正定显式错）+ 工具集成（stub calculate energy=(scale−s*)² 经 cell-scaled 谱系取标度，BO 逼近 s*±0.02 + 评估数 3+iterations + 卸载回收 + 缺服务报错）+ mcp 工具面 39→40"
     }
   ]
 }
