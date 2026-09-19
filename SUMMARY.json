@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T02:04:59.812Z",
-  "totalPass": 478,
+  "generatedAt": "2026-09-19T02:23:52.462Z",
+  "totalPass": 484,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -135,7 +135,7 @@
       "dir": "plugins\\phonon",
       "name": "@toki0413/plugin-phonon",
       "version": "0.3.7",
-      "pass": 23,
+      "pass": 29,
       "fail": 0
     },
     {
@@ -688,6 +688,11 @@
       "index": 100,
       "clause": "GP 代理贝叶斯优化 workflow.bayesOptimize（#4 方案2，plugin-explore gp.mjs）：零依赖高斯过程回归（RBF 核 + 自带 Cholesky 分解与前后回代）+ LCB 采集（mu−kappa·sigma，极小化版 UCB）做 1D 昂贵黑箱极小化——对种子材料各向同性体变标度 x、引擎 calculate 回算 E(x)/原子作 oracle，3 冷启动点 + iterations 次 LCB 采集逼近平衡体积。不声明全局最优（启发式，平滑单峰经验少评估逼近）；缺 material/potential 显式报错、非正定核显式抛错不静默加抖掩盖",
       "evidence": "plugin-explore gp 测试（闭式：Cholesky LLᵀ=A 还原 + 回代命中 A⁻¹z、GP 插值训练点均值≈观测/方差≈0 远处方差→sf²、二次目标 boMinimize bestX 近真极小、多峰目标不劣于冷启动、越界/空输入/非正定显式错）+ 工具集成（stub calculate energy=(scale−s*)² 经 cell-scaled 谱系取标度，BO 逼近 s*±0.02 + 评估数 3+iterations + 卸载回收 + 缺服务报错）+ mcp 工具面 39→40"
+    },
+    {
+      "index": 101,
+      "clause": "准谐近似热膨胀 analysis.quasiharmonic（A1，phonon-bz + eos 拼接）：对各向同性体变标度逐点算静态能 E_static 与振动自由能 F_vib(V,T)（runForceConstants 提 Φ(R)→runPhononThermo 出逐温 freeMeV），合成 F(V,T) 在体积网格上求极小、网格间三点抛物线插值（V∝scale³）→ V(T) 与 α=(1/V)dV/dT；模式 Grüneisen γ=-dlnω/dlnV 最小二乘拟合。诚实边界：准谐=ω随体积变但不含本征非谐（声子衰移/寿命），数值随网格密疏而定、非解析平衡态，落网格边界以 parabolaFitOk=false 如实报告",
+      "evidence": "plugin-phonon phonon-qha 测试（闭式：parabolaVertex 过三点命中顶点/开口向下判 false、合成模型 s*(T)=1+cT/2k 精确复现 + V(T)升 α>0 + volume=base·scale³、T→0 回静态平衡、ω∝V^-γ 拟合回 γ、非法输入显式错）+ 工具集成（真桥 Cu 极小网格跑通交付形态 + 两次调用确定性复现 + 轨迹落盘 + 无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 40→41"
     }
   ]
 }

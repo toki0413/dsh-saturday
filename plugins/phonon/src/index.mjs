@@ -15,6 +15,7 @@ import {
   phononError,
 } from './phonon.mjs'
 import { runPhononThermo } from './phonon-bz.mjs'
+import { quasiharmonic } from './phonon-qha.mjs'
 
 export {
   runPhononAnalysis, displacedGraph, displacementJobs, buildSupercell,
@@ -246,6 +247,67 @@ export default {
           })
         }
         return { ...result, fcDiagnostics: diagnostics }
+      },
+    })
+
+    rt.registerTool({
+      name: 'analysis.quasiharmonic',
+      description: '准谐近似热膨胀 α(T)/Grüneisen：对种子材料施各向同性体变标度，逐标度算静态能 E_static '
+        + '与振动自由能 F_vib(V,T)（实空间力常数→Born–von Kármán 格点），合成 F(V,T) 对体积求极小 → V(T)、α=(1/V)dV/dT。'
+        + '准谐=ω随体积变、不含本征非谐；极小在体积网格上求、网格间三点抛物线插值。需 material/potential 服务（引擎需有力）。'
+        + '诚实：数值随网格密疏而定，非解析平衡态。',
+      parameters: {
+        materialId: { type: 'string', description: '材料 ID（需已弛豫到平衡附近）' },
+        engine: { type: 'string', default: 'auto' },
+        scales: { type: 'array', items: { type: 'number' }, description: '线度标度网格（缺省 [0.97,0.985,1,1.015,1.03]，至少3点）' },
+        temperatures: { type: 'array', items: { type: 'number' }, default: [100, 200, 300], description: '温度网格（K）' },
+        mesh: { type: 'integer', default: 8, description: '每标度求 F_vib 的 q 网格每轴点数' },
+        supercellRep: { type: 'array', items: { type: 'integer' }, default: DEFAULT_SUPERCELL_REP },
+        displacement: { type: 'number', default: DEFAULT_DISPLACEMENT },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const materialService = rt.getService('material')
+        const potential = rt.getService('potential')
+        if (!args.materialId || !materialService || !potential) {
+          throw phononError('ANALYSIS_INPUT_MISSING',
+            'analysis.quasiharmonic requires materialId with services "material" and "potential" (mount the saturday core plugin first)')
+        }
+        const material = await materialService.get(args.materialId)
+        const provider = potential.resolveProvider({ engine: args.engine }, { type: 'calculate', nAtoms: material.nAtoms })
+        const scales = args.scales ?? [0.97, 0.985, 1, 1.015, 1.03]
+        const temperatures = args.temperatures ?? [100, 200, 300]
+        const det = (c) => Math.abs(
+          c[0][0] * (c[1][1] * c[2][2] - c[1][2] * c[2][1])
+          - c[0][1] * (c[1][0] * c[2][2] - c[1][2] * c[2][0])
+          + c[0][2] * (c[1][0] * c[2][1] - c[1][1] * c[2][0]))
+        const baseVolume = det(material.graph.cell)
+        const eStatic = [], fvibMeV = []
+        for (const s of scales) {
+          const g = structuredClone(material.graph)
+          g.cell = g.cell.map(row => row.map(v => v * s))
+          g.nodes = g.nodes.map(n => ({ ...n, position: n.position.map(v => v * s) }))
+          const forceProvider = async (variantGraph) => {
+            const variant = new Material({ modalities: { graph: variantGraph, formula: material.formula } }, variantGraph)
+            const r = await provider.calculate(variant)
+            if (!Array.isArray(r?.forces)) throw phononError('PHONON_FORCE_MISSING', `engine "${provider.name}" returned no forces; QHA requires forces`)
+            return { forces: r.forces, calculator: provider.name }
+          }
+          // 静态能（未位移）
+          const eq = await provider.calculate(new Material({ modalities: { graph: g, formula: material.formula } }, g))
+          if (!Number.isFinite(eq?.energy)) throw phononError('QHA_BAD_POINT', `non-finite static energy at scale ${s}`)
+          eStatic.push(eq.energy)
+          const { fc } = await runForceConstants(g, forceProvider, { displacement: args.displacement, supercellRep: args.supercellRep ?? DEFAULT_SUPERCELL_REP })
+          const thermo = runPhononThermo(fc, { mesh: args.mesh, temperatureGrid: temperatures })
+          fvibMeV.push(thermo.series.map(p => p.fVibMeV))
+        }
+        const result = quasiharmonic({ baseVolume, scales, eStatic, fvibMeV, temperatures })
+        await rt.appendTrajectory?.({
+          type: 'analysis_complete', analysis: 'quasiharmonic',
+          result: { volumeAt0: result.volumeAt0, points: result.points.length, maxAlpha: Math.max(...result.points.map(p => p.alphaPerK)) },
+        })
+        await rt.emit?.('saturday/analysis/complete', { type: 'saturday/analysis/complete', payload: { analysis: 'quasiharmonic', volumeAt0: result.volumeAt0 } })
+        return { ...result, provider: provider.name, formula: material.formula, baseVolume }
       },
     })
 
