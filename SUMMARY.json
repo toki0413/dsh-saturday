@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T00:00:29.291Z",
-  "totalPass": 465,
+  "generatedAt": "2026-09-19T01:41:51.185Z",
+  "totalPass": 471,
   "totalFail": 0,
   "packageCount": 26,
   "testedCount": 25,
@@ -86,7 +86,7 @@
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
       "version": "0.3.7",
-      "pass": 9,
+      "pass": 15,
       "fail": 0
     },
     {
@@ -678,6 +678,11 @@
       "index": 98,
       "clause": "streamable-http 传输入口（server 能力，不新增工具）：startHttp 以 node 内置 http + SDK StreamableHTTPServerTransport 暴露同一工具面，会话态多路复用——全局只 boot 一次、每 mcp-session-id 建一个 McpServer + transport（避免每会话重起 Python sidecar），附 /health 健康端点，CLI 以 --http 或 SATURDAY_MCP_TRANSPORT=http 切换（缺省仍 stdio，零外部依赖）；让任意远程 MCP 宿主无需本地安装即可接入。诚实边界：无 Python 的部署上工具面同样收缩至 lj-js 演示档（与 ModelScope 仅本地可用判定同源），远程端点不承诺 EMT/MACE 全物理",
       "evidence": "packages/mcp-server http 测试（进程内起 startHttp + SDK StreamableHTTPClientTransport 经真 HTTP 完成 initialize、tools/list、tools/call material.load Cu，断言按能力含 analysis.xrd 与工具数下限而非绝对值——无 MP_API_KEY 双档一致通过；再验 /health 与 shutdown 后端口关闭）+ stdio 路径回归不变（38 工具）"
+    },
+    {
+      "index": 99,
+      "clause": "主动学习闭环 basin-hopping（workflow seam 扩展，plugin-explore）：把单轮\"采样→回算\"升级成多轮\"从当前最优结构微扰产候选→引擎 relax 回算→能量更低则更新中心与最优\"的随机爬山；引擎是唯一 oracle（无 GP 代理、非贝叶斯优化——方案2另议），候选是采样分布点非唯一解，history 最优能量按构造单调不升（贪心接受下界），不声明全局最优；复用 material/potential/sampler-reference-perturbation 三服务不新引依赖，逐轮回算落 Trajectory（含 round 与 sampled-candidate 谱系）；缺服务或非法参数显式报错不静默降级",
+      "evidence": "plugin-explore active-learning 测试（合成 oracle E=sum of pos squared + 真 reference-perturbation sampler：贪心最优单调不升、评估数 1+rounds*cands 对账、同种子确定性复现、多轮确有降能、缺 sampler/potential 或非法 rounds 显式错）+ 工具层集成（workflow.activeLearning 端到端 + 每条事件标 active-learning + 卸载回收 + 缺服务报错）+ explore 工具名集更新 + mcp 工具面 38→39"
     }
   ]
 }

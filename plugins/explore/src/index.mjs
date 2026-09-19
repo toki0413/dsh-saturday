@@ -5,8 +5,9 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { exploreCandidates } from './explore.mjs'
+import { runActiveLearning } from './active-learning.mjs'
 
-export { exploreCandidates }
+export { exploreCandidates, runActiveLearning }
 
 export default {
   name: 'saturday-explore',
@@ -50,6 +51,39 @@ export default {
           engine: args.engine,
           topK: args.topK,
           // 事件经本插件的运行时出口发布，同 Context 内核心插件的监听器照常收到
+          emit: (type, event) => rt.emit(type, event),
+        })
+      },
+    })
+
+    rt.registerTool({
+      name: 'workflow.activeLearning',
+      description: 'basin-hopping 主动学习闭环（§4.3+§4.5 迭代版）：每轮从当前最优结构微扰产候选→引擎 relax '
+        + '回算→能量更低则更新中心与最优。引擎是唯一 oracle（无 GP 代理，非贝叶斯优化）；候选是采样分布点'
+        + '非唯一解；history 最优能量按构造单调不升，不声明全局最优。逐轮回算落 Trajectory（含 round/谱系）。'
+        + '需 material/potential/sampler/reference-perturbation 服务。',
+      parameters: {
+        referenceId: { type: 'string', required: true, description: '种子结构材料 ID' },
+        rounds: { type: 'integer', default: 3, description: '主动学习轮数' },
+        candidatesPerRound: { type: 'integer', default: 4, description: '每轮候选数' },
+        sigma: { type: 'number', default: 0.05, description: '微扰位移标准差（Å）' },
+        seed: { type: 'integer', default: 1, description: '随机种子（第 r 轮用 seed+r，确定性复现）' },
+        engine: { type: 'string', default: 'auto' },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const materialService = rt.getService('material')
+        const potential = rt.getService('potential')
+        const sampler = rt.getService('sampler/reference-perturbation')
+        if (!materialService || !potential || !sampler) {
+          throw new Error('workflow.activeLearning requires services "material", "potential" and '
+            + '"sampler/reference-perturbation" (mount the saturday core and sampler-perturb plugins first)')
+        }
+        const reference = await materialService.get(args.referenceId)
+        return runActiveLearning({
+          reference, sampler, potential, engine: args.engine,
+          rounds: args.rounds, candidatesPerRound: args.candidatesPerRound,
+          sigma: args.sigma, seed: args.seed,
           emit: (type, event) => rt.emit(type, event),
         })
       },

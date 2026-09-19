@@ -21,7 +21,7 @@ packages/
   python-bridge/   → @toki0413/python-bridge  通用 Python sidecar 客户端
   contract-tests/  → @toki0413/contract-tests  五条 seam 契约测试套件
   bridge/          → @toki0413/bridge         dsh Bundle 主插件 + 全部演示脚本
-  mcp-server/      → @toki0413/mcp-server     MCP 协议 server（38 工具 stdio）
+  mcp-server/      → @toki0413/mcp-server     MCP 协议 server（39 工具 stdio；--http 走 streamable-http）
   data/            → @toki0413/data           运行时数据（JSONL 轨迹等）
 
 plugins/           → 各独立插件（新插件必须过 contract-tests）

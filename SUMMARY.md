@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-19T00:00:29.290Z
+生成时间：2026-09-19T01:41:51.184Z
 
-**回归基线：465/465**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：471/471**（26 个包，其中 25 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -17,7 +17,7 @@
 | `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 5/5 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
-| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 9/9 |
+| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 15/15 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
 | `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 14/14 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
@@ -33,7 +33,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 38/38 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 8/8 |
 
-## 实证条款（契约文档附录 A，98 条）
+## 实证条款（契约文档附录 A，99 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -133,6 +133,7 @@
 - **#96** 全布里渊区声子热力学（analysis seam 扩展，phonon-bz）：从超胞有限位移提取保留格矢的实空间力常数 Φ_{ij}(R)（最近镜像折回小格矢 R=Rr−rep·round(Rr/rep)、牛顿第三 Φ_{ij}(R)=Φ_{ji}(−R)ᵀ 对称、ASR 改自作用块，asr/newton 残余如实报告）→ Born–von Kármán D(q)=Σ_R Φ(R)e^{iq·R}/√(m_i·m_j) 在 Γ 心 q 网格对角化（复 Hermitian 用 2n×2n 实对称嵌入求解）→ 每原胞 C_v(T)/熵/振动自由能/态密度 + Debye θ_D=ħω_max/k_B 对照；声学零模 q→0 测度为零剔除并计数、虚频>0 置 valid=false 不假装热力学可信（诚实纪律同 Γ 法）；units 随交付声明、Debye 显式标注为连续介质对照非格点结果冒充（证据：plugin-phonon phonon-bz 测试（闭式：Hermitian 本征 1和4、1D 链 ω(q)=2√(K/m)·abs(sinπq) 与 Γ 零模、Einstein 热容闭式与高低温极限/热三律、Debye T³ 与 Dulong-Petit、模数可加）+ phonon-fc 集成（合成 1D 链提取 Φ_xx(R) 为 2K 与 −K、ASR 与牛顿残余≈0 → BvK ω(q) 对闭式）+ 工具层 test 15（Cu → analysis.phonon.thermo 每原胞 12 支、C_v(T) 单调、ASR 牛顿受控、谱系落盘、无力引擎 PHONON_FORCE_MISSING 双档分支）+ mcp 工具面 36→37）
 - **#97** X 射线粉末衍射分析（analysis seam 第四实证，plugin-xrd）：纯几何运动学衍射——倒格度规 G*=g⁻¹ 给 d(hkl)、几何结构因子 F(hkl)=Σ_j f_j·exp(2πi H·r_j) 定系统消光、Bragg 2θ、粉末峰按等 d 分组合并多极数；仅需 material 服务（引擎无关、零依赖、任何环境可跑）。诚实边界写死：峰位与消光精确（只依赖点阵中心化几何，与 f 数值无关），强度为 abs(F)² 相对值取 f≈Z 前向近似、未含 Cromer-Mann/Debye-Waller/偏振/吸收/织构因子，随交付 note 声明不冒充实验定量强度；奇异胞/非法入参显式抛错（证据：plugin-xrd xrd 测试（闭式：立方 d-spacing、bcc/fcc/金刚石/NaCl 系统消光与结构因子幅度、粉末首峰 {110} 多极 12、同种 Z 使 NaCl 111 消失证相位效应非巧合、奇异胞/非法入参显式错）+ 工具层集成（Cu→analysis.xrd 峰按 2θ 升序 + fcc {100} 消光 + 谱系落盘 + 缺料显式报错）+ mcp 工具面 37→38）
 - **#98** streamable-http 传输入口（server 能力，不新增工具）：startHttp 以 node 内置 http + SDK StreamableHTTPServerTransport 暴露同一工具面，会话态多路复用——全局只 boot 一次、每 mcp-session-id 建一个 McpServer + transport（避免每会话重起 Python sidecar），附 /health 健康端点，CLI 以 --http 或 SATURDAY_MCP_TRANSPORT=http 切换（缺省仍 stdio，零外部依赖）；让任意远程 MCP 宿主无需本地安装即可接入。诚实边界：无 Python 的部署上工具面同样收缩至 lj-js 演示档（与 ModelScope 仅本地可用判定同源），远程端点不承诺 EMT/MACE 全物理（证据：packages/mcp-server http 测试（进程内起 startHttp + SDK StreamableHTTPClientTransport 经真 HTTP 完成 initialize、tools/list、tools/call material.load Cu，断言按能力含 analysis.xrd 与工具数下限而非绝对值——无 MP_API_KEY 双档一致通过；再验 /health 与 shutdown 后端口关闭）+ stdio 路径回归不变（38 工具））
+- **#99** 主动学习闭环 basin-hopping（workflow seam 扩展，plugin-explore）：把单轮"采样→回算"升级成多轮"从当前最优结构微扰产候选→引擎 relax 回算→能量更低则更新中心与最优"的随机爬山；引擎是唯一 oracle（无 GP 代理、非贝叶斯优化——方案2另议），候选是采样分布点非唯一解，history 最优能量按构造单调不升（贪心接受下界），不声明全局最优；复用 material/potential/sampler-reference-perturbation 三服务不新引依赖，逐轮回算落 Trajectory（含 round 与 sampled-candidate 谱系）；缺服务或非法参数显式报错不静默降级（证据：plugin-explore active-learning 测试（合成 oracle E=sum of pos squared + 真 reference-perturbation sampler：贪心最优单调不升、评估数 1+rounds*cands 对账、同种子确定性复现、多轮确有降能、缺 sampler/potential 或非法 rounds 显式错）+ 工具层集成（workflow.activeLearning 端到端 + 每条事件标 active-learning + 卸载回收 + 缺服务报错）+ explore 工具名集更新 + mcp 工具面 38→39）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
