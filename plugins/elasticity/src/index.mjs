@@ -7,10 +7,11 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
-import { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA, densityFromGraph, acousticFromModuli } from './elasticity.mjs'
+import { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA, densityFromGraph, acousticFromModuli, directionVelocities } from './elasticity.mjs'
 
 export { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA, strainedGraph, assembleStiffness, deriveModuli, jacobiEigenvalues } from './elasticity.mjs'
 export { densityFromGraph, acousticFromModuli, AMU_KG, HBAR_OVER_KB_KS } from './elasticity.mjs'
+export { christoffel, directionVelocities, eig3Symmetric } from './elasticity.mjs'
 
 export default {
   name: 'saturday-elasticity',
@@ -67,9 +68,14 @@ export default {
           K_GPa: result.K_GPa, G_GPa: result.G_GPa,
           density_kg_m3: density.rho_kg_m3, number_density_m3: density.number_density_m3,
         })
+        const acousticAnisotropy = directionVelocities({
+          C: result.C, density_kg_m3: density.rho_kg_m3,
+          directions: [{ name: '[100]', dir: [1, 0, 0] }, { name: '[110]', dir: [1, 1, 0] }, { name: '[111]', dir: [1, 1, 1] }],
+        })
         return {
           ...result,
           acoustic,
+          acousticAnisotropy,
           density,
           units: { stiffness: 'eV/Å³', gpaConversion: `1 eV/Å³ = ${EV_PER_A3_TO_GPA} GPa (CODATA-derived, explicit)`, acoustic: 'v km/s、θ_D K' },
           engine: provider.name,

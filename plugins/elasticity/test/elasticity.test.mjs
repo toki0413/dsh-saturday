@@ -9,7 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import plugin, {
   strainedGraph, assembleStiffness, deriveModuli, jacobiEigenvalues, elasticStiffness,
-  densityFromGraph, acousticFromModuli,
+  densityFromGraph, acousticFromModuli, christoffel, directionVelocities, eig3Symmetric, EV_PER_A3_TO_GPA,
 } from '../src/index.mjs'
 
 const LAME = { lambda: 1.0, mu: 0.4 } // eV/Å³
@@ -178,6 +178,8 @@ test('5. 工具门禁：引擎声明 calculate+stress → 12 次调用出 C；�
     assert.ok(Number.isFinite(out.acoustic.debyeTemperature_K) && out.acoustic.debyeTemperature_K > 0, '弹性 Debye θ_D 随分析产出')
     assert.ok(out.acoustic.vL_ms > out.acoustic.vT_ms, '纵波快于横波')
     assert.ok(out.density.rho_kg_m3 > 0 && out.density.number_density_m3 > 0, '质密/数密度随产出')
+    assert.ok(Array.isArray(out.acousticAnisotropy) && out.acousticAnisotropy.length === 3, '单晶方向声速 [100]/[110]/[111] 随产出')
+    assert.ok(out.acousticAnisotropy[0].velocities_ms.every(v => Number.isFinite(v) && v > 0), '[100] 三支相速有限')
   } finally {
     await ok.fiber.dispose(); await ok.coreFiber.dispose()
   }
@@ -206,4 +208,28 @@ test('6. 密度与声速/弹性 Debye 温度：Cu fcc 对账实验值（闭式�
   // 守卫：零模 / 零密度 / 非周期胞 各显式错
   assert.throws(() => acousticFromModuli({ K_GPa: 0, G_GPa: 1, density_kg_m3: 1, number_density_m3: 1 }), e => e.code === 'ELASTICITY_ACOUSTIC_BAD_INPUT')
   assert.throws(() => densityFromGraph({ cell: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], nodes: [{ number: 29, position: [0, 0, 0] }] }), e => e.code === 'ELASTICITY_NEEDS_CELL')
+})
+
+const cubicC = (c11, c12, c44) => {
+  const C = Array.from({ length: 6 }, () => Array(6).fill(0))
+  C[0][0] = C[1][1] = C[2][2] = c11; C[0][1] = C[0][2] = C[1][0] = C[1][2] = C[2][0] = C[2][1] = c12
+  C[3][3] = C[4][4] = C[5][5] = c44
+  return C
+}
+const EV_PA = EV_PER_A3_TO_GPA * 1e9
+
+test('7. 各向异性方向声速：eig3Symmetric 闭式 + 各向同性方向无关守卫 + 立方 [100]/[111] 解析', () => {
+  // 根因守卫：eig3Symmetric 对强耦合对称阵直接解（jacobiEigenvalues 会不收敛）
+  assert.deepEqual(eig3Symmetric([[0.8667, 0.4667, 0.4667], [0.4667, 0.8667, 0.4667], [0.4667, 0.4667, 0.8667]]).map(v => +v.toFixed(3)), [0.4, 0.4, 1.8])
+  const rho = 5000
+  const mods = (dir, C) => directionVelocities({ C, density_kg_m3: rho, directions: [{ name: 'x', dir }] })[0].velocities_ms
+    .map(v => (v * v * rho) / EV_PA).sort((a, b) => a - b)   // 反推回 eV/Å³ 特征值
+  const iso = cubicC(1.8, 1, 0.4)   // λ=1,μ=0.4 各向同性
+  const i100 = mods([1, 0, 0], iso), i111 = mods([1, 1, 1], iso)
+  assert.deepEqual(i100.map(v => +v.toFixed(4)), i111.map(v => +v.toFixed(4)), '各向同性：方向无关')
+  assert.deepEqual(i111.map(v => +v.toFixed(4)), [0.4, 0.4, 1.8], `iso {0.4,0.4,1.8} got ${i111}`)
+  const C = cubicC(3, 1, 0.6)
+  assert.deepEqual(mods([1, 0, 0], C).map(v => +v.toFixed(4)), [0.6, 0.6, 3], '立方 [100]')
+  assert.deepEqual(mods([1, 1, 1], C).map(v => +v.toFixed(4)), [0.8667, 0.8667, 2.4667], '立方 [111]')
+  assert.throws(() => christoffel(C, [0, 0, 0]), e => e.code === 'ELASTICITY_BAD_INPUT')
 })

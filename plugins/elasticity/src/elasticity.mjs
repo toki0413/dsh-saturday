@@ -158,6 +158,64 @@ function invert6(A) {
   return M.map(row => row.slice(n))
 }
 
+/**
+ * 对称 3×3 矩阵特征值闭式解（Cardano/三角法），确定性、无迭代收敛问题。
+ * 升序返回三个实特征值（trace 严格守恒）。适用于声学张量这类强耦合/退化特征值 3×3。
+ * （jacobiEigenvalues 对大次对角/退化特征值不收敛——已用 iso[111] 探针坐实，故方向声速不走它。）
+ */
+export function eig3Symmetric(A) {
+  const a = A[0][0], b = A[1][1], c = A[2][2], d = A[0][1], e = A[0][2], f = A[1][2]
+  const q = a + b + c
+  const qa = q / 3
+  const b11 = a - qa, b22 = b - qa, b33 = c - qa
+  const p2 = (b11 * b11 + b22 * b22 + b33 * b33 + 2 * (d * d + e * e + f * f)) / 6
+  if (p2 < 1e-30) return [a, b, c].sort((x, y) => x - y)   // 已（近）对角：次对角为零，直接取对角元
+  const det = b11 * (b22 * b33 - f * f) - d * (d * b33 - f * e) + e * (d * f - b22 * e)
+  const r = Math.sqrt(p2)
+  const ec = Math.max(-1, Math.min(1, (det / 2) / (r * r * r)))
+  const phi = Math.acos(ec) / 3
+  const e1 = qa + 2 * r * Math.cos(phi)
+  const e3 = qa + 2 * r * Math.cos(phi + 2 * Math.PI / 3)
+  const e2 = q - e1 - e3
+  return [e1, e2, e3].sort((x, y) => x - y)
+}
+
+/**
+ * 声学（Christoffel）张量：Γ_il = Σ_{jk} C_ijkl n_j n_k（单位传播方向 n）。
+ * C 为 6×6 Voigt 刚度（eV/Å³，剪切行/列已为物理 C_yzyz，无需因子）；展回张量靠对称映射。
+ * 返回 3×3 对称 Γ（同单位）。零方向报 ELASTICITY_BAD_INPUT。（iso 已验证 Γ[111]=0.867I+0.467(off)，方向无关。）
+ */
+export function christoffel(C, n) {
+  const len = Math.hypot(n[0], n[1], n[2])
+  if (!Number.isFinite(len) || len === 0) throw elasticityError('ELASTICITY_BAD_INPUT', `christoffel needs a nonzero direction; got ${JSON.stringify(n)}`)
+  const u = [n[0] / len, n[1] / len, n[2] / len]
+  const vp = [[0, 0], [1, 1], [2, 2], [1, 2], [0, 2], [0, 1]]  // Voigt ↔ 对称张量对
+  const vidx = (i, j) => vp.findIndex(([a, b]) => (a === i && b === j) || (a === j && b === i))
+  const G = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+  for (let i = 0; i < 3; i++) for (let l = 0; l < 3; l++) {
+    let s = 0
+    for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) s += C[vidx(i, j)][vidx(k, l)] * u[j] * u[k]
+    G[i][l] = s
+  }
+  return G.map((r, i) => r.map((v, l) => 0.5 * (v + G[l][i])))  // 强制对称（数值安全）
+}
+
+/**
+ * 单晶方向相速：对给定传播方向集，解 Christoffel 特征值 → 3 个分支声速（m/s）。
+ * C 原生 eV/Å³，经 EV_PER_A3_TO_GPA×1e9 转 Pa，ρ 用 kg/m³；负特征值（力学不稳）该分支记 null。
+ */
+export function directionVelocities({ C, density_kg_m3, directions = [] } = {}) {
+  if (!Array.isArray(C) || C.length !== 6) throw elasticityError('ELASTICITY_BAD_INPUT', 'directionVelocities requires 6×6 C')
+  if (!(Number.isFinite(density_kg_m3) && density_kg_m3 > 0)) throw elasticityError('ELASTICITY_ACOUSTIC_BAD_INPUT', `density_kg_m3 must be > 0; got ${density_kg_m3}`)
+  const PA = EV_PER_A3_TO_GPA * 1e9
+  return directions.map(({ name, dir }) => {
+    const eig = eig3Symmetric(christoffel(C, dir).map(r => r.map(v => v * PA)))  // Pa，升序
+    const velocities_ms = eig.map(e => (e > 1e-9 ? Math.sqrt(e / density_kg_m3) : null))
+    const finite = velocities_ms.filter(v => v != null)
+    return { direction: name, velocities_ms, vMax_ms: finite.length ? Math.max(...finite) : null, stable: eig.every(e => e > -1e-6 * PA) }
+  })
+}
+
 /** CODATA-2018 基本常数：amu(kg)、ħ/kB(K·s)。1 Å³ = 1e-30 m³。 */
 export const AMU_KG = 1.66053906660e-27
 export const HBAR_OVER_KB_KS = 7.638233314e-12

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T13:36:37.411Z",
-  "totalPass": 569,
+  "generatedAt": "2026-09-20T14:41:16.234Z",
+  "totalPass": 570,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -79,7 +79,7 @@
       "dir": "plugins\\elasticity",
       "name": "@toki0413/plugin-elasticity",
       "version": "0.3.10",
-      "pass": 6,
+      "pass": 7,
       "fail": 0
     },
     {
@@ -787,6 +787,11 @@
       "index": 117,
       "clause": "descriptor 端到端接 POSCAR 引擎实证（SDK 收口，纯测试无新代码/工具）：把 #110 写侧、#112 摄侧、descriptor-provider 三者串成完整闭环——一个 inputFormat 为 poscar 的 VASP 系引擎描述符 poscarcli，仅填描述符 + 选 poscar codec（provider 装配逻辑复用不改），makeDescriptorProvider 走 getCodec(inputFormat).write 用 writePoscar 写出结构文件；注入的伪引擎 spawnImpl 真去读回该文件并用 readPoscar 解析（产物非合法 POSCAR 即失败），据原子数回总能量。过 conformanceReport 与同一份 potentialProviderContract（与 ase/lammps/mace/xyzcli 同一入口）。证明\"零代码接一个 VASP 系引擎\"不只是 codec 存在、而是端到端可回算",
       "evidence": "packages/lammps poscar-engine 测试（poscar 描述符过 conformance；relax 端到端伪引擎读回合法 POSCAR 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE 全过；共 6 子测）+ 工具数不变（52）"
+    },
+    {
+      "index": 118,
+      "clause": "弹性到单晶各向异性声速（Christoffel）加闭式 3×3 特征值修根因（elasticity 纯层，无新工具）：christoffel 由 6×6 Voigt 刚度展回 Γ_il=Σ_jk C_ijkl n_j n_k（iso 验证 Γ[111]=0.867I+0.467 次对角、方向无关），directionVelocities 解 Γ 特征值得单晶方向相速（[100]/[110]/[111]），analysis.elasticity 输出附 acousticAnisotropy。关键根因：首版用 jacobiEigenvalues 解 Γ 时各向同性输入 [111] 给 {0.72,0.82,1.07}（trace 守恒但不收敛）——坐实 jacobiEigenvalues 对大次对角/退化特征值不可靠；改用闭式 eig3Symmetric（Cardano 三角法、trace 严格守恒），iso[100]==iso[111]=={μ,μ,λ+2μ}、立方 [111]=((C11−C12+C44)/3 双、(C11+2C12+4C44)/3) 解析精确。jacobiEigenvalues 仅留 6×6 Born 正定粗判（近对角输入历史测过），其强耦合缺陷另记待修",
+      "evidence": "packages/elasticity test7（eig3Symmetric 解精确强耦合阵得 {0.4,0.4,1.8}；各向同性方向无关守卫 iso[100]==iso[111]；立方 [100]={C44,C44,C11}、[111] 解析式；零方向 ELASTICITY_BAD_INPUT）+ test5 断言 acousticAnisotropy 三支有限且 vL 大于 vT + 工具数不变（52）"
     }
   ]
 }
