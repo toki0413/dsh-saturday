@@ -5,6 +5,7 @@
 import { createCordisAdapter } from '@toki0413/kernel'
 import { loadClusters } from '@toki0413/python-bridge'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry, Material, composeFormula } from '@toki0413/core'
+import { readPoscar } from '@toki0413/core/codecs'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
@@ -142,6 +143,32 @@ export default {
           smiles: args.smiles,
           forcefield: result.forcefield,
         }
+      },
+    })
+
+    rt.registerTool({
+      name: 'structure.fromPoscar',
+      description: 'VASP POSCAR 文本 → 周期 Material（解析 lattice/按元素分组/分数或笛卡尔坐标）。'
+        + '零依赖、任何环境可跑（不需 RDKit/sidecar），产物 materialId 供 relax/calculate/phonon/xrd/筛选下游。'
+        + '未知元素 POSCAR_NO_SYMBOLS、截断/奇异胞显式报错不猜。',
+      parameters: {
+        text: { type: 'string', required: true, description: 'POSCAR / VASP CONTCAR 结构文本' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ text } = {}) {
+        if (typeof text !== 'string' || text.trim() === '') throw runtimeErr('POSCAR_INPUT_MISSING', 'structure.fromPoscar 需要非空 POSCAR 文本')
+        const { cell, nodes } = readPoscar(text)
+        const numbers = nodes.map(n => n.number)
+        const graph = { cell, pbc: [true, true, true], nodes }
+        const material = new Material({ modalities: { graph, formula: composeFormula(numbers) } }, graph)
+        materialService.store.set(material.id, material)
+        await rt.appendTrajectory({
+          type: 'structure_from_poscar', material: { id: material.id, formula: material.formula }, nAtoms: material.nAtoms,
+        })
+        return { materialId: material.id, formula: material.formula, nAtoms: material.nAtoms, cell }
       },
     })
 
