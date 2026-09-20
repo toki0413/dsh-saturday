@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T16:00:57.969Z",
-  "totalPass": 581,
+  "generatedAt": "2026-09-20T16:24:38.411Z",
+  "totalPass": 582,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -79,7 +79,7 @@
       "dir": "plugins\\elasticity",
       "name": "@toki0413/plugin-elasticity",
       "version": "0.3.10",
-      "pass": 7,
+      "pass": 8,
       "fail": 0
     },
     {
@@ -802,6 +802,11 @@
       "index": 120,
       "clause": "descriptor 端到端接 CIF 引擎实证（SDK 收口，纯测试无新代码/工具）：与 #117 POSCAR 成对——inputFormat 为 cif 的引擎描述符 cifcli 仅填描述符 + 选 cif codec，makeDescriptorProvider 走 getCodec cif 的 write=writeCif 写出 CIF 结构文件；注入伪引擎 spawnImpl 真读回并用 readCif 解析（产物非合法 CIF 即失败），据原子数回能量。过 conformanceReport 与同一份 potentialProviderContract。至此 POSCAR 与 CIF 两大周期结构交换格式都端到端可回算（SMILES/POSCAR/XYZ/CIF 四路输入齐）",
       "evidence": "packages/lammps cif-engine 测试（cif 描述符过 conformance；relax 端到端伪引擎读回合法 CIF 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE；共 7 子测）+ 工具数不变（52）"
+    },
+    {
+      "index": 121,
+      "clause": "弹性方向力学各向异性：杨氏模量 E(n) 与通用指数 A^U（analysis.elasticity 附 mechanicalAnisotropy，无新工具）：directionYoungsModulus 由柔量 S=invert6(C) 出 1/E(n)=a(n)ᵀS a(n)，a=[l1²,l2²,l3²,l2l3,l1l3,l1l2]（剪切项不带因子 2——Voigt 柔量 S44=2·S_tensor 已含对称双计，首版误加 2 致各向同性 E 竟方向相关，被\"方向无关\"守卫当场拦下改对）；universalAnisotropy 给 A^U=5(G_V/G_R)+(K_V/K_R)−6（Ørehøj 2009，复用 deriveModuli 的 VRH 界，各向同性=0）。与 #118 声速成对，弹性各向异性从波速扩到力学模量。E[100]=1/S11、E[111] 立方解析；工具输出附 mechanicalAnisotropy（[100]/[110]/[111] E + universalIndex）",
+      "evidence": "packages/elasticity test8（各向同性 λ=1,μ=0.4：E 方向无关 =μ(3λ+2μ)/(λ+μ)、A^U=0；立方 C11=3,C12=1,C44=0.6：E[100]=2.5、E[111] 约 1.607、A^U 大于 0；零方向与非正界 ELASTICITY_BAD_INPUT/AU_BAD_INPUT）+ test5 acousticAnisotropy 不变 + 工具数不变（52）"
     }
   ]
 }

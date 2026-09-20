@@ -9,7 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import plugin, {
   strainedGraph, assembleStiffness, deriveModuli, jacobiEigenvalues, elasticStiffness,
-  densityFromGraph, acousticFromModuli, christoffel, directionVelocities, eig3Symmetric, EV_PER_A3_TO_GPA,
+  densityFromGraph, acousticFromModuli, christoffel, directionVelocities, eig3Symmetric, directionYoungsModulus, universalAnisotropy, EV_PER_A3_TO_GPA,
 } from '../src/index.mjs'
 
 const LAME = { lambda: 1.0, mu: 0.4 } // eV/Å³
@@ -235,4 +235,28 @@ test('7. 各向异性方向声速：eig3Symmetric 闭式 + 各向同性方向无
   assert.deepEqual(mods([1, 0, 0], C).map(v => +v.toFixed(4)), [0.6, 0.6, 3], '立方 [100]')
   assert.deepEqual(mods([1, 1, 1], C).map(v => +v.toFixed(4)), [0.8667, 0.8667, 2.4667], '立方 [111]')
   assert.throws(() => christoffel(C, [0, 0, 0]), e => e.code === 'ELASTICITY_BAD_INPUT')
+})
+
+test('8. 方向杨氏模量 + 通用各向异性指数 A^U：各向同性守卫 + 立方解析', () => {
+  // 各向同性 λ=1,μ=0.4 → E=μ(3λ+2μ)/(λ+μ)=1.0857 eV/Å³，方向无关，A^U=0
+  const iso = cubicC(1.8, 1, 0.4)
+  const e100 = directionYoungsModulus(iso, [1, 0, 0]).E_EVperA3
+  const e111 = directionYoungsModulus(iso, [1, 1, 1]).E_EVperA3
+  const e110 = directionYoungsModulus(iso, [1, 1, 0]).E_EVperA3
+  assert.ok(Math.abs(e100 - (0.4 * (3 + 0.8) / 1.4)) < 1e-6, `E[100]≈1.0857 got ${e100}`)
+  assert.ok(Math.abs(e100 - e111) < 1e-6 && Math.abs(e100 - e110) < 1e-6, '各向同性：E 方向无关')
+  const d = deriveModuli(iso)
+  assert.ok(Math.abs(universalAnisotropy({ KV: d.KV_EVperA3, KR: d.KR_EVperA3, GV: d.GV_EVperA3, GR: d.GR_EVperA3 })) < 1e-6, 'A^U≈0（各向同性）')
+  // 立方各向异性：E[100]=1/S11、E[111] 不同、A^U>0
+  const C = cubicC(3, 1, 0.6)
+  const E100 = directionYoungsModulus(C, [1, 0, 0]).E_EVperA3
+  const E111 = directionYoungsModulus(C, [1, 1, 1]).E_EVperA3
+  assert.ok(Math.abs(E100 - 2.5) < 1e-6, `立方 E[100]=1/S11=2.5 got ${E100}`)  // S11=(C11+C12)/((C11−C12)(C11+2C12))=0.4
+  assert.ok(Math.abs(E111 - 1.607) < 5e-3, `立方 E[111]≈1.607 got ${E111}`)
+  assert.ok(E100 !== E111, '各向异性：E[100]≠E[111]')
+  const dc = deriveModuli(C)
+  assert.ok(universalAnisotropy({ KV: dc.KV_EVperA3, KR: dc.KR_EVperA3, GV: dc.GV_EVperA3, GR: dc.GR_EVperA3 }) > 0, 'A^U>0（各向异性）')
+  // 守卫：零方向报错；A^U 非正界报错
+  assert.throws(() => directionYoungsModulus(C, [0, 0, 0]), e => e.code === 'ELASTICITY_BAD_INPUT')
+  assert.throws(() => universalAnisotropy({ KV: 1, KR: 0, GV: 1, GR: 1 }), e => e.code === 'ELASTICITY_AU_BAD_INPUT')
 })

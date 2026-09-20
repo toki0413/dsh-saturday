@@ -187,6 +187,43 @@ export function directionVelocities({ C, density_kg_m3, directions = [] } = {}) 
   })
 }
 
+/**
+ * 方向杨氏模量 E(n) = 1 / (a(n)ᵀ S a(n))，S=柔量(C⁻¹, Å³/eV)，a=[n1²,n2²,n3²,2n2n3,2n1n3,2n1n2]
+ * （Voigt 剪切序按本仓 VOIGT=[xx,yy,zz,yz,xz,xy]）。C 单位 eV/Å³ → E 原生 eV/Å³，×EV_PER_A3_TO_GPA 转 GPa。
+ * 各向同性时方向无关且 = 9KG/(3K+G)（已由测固定）；退化/非正 E 显式报错。
+ */
+export function directionYoungsModulus(C, n) {
+  const S = invert6(C)
+  const len = Math.hypot(n[0], n[1], n[2])
+  if (!Number.isFinite(len) || len === 0) throw elasticityError('ELASTICITY_BAD_INPUT', `directionYoungsModulus needs a nonzero direction; got ${JSON.stringify(n)}`)
+  const u = [n[0] / len, n[1] / len, n[2] / len]
+  const a = [u[0] * u[0], u[1] * u[1], u[2] * u[2], u[1] * u[2], u[0] * u[2], u[0] * u[1]]   // 剪切项不带因子 2（Voigt 柔量 S44=2·S_tensor，此处 l_j l_k 已含对称双计）
+  let invE = 0
+  for (let I = 0; I < 6; I++) for (let J = 0; J < 6; J++) invE += a[I] * S[I][J] * a[J]   // Å³/eV
+  if (!(invE > 1e-18)) throw elasticityError('ELASTICITY_YOUNGS_NONPOSITIVE', `1/E(n) non-positive (${invE}) along ${JSON.stringify(n)}; material not stiff in that direction`)
+  return { direction: n.map(v => +(v / len).toFixed(6)), E_GPa: EV_PER_A3_TO_GPA / invE, E_EVperA3: 1 / invE }
+}
+
+/**
+ * 通用各向异性指数 A^U = 5(G_V/G_R) + (K_V/K_R) − 6（Ørehøj 等 2009）；≥ 0，各向同性时 = 0。
+ * 用 VRH Voigt/Reuss 界（单位无关，同取 eV/Å³）。
+ */
+export function universalAnisotropy({ KV, KR, GV, GR } = {}) {
+  const pos = (v) => Number.isFinite(v) && v > 0
+  if (![KV, KR, GV, GR].every(pos)) throw elasticityError('ELASTICITY_AU_BAD_INPUT', `universalAnisotropy needs KV,KR,GV,GR all > 0; got ${JSON.stringify({ KV, KR, GV, GR })}`)
+  return 5 * (GV / GR) + (KV / KR) - 6
+}
+
+/**
+ * 方向力学各向异性汇总：给定 C 与方向集，逐个出 E(n) + 从 VRH 界算 A^U。
+ */
+export function elasticAnisotropy({ C, KV, KR, GV, GR, directions = [] } = {}) {
+  return {
+    youngs: directions.map(({ name, dir }) => ({ name, ...directionYoungsModulus(C, dir) })),
+    universalIndex: universalAnisotropy({ KV, KR, GV, GR }),
+  }
+}
+
 /** CODATA-2018 基本常数：amu(kg)、ħ/kB(K·s)。1 Å³ = 1e-30 m³。 */
 export const AMU_KG = 1.66053906660e-27
 export const HBAR_OVER_KB_KS = 7.638233314e-12
