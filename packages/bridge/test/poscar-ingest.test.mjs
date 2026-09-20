@@ -57,3 +57,25 @@ test('3. structure.fromXyz 摄取 → 分子 material（零胞 pbc=false）+ 下
     await assert.rejects(() => rt.tools.call('structure.fromXyz', { text: '3\nc\nCu 0 0 0' }), e => e.code === 'XYZ_TRUNCATED')
   } finally { await core.dispose() }
 })
+
+const CU_CIF = ['data_cu', '_cell_length_a 3.615', '_cell_length_b 3.615', '_cell_length_c 3.615',
+  '_cell_angle_alpha 90', '_cell_angle_beta 90', '_cell_angle_gamma 90',
+  '_symmetry_space_group_name_H-M "P 1"', 'loop_', '_atom_site.type_symbol',
+  '_atom_site.fract_x', '_atom_site.fract_y', '_atom_site.fract_z', '_atom_site.occupancy',
+  'Cu 0 0 0 1.0', 'Cu 0.5 0.5 0.5 1.0'].join('\n')
+
+test('4. structure.fromCif 摄取周期 Cu2 → materialId + 下游 relax 真跑 + 对称拒绝', async () => {
+  const ctx = new Context()
+  const core = await ctx.registry.plugin({ name: 'saturday', apply: (c) => bridgePlugin.apply(c, { quiet: true }) })
+  const { rt } = core.store.saturday
+  try {
+    const ing = await rt.tools.call('structure.fromCif', { text: CU_CIF })
+    assert.equal(ing.formula, 'Cu2'); assert.equal(ing.nAtoms, 2)
+    assert.deepEqual(ing.cell[0], [3.615, 0, 0])
+    const r = await rt.tools.call('potential.relax', { materialId: ing.materialId })
+    assert.ok(Number.isFinite(r.energy), 'relax 对摄取周期结构给有限能量')
+    const symCif = CU_CIF + '\nloop_\n_space_group_symop_operation_xyz\nx,y,z\nx+1/2,y,z\n'
+    await assert.rejects(() => rt.tools.call('structure.fromCif', { text: symCif }), e => e.code === 'CIF_SYMMETRY_UNSUPPORTED')
+    await assert.rejects(() => rt.tools.call('structure.fromCif', { text: '  ' }), e => e.code === 'CIF_INPUT_MISSING')
+  } finally { await core.dispose() }
+})

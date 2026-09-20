@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：113 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：114 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 113, '附录 A 当前应为 113 条实证映射')
+  assert.equal(rows.length, 114, '附录 A 当前应为 114 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(114).clause.includes('CIF 结构摄取') && at(114).evidence.includes('cellFromParams'),
+      '第 114 条证据指向 CIF 结构摄取')
   assert.ok(at(113).clause.includes('XYZ 结构摄取') && at(113).evidence.includes('fromXyz'),
       '第 113 条证据指向 XYZ 结构摄取')
   assert.ok(at(112).clause.includes('结构摄取') && at(112).evidence.includes('structure_from_poscar'),

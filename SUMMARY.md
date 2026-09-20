@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-20T09:32:40.850Z
+生成时间：2026-09-20T10:04:59.607Z
 
-**回归基线：558/558**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：560/560**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 68/68 |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 69/69 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 53/53 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 54/54 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 9/9 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，113 条）
+## 实证条款（契约文档附录 A，114 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -150,6 +150,7 @@
 - **#111** 跨引擎 A/B 对账 runtime.engine.crossCheck（信任层，bridge cross-check）：同一 materialId 在 ≥2 引擎上回算（calculate 或 relax），机器并列每引擎 energyPerAtom、单位三元组、指纹 与逐对 deltaEnergyPerAtom。可比性只按单位三元组判（不自动换算，§units 纪律），异单位 comparable=false 仍报原始差；指纹差异如实标注不阻断（同单位不同源正是 A/B 要暴露的分歧，unknown 版本走通配 reason）。缺引擎、无能量、无能力、不足两个显式报错不静默。纯比较器 cross-check.mjs 独立闭式测，工具在 bridge 运行时动词面（与 capability.list、attach、detach 同侧，不改 attach/detach 逻辑）。core/units 补 ./units 子路径导出供 fingerprintEqual 复用（证据：packages/bridge cross-check 测试（纯比较器 <2、非有限能、缺单位缺指纹 报错；同单位 comparable+delta；异单位 comparable=false 仍报差；unknown 通配 reason；工具集成真桥+注入 stub 引擎 A/B → 两 run 单位 eV/Å/fs 可比、指纹不同标注、delta 有限、轨迹落 runtime_engine_cross_check；不足两引擎、未在册 显式错）+ bridge 工具基线 7→8 + mcp 工具面 48→49）
 - **#112** VASP POSCAR 结构摄取 structure.fromPoscar（输入侧，bridge 复用 core/codecs readPoscar）：POSCAR/CONTCAR 文本 → 周期 Material（解析 lattice、按元素分组、分数或笛卡尔坐标、scale），composeFormula 生成化学式、pbc=true，materialId 存 materialService 供 relax/calculate/phonon/xrd/筛选下游。零依赖、不需 RDKit/sidecar，任何环境可跑；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS、截断/奇异胞显式报错不猜。与 #110 POSCAR 写侧合成结构 IO 双向闭环（引擎喂得进、结构接得进）（证据：packages/bridge poscar-ingest 测试（摄 Cu2 POSCAR → materialId/formula Cu2/nAtoms 2/cell 正确、下游 potential.relax 对摄取结构给有限能量、轨迹落 structure_from_poscar；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS）+ core readPoscar 闭式测复用 + bridge 工具基线 8→9 + mcp 工具面 49→50）
 - **#113** XYZ 结构摄取 structure.fromXyz（输入侧，复用 core/codecs 新增 readXyz）：补 readXyz 与 writeXyz 对称（首行原子数必须与后续行匹配，元素符号→Z，坐标直接为绝对 Å），xyz codec 从只写升级为可读写。工具读 XYZ 文本 → 分子 Material（零胞 + pbc=false，与 structure.fromSmiles 同非周期语义），materialId 入 materialService；空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、非有限坐标 XYZ_BAD_COORD 全显式报错。与 #110 写侧、#112 POSCAR 摄取合成三格式读写 + 两格式摄取闭环（SMILES 走 RDKit、POSCAR/XYZ 零依赖）（证据：packages/core descriptor 测试 test10（writeXyz→readXyz 往返 numbers/positions 守恒、首行计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、getCodec xyz 现为可读写）+ packages/bridge poscar-ingest 测试 test3（fromXyz 摄 Cu-Ag → materialId/nAtoms 2/formula 含两者、空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED；金属二聚体无 SMILES 在 ASE 档 relax 触发 rdDetermineBonds 失败，故不测下游，周期性摄取由 POSCAR Cu2 relax 用例覆盖）+ bridge 工具基线 9→10 + mcp 工具面 50→51）
+- **#114** CIF 结构摄取 structure.fromCif（输入侧最大通用格式，bridge 复用 core/codecs 新增 readCif/writeCif）：补 CIF P1 子集读写——cellFromParams/paramsFromCell 做晶胞参数(a,b,c,α,β,γ)↔行向量互逆（a 沿 x、b 在 xy 平面标准约定），writeCif 出 P1 CIF（_cell 参数 + _atom_site 环分数坐标），readCif 解析 _cell + _atom_site 环 fract_/cartn_ 坐标。诚实子集：对称性操作（非 P1）报 CIF_SYMMETRY_UNSUPPORTED、部分占位报 CIF_OCCUPANCY_UNSUPPORTED、缺 tag、无环、非有限坐标各显式错，绝不自动展开对称或补 disorder。工具摄 CIF → 周期 Material pbc=true，materialId 供下游 relax/calculate/phonon/xrd/筛选；至此 SMILES(RDKit) 与 POSCAR/XYZ/CIF（零依赖）四路结构输入 + 三格式读写齐（证据：packages/core descriptor 测试 test11（writeCif→readCif 立方与三斜往返 positions 守恒、cellFromParams/paramsFromCell 参数↔向量互逆、对称 CIF_SYMMETRY_UNSUPPORTED、部分占位 CIF_OCCUPANCY_UNSUPPORTED、缺 cell tag CIF_MISSING_TAG、getCodec cif 读写齐）+ packages/bridge poscar-ingest 测试 test4（fromCif 摄周期 Cu2 → materialId/formula Cu2/cell 正确、下游 potential.relax 真跑给有限能量、对称操作 CIF_SYMMETRY_UNSUPPORTED、空文本 CIF_INPUT_MISSING）+ bridge 工具基线 10→11 + mcp 工具面 51→52）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

@@ -5,7 +5,7 @@
 import { createCordisAdapter } from '@toki0413/kernel'
 import { loadClusters } from '@toki0413/python-bridge'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry, Material, composeFormula } from '@toki0413/core'
-import { readPoscar, readXyz } from '@toki0413/core/codecs'
+import { readPoscar, readXyz, readCif } from '@toki0413/core/codecs'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
@@ -195,6 +195,32 @@ export default {
           type: 'structure_from_xyz', material: { id: material.id, formula: material.formula }, nAtoms: material.nAtoms,
         })
         return { materialId: material.id, formula: material.formula, nAtoms: material.nAtoms, comment }
+      },
+    })
+
+    rt.registerTool({
+      name: 'structure.fromCif',
+      description: 'CIF 文本 → 周期 Material（P1 子集：_cell 参数还原晶胞 + _atom_site 分数/笛卡尔坐标）。'
+        + '零依赖不需 sidecar。materialId 供 relax/calculate/phonon/xrd/筛选下游。'
+        + '不支持对称性操作与非整比占位：显式报 CIF_SYMMETRY_UNSUPPORTED / CIF_OCCUPANCY_UNSUPPORTED，不自动展开。',
+      parameters: {
+        text: { type: 'string', required: true, description: 'CIF 结构文本（P1、显式原子列表）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ text } = {}) {
+        if (typeof text !== 'string' || text.trim() === '') throw runtimeErr('CIF_INPUT_MISSING', 'structure.fromCif 需要非空 CIF 文本')
+        const { cell, nodes } = readCif(text)
+        const numbers = nodes.map(n => n.number)
+        const graph = { cell, pbc: [true, true, true], nodes }
+        const material = new Material({ modalities: { graph, formula: composeFormula(numbers) } }, graph)
+        materialService.store.set(material.id, material)
+        await rt.appendTrajectory({
+          type: 'structure_from_cif', material: { id: material.id, formula: material.formula }, nAtoms: material.nAtoms,
+        })
+        return { materialId: material.id, formula: material.formula, nAtoms: material.nAtoms, cell }
       },
     })
 

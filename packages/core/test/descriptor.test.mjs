@@ -2,7 +2,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { writeLammpsData, writePoscar, readPoscar, writeXyz, readXyz, getCodec } from '../src/codecs.mjs'
+import { writeLammpsData, writePoscar, readPoscar, writeXyz, readXyz, writeCif, readCif, getCodec } from '../src/codecs.mjs'
+import { cellFromParams, paramsFromCell } from '../src/codecs.mjs'
 import { ATOMIC_MASS, SYMBOL } from '../src/elements.mjs'
 import { makeDescriptorProvider, renderTemplate, parseByRegex, checkGoldens } from '../src/descriptor-provider.mjs'
 
@@ -130,4 +131,25 @@ test('10. XYZ 写入→读取往返 + 计数不符/未知元素报错 + getCodec
   assert.ok(typeof getCodec('xyz').read === 'function', 'xyz codec 现为可读写')
   assert.throws(() => readXyz('5\nc\nCu 0 0 0'), e => e.code === 'XYZ_TRUNCATED')
   assert.throws(() => readXyz('1\nc\nZz 0 0 0'), e => e.code === 'ELEMENT_DATA_MISSING')
+})
+
+test('11. CIF 写入→读取往返（立方 + 三斜）+ 对称/占位/缺 tag 拒绝 + 品胞参数互逆', () => {
+  const rt = (cell) => {
+    const graph = { cell, nodes: [{ number: 29, position: [0, 0, 0] }, { number: 47, position: [1.2, 2.3, 3.4] }] }
+    const back = readCif(writeCif(graph))
+    for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) close(back.nodes[i].position[k], graph.nodes[i].position[k], 1e-4, `atom${i}.${k}`)
+    assert.deepEqual(back.nodes.map(n => n.number), [29, 47])
+  }
+  rt([[3.615, 0, 0], [0, 3.615, 0], [0, 0, 3.615]])                         // 立方
+  rt(cellFromParams(4, 5, 6, 80, 70, 60))                                   // 三斜
+  const p = paramsFromCell(cellFromParams(4, 5, 6, 80, 70, 60))
+  close(p.a, 4, 1e-6); close(p.b, 5, 1e-6); close(p.c, 6, 1e-6); close(p.gamma, 60, 1e-6)  // 参数↔向量互逆
+  assert.ok(typeof getCodec('cif').read === 'function' && typeof getCodec('cif').write === 'function', 'cif codec 读写齐')
+  // 对称性操作 → 拒
+  assert.throws(() => readCif('data_x\n_cell_length_a 4\n_cell_length_b 4\n_cell_length_c 4\n_cell_angle_alpha 90\n_cell_angle_beta 90\n_cell_angle_gamma 90\nloop_\n_symmetry_equiv_pos_as_xyz\nx,y,z\n'), e => e.code === 'CIF_SYMMETRY_UNSUPPORTED')
+  // 部分占位 → 拒
+  const occCif = 'data_x\n_cell_length_a 4\n_cell_length_b 4\n_cell_length_c 4\n_cell_angle_alpha 90\n_cell_angle_beta 90\n_cell_angle_gamma 90\nloop_\n_atom_site.type_symbol\n_atom_site.fract_x\n_atom_site.fract_y\n_atom_site.fract_z\n_atom_site.occupancy\nCu 0 0 0 0.5\n'
+  assert.throws(() => readCif(occCif), e => e.code === 'CIF_OCCUPANCY_UNSUPPORTED')
+  // 缺 cell tag → 拒
+  assert.throws(() => readCif('data_x\n_cell_length_a 4\nloop_\n_atom_site.type_symbol\n_atom_site.fract_x\n_atom_site.fract_y\n_atom_site.fract_z\nCu 0 0 0\n'), e => e.code === 'CIF_MISSING_TAG')
 })
