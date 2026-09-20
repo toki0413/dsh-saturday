@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T10:04:59.611Z",
-  "totalPass": 560,
+  "generatedAt": "2026-09-20T10:21:12.499Z",
+  "totalPass": 561,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -100,7 +100,7 @@
       "dir": "plugins\\explore",
       "name": "@toki0413/plugin-explore",
       "version": "0.3.9",
-      "pass": 28,
+      "pass": 29,
       "fail": 0
     },
     {
@@ -772,6 +772,11 @@
       "index": 114,
       "clause": "CIF 结构摄取 structure.fromCif（输入侧最大通用格式，bridge 复用 core/codecs 新增 readCif/writeCif）：补 CIF P1 子集读写——cellFromParams/paramsFromCell 做晶胞参数(a,b,c,α,β,γ)↔行向量互逆（a 沿 x、b 在 xy 平面标准约定），writeCif 出 P1 CIF（_cell 参数 + _atom_site 环分数坐标），readCif 解析 _cell + _atom_site 环 fract_/cartn_ 坐标。诚实子集：对称性操作（非 P1）报 CIF_SYMMETRY_UNSUPPORTED、部分占位报 CIF_OCCUPANCY_UNSUPPORTED、缺 tag、无环、非有限坐标各显式错，绝不自动展开对称或补 disorder。工具摄 CIF → 周期 Material pbc=true，materialId 供下游 relax/calculate/phonon/xrd/筛选；至此 SMILES(RDKit) 与 POSCAR/XYZ/CIF（零依赖）四路结构输入 + 三格式读写齐",
       "evidence": "packages/core descriptor 测试 test11（writeCif→readCif 立方与三斜往返 positions 守恒、cellFromParams/paramsFromCell 参数↔向量互逆、对称 CIF_SYMMETRY_UNSUPPORTED、部分占位 CIF_OCCUPANCY_UNSUPPORTED、缺 cell tag CIF_MISSING_TAG、getCodec cif 读写齐）+ packages/bridge poscar-ingest 测试 test4（fromCif 摄周期 Cu2 → materialId/formula Cu2/cell 正确、下游 potential.relax 真跑给有限能量、对称操作 CIF_SYMMETRY_UNSUPPORTED、空文本 CIF_INPUT_MISSING）+ bridge 工具基线 10→11 + mcp 工具面 51→52"
+    },
+    {
+      "index": 115,
+      "clause": "探索/主动学习闭环接可插拔提议器（explore 消费 sampler seam）：workflow.explore 与 workflow.activeLearning 的 sampler 从焊死 reference-perturbation 改为可选 sampler 名称参数（缺省仍 reference-perturbation），解析 sampler 服务——ergodic 已有的模式补齐到探索/AL 两工具。至此 ou-perturbation、affine-flow、rss 等生成式提议器都能喂进采样→回算→择优闭环（纯函数 runActiveLearning、exploreCandidates 本就对任意 sampler 泛化，这次是把选择权暴露给消费端）。诚实边界：sigma 仅对微扰类 sampler 生效；缺该具名服务与另两依赖同式显式报错、不静默降级；生成式提议器仍须从参考生成以保组成，loop 的 formula 沿用参考",
+      "evidence": "packages/explore 测试 test6（stub-core 只提 alt-perturb：选它 workflow.explore 成功走闭环 ranked 非空、activeLearning rounds1 评 3 次；缺省 reference-perturbation 与未知名 ghost 各显式错并含服务名）+ 既有 explore/AL 契约测不变（纯函数层本就 sampler 泛化）+ 工具数不变（explore 4 工具，mcp 52）"
     }
   ]
 }

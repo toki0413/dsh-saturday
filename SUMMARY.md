@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-20T10:04:59.607Z
+生成时间：2026-09-20T10:21:12.498Z
 
-**回归基线：560/560**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：561/561**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -19,7 +19,7 @@
 | `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 5/5 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
-| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 28/28 |
+| `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 29/29 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
 | `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 23/23 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，114 条）
+## 实证条款（契约文档附录 A，115 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -151,6 +151,7 @@
 - **#112** VASP POSCAR 结构摄取 structure.fromPoscar（输入侧，bridge 复用 core/codecs readPoscar）：POSCAR/CONTCAR 文本 → 周期 Material（解析 lattice、按元素分组、分数或笛卡尔坐标、scale），composeFormula 生成化学式、pbc=true，materialId 存 materialService 供 relax/calculate/phonon/xrd/筛选下游。零依赖、不需 RDKit/sidecar，任何环境可跑；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS、截断/奇异胞显式报错不猜。与 #110 POSCAR 写侧合成结构 IO 双向闭环（引擎喂得进、结构接得进）（证据：packages/bridge poscar-ingest 测试（摄 Cu2 POSCAR → materialId/formula Cu2/nAtoms 2/cell 正确、下游 potential.relax 对摄取结构给有限能量、轨迹落 structure_from_poscar；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS）+ core readPoscar 闭式测复用 + bridge 工具基线 8→9 + mcp 工具面 49→50）
 - **#113** XYZ 结构摄取 structure.fromXyz（输入侧，复用 core/codecs 新增 readXyz）：补 readXyz 与 writeXyz 对称（首行原子数必须与后续行匹配，元素符号→Z，坐标直接为绝对 Å），xyz codec 从只写升级为可读写。工具读 XYZ 文本 → 分子 Material（零胞 + pbc=false，与 structure.fromSmiles 同非周期语义），materialId 入 materialService；空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、非有限坐标 XYZ_BAD_COORD 全显式报错。与 #110 写侧、#112 POSCAR 摄取合成三格式读写 + 两格式摄取闭环（SMILES 走 RDKit、POSCAR/XYZ 零依赖）（证据：packages/core descriptor 测试 test10（writeXyz→readXyz 往返 numbers/positions 守恒、首行计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、getCodec xyz 现为可读写）+ packages/bridge poscar-ingest 测试 test3（fromXyz 摄 Cu-Ag → materialId/nAtoms 2/formula 含两者、空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED；金属二聚体无 SMILES 在 ASE 档 relax 触发 rdDetermineBonds 失败，故不测下游，周期性摄取由 POSCAR Cu2 relax 用例覆盖）+ bridge 工具基线 9→10 + mcp 工具面 50→51）
 - **#114** CIF 结构摄取 structure.fromCif（输入侧最大通用格式，bridge 复用 core/codecs 新增 readCif/writeCif）：补 CIF P1 子集读写——cellFromParams/paramsFromCell 做晶胞参数(a,b,c,α,β,γ)↔行向量互逆（a 沿 x、b 在 xy 平面标准约定），writeCif 出 P1 CIF（_cell 参数 + _atom_site 环分数坐标），readCif 解析 _cell + _atom_site 环 fract_/cartn_ 坐标。诚实子集：对称性操作（非 P1）报 CIF_SYMMETRY_UNSUPPORTED、部分占位报 CIF_OCCUPANCY_UNSUPPORTED、缺 tag、无环、非有限坐标各显式错，绝不自动展开对称或补 disorder。工具摄 CIF → 周期 Material pbc=true，materialId 供下游 relax/calculate/phonon/xrd/筛选；至此 SMILES(RDKit) 与 POSCAR/XYZ/CIF（零依赖）四路结构输入 + 三格式读写齐（证据：packages/core descriptor 测试 test11（writeCif→readCif 立方与三斜往返 positions 守恒、cellFromParams/paramsFromCell 参数↔向量互逆、对称 CIF_SYMMETRY_UNSUPPORTED、部分占位 CIF_OCCUPANCY_UNSUPPORTED、缺 cell tag CIF_MISSING_TAG、getCodec cif 读写齐）+ packages/bridge poscar-ingest 测试 test4（fromCif 摄周期 Cu2 → materialId/formula Cu2/cell 正确、下游 potential.relax 真跑给有限能量、对称操作 CIF_SYMMETRY_UNSUPPORTED、空文本 CIF_INPUT_MISSING）+ bridge 工具基线 10→11 + mcp 工具面 51→52）
+- **#115** 探索/主动学习闭环接可插拔提议器（explore 消费 sampler seam）：workflow.explore 与 workflow.activeLearning 的 sampler 从焊死 reference-perturbation 改为可选 sampler 名称参数（缺省仍 reference-perturbation），解析 sampler 服务——ergodic 已有的模式补齐到探索/AL 两工具。至此 ou-perturbation、affine-flow、rss 等生成式提议器都能喂进采样→回算→择优闭环（纯函数 runActiveLearning、exploreCandidates 本就对任意 sampler 泛化，这次是把选择权暴露给消费端）。诚实边界：sigma 仅对微扰类 sampler 生效；缺该具名服务与另两依赖同式显式报错、不静默降级；生成式提议器仍须从参考生成以保组成，loop 的 formula 沿用参考（证据：packages/explore 测试 test6（stub-core 只提 alt-perturb：选它 workflow.explore 成功走闭环 ranked 非空、activeLearning rounds1 评 3 次；缺省 reference-perturbation 与未知名 ghost 各显式错并含服务名）+ 既有 explore/AL 契约测不变（纯函数层本就 sampler 泛化）+ 工具数不变（explore 4 工具，mcp 52））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

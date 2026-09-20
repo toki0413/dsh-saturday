@@ -13,7 +13,7 @@ import plugin, { exploreCandidates } from '../src/index.mjs'
 // ── stub 核心插件：material / potential / sampler 三个服务 ──────────
 // 回算能量由候选谱系决定：候选序号越大能量越低 → 排序必须反转生成顺序，
 // 验证"排序"而非"透传"；参考结构无候选谱系 → 能量最高排最后（dE 基线）。
-function stubCorePlugin(getRelaxImpl) {
+function stubCorePlugin(getRelaxImpl, samplers = { 'reference-perturbation': referencePerturbationSampler }) {
   return {
     name: 'stub-core',
     async apply(ctx) {
@@ -50,7 +50,7 @@ function stubCorePlugin(getRelaxImpl) {
       ctx.events.on('saturday/simulation/converged', e => events.push(e))
       ctx.reflect.provide('material', materialService)
       ctx.reflect.provide('potential', potential)
-      ctx.reflect.provide('sampler/reference-perturbation', referencePerturbationSampler)
+      for (const [name, s] of Object.entries(samplers)) ctx.reflect.provide('sampler/' + name, s)
       ctx.fiber.store.stub = { materialService, events }
     },
   }
@@ -155,6 +155,34 @@ test('5. 种子确定性：同种子同闭环结果，异种子异结果', async
     assert.deepEqual(pick(b), pick(a))
     const c = await exploreRt.tools.call('workflow.explore', { referenceId: cu.id, n: 2, seed: 8 })
     assert.notDeepEqual(pick(c), pick(a))
+  } finally {
+    await coreFiber.dispose()
+  }
+})
+
+test('6. sampler 参数选提议器：换到具名服务成功、缺省/未知名显式错（接 sampler seam）', async () => {
+  // 只提供 sampler/alt-perturb（不提供 reference-perturbation），证明参数真解析到具名服务
+  const altSampler = {
+    async sample(refCtx, opt) {
+      const cands = await referencePerturbationSampler.sample(refCtx, opt)
+      return cands.map(x => ({ ...x, source: 'alt-flow:' + x.source }))
+    },
+  }
+  const coreFiber = await ctx.registry.plugin(stubCorePlugin(indexedRelax, { 'alt-perturb': altSampler }))
+  try {
+    const { materialService } = coreFiber.store.stub
+    const cu = await materialService.load('Cu')
+    const r = await exploreRt.tools.call('workflow.explore', { referenceId: cu.id, n: 2, seed: 3, sampler: 'alt-perturb' })
+    assert.equal(r.failed.length, 0); assert.ok(r.ranked.length >= 1, '选具名 sampler 成功走闭环')
+    // 缺省 reference-perturbation 未提供 → 显式错
+    await assert.rejects(() => exploreRt.tools.call('workflow.explore', { referenceId: cu.id, n: 2 }),
+      /sampler\/reference-perturbation/)
+    // 未知名 → 错中包含该名
+    await assert.rejects(() => exploreRt.tools.call('workflow.explore', { referenceId: cu.id, n: 2, sampler: 'ghost' }),
+      /sampler\/ghost/)
+    // activeLearning 同样可选提议器
+    const al = await exploreRt.tools.call('workflow.activeLearning', { referenceId: cu.id, rounds: 1, candidatesPerRound: 2, sampler: 'alt-perturb' })
+    assert.equal(al.evaluations, 3, '1 种子 + 1轮×2 候选')
   } finally {
     await coreFiber.dispose()
   }

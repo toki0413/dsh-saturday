@@ -26,7 +26,8 @@ export default {
         referenceId: { type: 'string', required: true, description: '参考结构材料 ID' },
         n: { type: 'integer', default: 8, description: '候选数量' },
         seed: { type: 'integer', default: 1, description: '随机种子（确定性复现）' },
-        sigma: { type: 'number', default: 0.05, description: '微扰位移标准差（Å）' },
+        sigma: { type: 'number', default: 0.05, description: '微扰位移标准差（Å，仅对微扰类 sampler 生效）' },
+        sampler: { type: 'string', default: 'reference-perturbation', description: '提议器服务名 sampler/<name>（如 ou-perturbation / affine-flow / rss；缺省微扰）' },
         engine: { type: 'string', default: 'auto', description: '引擎选择（validation 画像）' },
         topK: { type: 'integer', description: '只返回能量最低的前 K 个' },
       },
@@ -35,11 +36,11 @@ export default {
         // 服务依赖在调用时解析：缺依赖显式报错，不静默降级（契约 §2）
         const materialService = rt.getService('material')
         const potential = rt.getService('potential')
-        const sampler = rt.getService('sampler/reference-perturbation')
+        const samplerName = args.sampler ?? 'reference-perturbation'
+        const sampler = rt.getService('sampler/' + samplerName)
         if (!materialService || !potential || !sampler) {
           throw new Error('workflow.explore requires services "material", "potential" and ' +
-                          '"sampler/reference-perturbation" (mount the saturday core and ' +
-                          'sampler-perturb plugins first)')
+                          `"sampler/${samplerName}" (mount the saturday core and the named sampler plugin first)`)
         }
         const reference = await materialService.get(args.referenceId)
         const candidates = await sampler.sample(
@@ -63,12 +64,13 @@ export default {
       description: 'basin-hopping 主动学习闭环（§4.3+§4.5 迭代版）：每轮从当前最优结构微扰产候选→引擎 relax '
         + '回算→能量更低则更新中心与最优。引擎是唯一 oracle（无 GP 代理，非贝叶斯优化）；候选是采样分布点'
         + '非唯一解；history 最优能量按构造单调不升，不声明全局最优。逐轮回算落 Trajectory（含 round/谱系）。'
-        + '需 material/potential/sampler/reference-perturbation 服务。',
+        + '提议器可选 sampler/<name>（缺省 reference-perturbation）。需 material/potential/sampler 服务。',
       parameters: {
         referenceId: { type: 'string', required: true, description: '种子结构材料 ID' },
         rounds: { type: 'integer', default: 3, description: '主动学习轮数' },
         candidatesPerRound: { type: 'integer', default: 4, description: '每轮候选数' },
-        sigma: { type: 'number', default: 0.05, description: '微扰位移标准差（Å）' },
+        sigma: { type: 'number', default: 0.05, description: '微扰位移标准差（Å，仅对微扰类 sampler 生效）' },
+        sampler: { type: 'string', default: 'reference-perturbation', description: '提议器服务名 sampler/<name>（每轮从当前最优结构生成候选；可换 ou/flow/rss 等）' },
         seed: { type: 'integer', default: 1, description: '随机种子（第 r 轮用 seed+r，确定性复现）' },
         engine: { type: 'string', default: 'auto' },
       },
@@ -76,10 +78,11 @@ export default {
       async execute(args) {
         const materialService = rt.getService('material')
         const potential = rt.getService('potential')
-        const sampler = rt.getService('sampler/reference-perturbation')
+        const samplerName = args.sampler ?? 'reference-perturbation'
+        const sampler = rt.getService('sampler/' + samplerName)
         if (!materialService || !potential || !sampler) {
           throw new Error('workflow.activeLearning requires services "material", "potential" and '
-            + '"sampler/reference-perturbation" (mount the saturday core and sampler-perturb plugins first)')
+            + `"sampler/${samplerName}" (mount the saturday core and the named sampler plugin first)`)
         }
         const reference = await materialService.get(args.referenceId)
         return runActiveLearning({
