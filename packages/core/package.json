@@ -10,6 +10,7 @@
     "./potential": "./src/potential.mjs",
     "./structure-resolver": "./src/structure-resolver.mjs",
     "./elements": "./src/elements.mjs",
+    "./units": "./src/units.mjs",
     "./thermo": "./src/thermo.mjs",
     "./gp": "./src/gp.mjs",
     "./codecs": "./src/codecs.mjs",

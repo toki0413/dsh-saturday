@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T20:13:13.123Z",
-  "totalPass": 549,
+  "generatedAt": "2026-09-20T08:51:32.491Z",
+  "totalPass": 554,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.9",
-      "pass": 60,
+      "pass": 65,
       "fail": 0
     },
     {
@@ -752,6 +752,11 @@
       "index": 110,
       "clause": "POSCAR（VASP）结构 codec 扩 SDK 覆盖面（core/codecs）：加 writePoscar/readPoscar 注册为 poscar codec，把“可零代码接入的引擎”从 lammps-data/xyz 扩到 VASP 系。writePoscar 出 canonical POSCAR（分数坐标 Direct、按元素分组、支持非正交胞、行向量 pos=f·cell 经 3×3 逆矩阵换算），readPoscar 支持 Direct/Cartesian、scale、按元素分组展开为 AtomGraph；未知元素 POSCAR_NO_SYMBOLS/ELEMENT_DATA_MISSING、截断/奇异胞显式报错不猜。descriptor-provider 按 structure.inputFormat 选它即装配 VASP 系引擎，作者只填描述符。纯 core 能力（无新 MCP 工具），直接乘数放大 SDK 的“填描述符即接引擎”覆盖面",
       "evidence": "packages/core descriptor 测试新增（POSCAR 立方胞写入→读取往返、分数↔笛卡尔互逆；按元素分组读 Cu2Ag→numbers[29,29,47] 坐标经胞换算；Cartesian 模式直读；未知元素 POSCAR_NO_SYMBOLS；非正交 fcc 原胞往返；getCodec poscar 有 write+read）+ 既有 codec/descriptor/goldens/契约测试不变 + mcp 工具面不变（仍 48）"
+    },
+    {
+      "index": 111,
+      "clause": "跨引擎 A/B 对账 runtime.engine.crossCheck（信任层，bridge cross-check）：同一 materialId 在 ≥2 引擎上回算（calculate 或 relax），机器并列每引擎 energyPerAtom、单位三元组、指纹 与逐对 deltaEnergyPerAtom。可比性只按单位三元组判（不自动换算，§units 纪律），异单位 comparable=false 仍报原始差；指纹差异如实标注不阻断（同单位不同源正是 A/B 要暴露的分歧，unknown 版本走通配 reason）。缺引擎、无能量、无能力、不足两个显式报错不静默。纯比较器 cross-check.mjs 独立闭式测，工具在 bridge 运行时动词面（与 capability.list、attach、detach 同侧，不改 attach/detach 逻辑）。core/units 补 ./units 子路径导出供 fingerprintEqual 复用",
+      "evidence": "packages/bridge cross-check 测试（纯比较器 <2、非有限能、缺单位缺指纹 报错；同单位 comparable+delta；异单位 comparable=false 仍报差；unknown 通配 reason；工具集成真桥+注入 stub 引擎 A/B → 两 run 单位 eV/Å/fs 可比、指纹不同标注、delta 有限、轨迹落 runtime_engine_cross_check；不足两引擎、未在册 显式错）+ bridge 工具基线 7→8 + mcp 工具面 48→49"
     }
   ]
 }

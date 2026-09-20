@@ -8,6 +8,7 @@ import { PrototypeLibResolver, MaterialService, PotentialRegistry, Material, com
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
+import { crossCompare } from './cross-check.mjs'
 
 export default {
   name: 'saturday',
@@ -439,6 +440,51 @@ export default {
     // 不能返回任意对象——返回对象会被当作 effect 而拒绝）；
     // dataPlane 如实声明当前数据面形态（'emt-mock' | 'lj-js'），演示与工具据此呈现；
     // bridgeInfo = sidecar 握手实测态（含 structureSources），测试/宿主据此按能力分支而非档位身份
+    // 跨引擎 A/B 对账：同一 material 用 ≥2 引擎回算,并列 energyPerAtom/单位/指纹 + 逐对差与可比性。
+    rt.registerTool({
+      name: 'runtime.engine.crossCheck',
+      description: '跨引擎对账（A/B）：把同一 materialId 在两个或多个引擎上回算,机器并列每引擎的 '
+        + 'energyPerAtom/单位三元组/指纹 与逐对 deltaEnergyPerAtom;可比性只按单位三元组判(不自动换算),'
+        + '指纹差异如实标注不阻断(差异就是 A/B 要暴露的引擎/版本分歧)。缺引擎/无能量/无能力显式报错。',
+      parameters: {
+        materialId: { type: 'string', required: true, description: '被对账的材料 ID' },
+        engines: { type: 'array', items: { type: 'string' }, description: '引擎名列表（≥2；缺省=当前在册全部具该能力引擎）' },
+        kind: { type: 'string', default: 'calculate', description: 'calculate | relax' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ materialId, engines, kind = 'calculate' } = {}) {
+        if (kind !== 'calculate' && kind !== 'relax') throw runtimeErr('CROSS_BAD_KIND', `kind must be calculate|relax; got "${kind}"`)
+        const material = await materialService.get(materialId)
+        const candidates = (Array.isArray(engines) && engines.length ? engines : [...potential.providers.keys()])
+        if (candidates.length < 2) throw runtimeErr('CROSS_NEED_TWO', `需要 ≥2 引擎做 A/B；当前候选 [${candidates.join(', ') || '无'}]`)
+        const runs = []
+        for (const name of candidates) {
+          const provider = potential.providers.get(name)
+          if (!provider) throw runtimeErr('CROSS_ENGINE_UNAVAILABLE', `引擎 "${name}" 未在册`)
+          if (typeof provider[kind] !== 'function') throw runtimeErr('CROSS_CAPABILITY_MISSING', `引擎 "${name}" 无 ${kind}() 方法`)
+          const r = await provider[kind](material, {})
+          if (!Number.isFinite(r?.energy)) throw runtimeErr('CROSS_ENERGY_MISSING', `引擎 "${name}" 未返回有限 energy`)
+          const u = provider._units, f = provider._fingerprint
+          runs.push({
+            engine: name, energyPerAtom: r.energy / material.nAtoms,
+            calculator: r.calculator ?? r.engine ?? name,
+            units: { energy: u.energy, length: u.length, time: u.time },
+            fingerprint: { software: f.software, method: f.method, version: f.version },
+            converged: r.converged ?? null, jobId: r.jobId ?? null,
+          })
+        }
+        const cmp = crossCompare(runs)
+        await rt.appendTrajectory({
+          type: 'runtime_engine_cross_check', material: { id: material.id, formula: material.formula },
+          kind, engines: runs.map(r => r.engine), allComparable: cmp.allComparable,
+        })
+        return cmp
+      },
+    })
+
     ctx.fiber.store.saturday = { rt, materialService, potential, dataPlane, bridgeInfo: bridge.sidecarInfo ?? null }
   },
 }
