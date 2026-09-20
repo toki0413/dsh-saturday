@@ -12,7 +12,7 @@ import { Context } from '@deepseek-ai/cordis'
 import bridgePlugin from '@toki0413/bridge'
 import plugin, {
   eosAnalysis, fitBirchMurnaghan, birchMurnaghan, cellVolume,
-  scaledVariant, DEFAULT_SCALES,
+  scaledVariant, DEFAULT_SCALES, fitVinet, vinet,
 } from '../src/index.mjs'
 
 // 合成真值：量级对应真实金属（B0 = 0.9 eV/Å³ ≈ 144 GPa）
@@ -176,4 +176,23 @@ test('8. 集成：真实桥 + Cu，缩放体积静态单点 → 拟合（EMT/LJ 
     await coreFiber.dispose()
     await rm(dir, { recursive: true, force: true })
   }
+})
+
+test('9. Vinet 状态方程：闭式极小 + 二阶导回得 B0（验 prefactor）+ fitVinet 自洽还原', () => {
+  const T = { E0: -14, V0: 11.6, B0: 0.9, B0p: 5 }
+  // V0 处 E=E0、一阶导零、正曲率
+  assert.ok(Math.abs(vinet(T.V0, T) - T.E0) < 1e-9, 'vinet(V0)=E0')
+  const h = 1e-4
+  const dE = (vinet(T.V0 + h, T) - vinet(T.V0 - h, T)) / (2 * h)
+  assert.ok(Math.abs(dE) < 1e-6, 'vinet 在 V0 一阶导≈0')
+  const d2E = (vinet(T.V0 + h, T) - 2 * vinet(T.V0, T) + vinet(T.V0 - h, T)) / (h * h)
+  const B0back = d2E * T.V0   // B0 = V0·d²E/dV²|V0
+  assert.ok(Math.abs(B0back - T.B0) / T.B0 < 1e-3, `二阶导回得 B0：got ${B0back} expect ${T.B0}`)
+  // 自洽：用 vinet 生成的序列，fitVinet 应还原四参数
+  const series = [0.92, 0.95, 0.98, 1.0, 1.02, 1.05, 1.08].map(s => ({ volume: T.V0 * s, energy: vinet(T.V0 * s, T) }))
+  const fit = fitVinet(series)
+  assert.ok(fit.converged)
+  assert.ok(Math.abs(fit.params.V0 - T.V0) < 1e-4 && Math.abs(fit.params.B0 - T.B0) < 1e-4, `fitVinet 还原 V0/B0 got ${fit.params.V0},${fit.params.B0}`)
+  assert.ok(Math.abs(fit.params.B0p - T.B0p) < 1e-2, `fitVinet 还原 B0p got ${fit.params.B0p}`)
+  assert.ok(fit.r2 > 1 - 1e-9)
 })

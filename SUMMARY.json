@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T16:24:38.411Z",
-  "totalPass": 582,
+  "generatedAt": "2026-09-20T16:51:30.682Z",
+  "totalPass": 583,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -86,7 +86,7 @@
       "dir": "plugins\\eos",
       "name": "@toki0413/plugin-eos",
       "version": "0.3.10",
-      "pass": 8,
+      "pass": 9,
       "fail": 0
     },
     {
@@ -807,6 +807,11 @@
       "index": 121,
       "clause": "弹性方向力学各向异性：杨氏模量 E(n) 与通用指数 A^U（analysis.elasticity 附 mechanicalAnisotropy，无新工具）：directionYoungsModulus 由柔量 S=invert6(C) 出 1/E(n)=a(n)ᵀS a(n)，a=[l1²,l2²,l3²,l2l3,l1l3,l1l2]（剪切项不带因子 2——Voigt 柔量 S44=2·S_tensor 已含对称双计，首版误加 2 致各向同性 E 竟方向相关，被\"方向无关\"守卫当场拦下改对）；universalAnisotropy 给 A^U=5(G_V/G_R)+(K_V/K_R)−6（Ørehøj 2009，复用 deriveModuli 的 VRH 界，各向同性=0）。与 #118 声速成对，弹性各向异性从波速扩到力学模量。E[100]=1/S11、E[111] 立方解析；工具输出附 mechanicalAnisotropy（[100]/[110]/[111] E + universalIndex）",
       "evidence": "packages/elasticity test8（各向同性 λ=1,μ=0.4：E 方向无关 =μ(3λ+2μ)/(λ+μ)、A^U=0；立方 C11=3,C12=1,C44=0.6：E[100]=2.5、E[111] 约 1.607、A^U 大于 0；零方向与非正界 ELASTICITY_BAD_INPUT/AU_BAD_INPUT）+ test5 acousticAnisotropy 不变 + 工具数不变（52）"
+    },
+    {
+      "index": 122,
+      "clause": "EOS 多方程：Vinet 普适状态方程并入 analysis.eos（无新工具，加 equation 选式参数）：把 fitBirchMurnaghan 的 LM 核抽成通用 fitEOS(series, model)，新增 vinet 模型与 fitVinet；analysis.eos 加 equation 参数取 birch-murnaghan 或 vinet（默认 BM，行为不变）。Vinet 能量由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0′−1)、E=E0−∫P dV 积分闭式 E=E0+(9B0V0/η²)[1−(1−ηs)e^{ηs}]、s=1−(V/V0)^(1/3)（宽体积域比 BM 更稳，热压数据首选）。教训：凭记忆初写的 Vinet 二阶导给出 −2·B0（符号/幂错），被\"V0 处 V0·d²E/dV²=B0\"物理校验当场拦下——自洽 fit 会掩盖错公式，故新 EOS 模型必带曲率回 B0 硬验",
+      "evidence": "packages/eos test9（vinet 在 V0 处 E0、一阶导零、二阶导回 B0 误差<0.1%；合成 vinet 序列 fitVinet 还原四参数 r²≈1）+ fitBirchMurnaghan 委托 fitEOS 行为不变（既有 BM/契约测全绿）+ equation 默认 BM 向后兼容 + 工具数不变（52）"
     }
   ]
 }

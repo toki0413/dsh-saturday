@@ -22,6 +22,18 @@ export function birchMurnaghan(V, { E0, V0, B0, B0p }) {
   return E0 + ((9 * V0 * B0) / 16) * (B0p * xi ** 3 + xi ** 2 * (6 - 4 * eta))
 }
 
+/**
+ * Vinet（普适）状态方程，E(V0)=E0；四参数 {E0,V0,B0,B0p}，B0 单位 eV/Å³。
+ * 由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0p−1)、E=E0−∫P dV 积分得：
+ *   E = E0 + (9·B0·V0/η²)·[ 1 − (1 − η·s)·exp(η·s) ]，s = 1 − (V/V0)^(1/3)。
+ * V0 处二阶导满 V0·d²E/dV²=B0（已由测固定）。宽体积域常比 BM 拟合更稳。
+ */
+export function vinet(V, { E0, V0, B0, B0p }) {
+  const eta = 1.5 * (B0p - 1)
+  const s = 1 - (V / V0) ** (1 / 3)
+  return E0 + (9 * B0 * V0 / (eta * eta)) * (1 - (1 - eta * s) * Math.exp(eta * s))
+}
+
 /** eV/Å³ → GPa */
 export const EV_PER_A3_TO_GPA = 160.21766208
 
@@ -93,7 +105,13 @@ function initialGuess(series) {
  * @param {{B0p0?: number, maxIterations?: number, tol?: number}} options B0p0 为 B0′ 初值
  * @returns {{converged, params: {E0,V0,B0,B0p}, B0GPa, rmse, r2, nPoints, nIterations}}
  */
-export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol = 1e-12 } = {}) {
+/**
+ * 拟合 (V,E) 序列到任意四参数 EOS 模型（共享 Levenberg-Marquardt 核）。
+ * @param {Array<{volume,energy}>} series 至少 4 点
+ * @param {(V:number,p:{E0,V0,B0,B0p})=>number} model 能量模型（birchMurnaghan / vinet）
+ * @param {{B0p0?:number,maxIterations?:number,tol?:number}} options
+ */
+export function fitEOS(series, model, { B0p0 = 4, maxIterations = 300, tol = 1e-12 } = {}) {
   if (!Number.isFinite(B0p0)) {
     throw analysisError('EOS_BAD_POINT', `B0p0 must be a finite number; got ${B0p0}`)
   }
@@ -115,14 +133,12 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
   const eMean = Es.reduce((s, e) => s + e, 0) / Es.length
   const ssTot = Es.reduce((s, e) => s + (e - eMean) ** 2, 0)
 
-  // 参数向量顺序：[E0, V0, B0, B0p]；在缩放空间 u = p/scale 内求解，
-  // 否则 JᵀJ 对角跨 8 个数量级、法方程病态（实证教训）
   const g = initialGuess(series)
   let params = [g.E0, g.V0, g.B0, B0p0]
   const scale = params.map(p => Math.max(Math.abs(p), 1e-8))
 
   const residuals = (prm) => Vs.map((V, i) =>
-    birchMurnaghan(V, { E0: prm[0], V0: prm[1], B0: prm[2], B0p: prm[3] }) - Es[i])
+    model(V, { E0: prm[0], V0: prm[1], B0: prm[2], B0p: prm[3] }) - Es[i])
   const sse = (r) => r.reduce((s, x) => s + x * x, 0)
 
   let r = residuals(params)
@@ -134,7 +150,6 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
   let gradStalls = 0
 
   for (; nIterations < maxIterations; nIterations++) {
-    // 数值 Jacobian（中心差分）——对缩放参数 u 求导：∂r/∂u_k = ∂r/∂p_k · scale_k
     const J = Vs.map(() => new Array(4).fill(0))
     for (let k = 0; k < 4; k++) {
       const h = Math.max(Math.abs(params[k]) * 1e-6, 1e-8)
@@ -143,8 +158,6 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
       const rp = residuals(pp), rm = residuals(pm)
       for (let i = 0; i < Vs.length; i++) J[i][k] = ((rp[i] - rm[i]) / (2 * h)) * scale[k]
     }
-
-    // 法方程 (JᵀJ + λ·diag) δu = −Jᵀr
     const JtJ = Array.from({ length: 4 }, () => new Array(4).fill(0))
     const Jtr = new Array(4).fill(0)
     for (let i = 0; i < Vs.length; i++) {
@@ -153,9 +166,6 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
         for (let b = 0; b < 4; b++) JtJ[a][b] += J[i][a] * J[i][b]
       }
     }
-    // 驻点判据：‖Jᵀr‖（缩放空间梯度）趋零即达驻点。
-    // 绝对阈值 1e-10 是数值微分噪声底的量级上界；连续几轮不再下降同样视为到达驻点，
-    // 纯步长判据（step < tol）在缩放空间永远达不到（实证教训）
     const gradNorm = Math.hypot(...Jtr)
     if (gradNorm >= prevGrad) gradStalls++
     else gradStalls = 0
@@ -167,28 +177,25 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
     )
     if (!delta || delta.some(d => !Number.isFinite(d))) {
       lambda *= 10
-      if (lambda > 1e12) break   // 数值上已无路可走：诚实报不收敛
+      if (lambda > 1e12) break
       continue
     }
-
     const cand = params.map((p, k) => p + delta[k] * scale[k])
-    // 物理约束守门：V0、B0 必须为正（拒绝即增大阻尼）
     if (!(cand[1] > 0) || !(cand[2] > 0)) {
       lambda *= 10
       if (lambda > 1e12) break
       continue
     }
-
     const rc = residuals(cand)
     const sc = sse(rc)
     if (sc < best) {
       params = cand; r = rc; best = sc
       lambda = Math.max(lambda * 0.5, 1e-10)
       const step = Math.max(...delta.map(Math.abs))
-      if (step < tol) { converged = true; break }   // 备用判据：参数停止移动；拟合质量由 rmse/r² 单独报告
+      if (step < tol) { converged = true; break }
     } else {
       lambda *= 10
-      if (lambda > 1e12) break   // 数值上已无路可走：诚实报不收敛
+      if (lambda > 1e12) break
     }
   }
 
@@ -202,4 +209,16 @@ export function fitBirchMurnaghan(series, { B0p0 = 4, maxIterations = 300, tol =
     r2: ssTot > 0 ? 1 - best / ssTot : 1,
     nPoints: series.length,
   }
+}
+
+/**
+ * 拟合 (V, E) 序列到三阶 Birch-Murnaghan（fitEOS 的 BM 特化）。
+ */
+export function fitBirchMurnaghan(series, options = {}) {
+  return fitEOS(series, birchMurnaghan, options)
+}
+
+/** 拟合 (V, E) 序列到 Vinet 状态方程（fitEOS 的 Vinet 特化）。 */
+export function fitVinet(series, options = {}) {
+  return fitEOS(series, vinet, options)
 }

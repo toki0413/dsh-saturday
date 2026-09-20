@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-20T16:24:38.409Z
+生成时间：2026-09-20T16:51:30.681Z
 
-**回归基线：582/582**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：583/583**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -17,7 +17,7 @@
 | `@toki0413/plugin-branch` | Saturday 会话分支账本插件：fork/record/compare/trunk——把模拟当可回退的规划树，add-only 对照分叉决策线，非破坏式合并。 | 9/9 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
 | `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 8/8 |
-| `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
+| `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 9/9 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 29/29 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，121 条）
+## 实证条款（契约文档附录 A，122 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -158,6 +158,7 @@
 - **#119** 实对称矩阵特征值去重进 core/eig（全仓唯一实现，行为等价）：新增 @toki0413/core/eig 的 symmetricEigenvalues（n×n NR 稳定小根循环 Jacobi、升序、scale 相对阈值），elasticity（jacobiEigenvalues 保留为别名导出）、phonon-bz（复 Hermitian 2n×2n 实对称嵌入取偶下标）、lj-engine（质量加权 Hessian）三份拷贝全改调它。此前 elasticity 那份是较弱 atan2 变体（#118 坐实强耦合不收敛），phonon/lj 是各自独立 NR 拷贝。行为不变守卫：elasticity、phonon、lj 各自特征值/声子色散/谐波频率测全绿（lj 逐 λ 分类末尾自排序与特征值顺序无关；phonon 取升序偶下标；elasticity 取升序 [0] 做 Born 判据）。eig3Symmetric（3×3 闭式，仅弹性声学方向声速用、非重复）留 elasticity（证据：packages/core eig.test（已知阵升序+迹不变；强耦合与二重零根收敛；入参不改、非方阵/空显式错 EIG_EMPTY/EIG_NOT_SQUARE；6×6 分块已知解）+ 消费者回归 core58/elasticity7/phonon29/lj15 全绿（行为等价）+ 工具数不变（52））
 - **#120** descriptor 端到端接 CIF 引擎实证（SDK 收口，纯测试无新代码/工具）：与 #117 POSCAR 成对——inputFormat 为 cif 的引擎描述符 cifcli 仅填描述符 + 选 cif codec，makeDescriptorProvider 走 getCodec cif 的 write=writeCif 写出 CIF 结构文件；注入伪引擎 spawnImpl 真读回并用 readCif 解析（产物非合法 CIF 即失败），据原子数回能量。过 conformanceReport 与同一份 potentialProviderContract。至此 POSCAR 与 CIF 两大周期结构交换格式都端到端可回算（SMILES/POSCAR/XYZ/CIF 四路输入齐）（证据：packages/lammps cif-engine 测试（cif 描述符过 conformance；relax 端到端伪引擎读回合法 CIF 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE；共 7 子测）+ 工具数不变（52））
 - **#121** 弹性方向力学各向异性：杨氏模量 E(n) 与通用指数 A^U（analysis.elasticity 附 mechanicalAnisotropy，无新工具）：directionYoungsModulus 由柔量 S=invert6(C) 出 1/E(n)=a(n)ᵀS a(n)，a=[l1²,l2²,l3²,l2l3,l1l3,l1l2]（剪切项不带因子 2——Voigt 柔量 S44=2·S_tensor 已含对称双计，首版误加 2 致各向同性 E 竟方向相关，被"方向无关"守卫当场拦下改对）；universalAnisotropy 给 A^U=5(G_V/G_R)+(K_V/K_R)−6（Ørehøj 2009，复用 deriveModuli 的 VRH 界，各向同性=0）。与 #118 声速成对，弹性各向异性从波速扩到力学模量。E[100]=1/S11、E[111] 立方解析；工具输出附 mechanicalAnisotropy（[100]/[110]/[111] E + universalIndex）（证据：packages/elasticity test8（各向同性 λ=1,μ=0.4：E 方向无关 =μ(3λ+2μ)/(λ+μ)、A^U=0；立方 C11=3,C12=1,C44=0.6：E[100]=2.5、E[111] 约 1.607、A^U 大于 0；零方向与非正界 ELASTICITY_BAD_INPUT/AU_BAD_INPUT）+ test5 acousticAnisotropy 不变 + 工具数不变（52））
+- **#122** EOS 多方程：Vinet 普适状态方程并入 analysis.eos（无新工具，加 equation 选式参数）：把 fitBirchMurnaghan 的 LM 核抽成通用 fitEOS(series, model)，新增 vinet 模型与 fitVinet；analysis.eos 加 equation 参数取 birch-murnaghan 或 vinet（默认 BM，行为不变）。Vinet 能量由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0′−1)、E=E0−∫P dV 积分闭式 E=E0+(9B0V0/η²)[1−(1−ηs)e^{ηs}]、s=1−(V/V0)^(1/3)（宽体积域比 BM 更稳，热压数据首选）。教训：凭记忆初写的 Vinet 二阶导给出 −2·B0（符号/幂错），被"V0 处 V0·d²E/dV²=B0"物理校验当场拦下——自洽 fit 会掩盖错公式，故新 EOS 模型必带曲率回 B0 硬验（证据：packages/eos test9（vinet 在 V0 处 E0、一阶导零、二阶导回 B0 误差<0.1%；合成 vinet 序列 fitVinet 还原四参数 r²≈1）+ fitBirchMurnaghan 委托 fitEOS 行为不变（既有 BM/契约测全绿）+ equation 默认 BM 向后兼容 + 工具数不变（52））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

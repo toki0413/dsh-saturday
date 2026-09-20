@@ -7,9 +7,10 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
-import { fitBirchMurnaghan, cellVolume, analysisError } from './eos.mjs'
+import { fitBirchMurnaghan, fitVinet, fitEOS, birchMurnaghan, vinet, cellVolume, analysisError } from './eos.mjs'
 
 export { fitBirchMurnaghan, birchMurnaghan, cellVolume, analysisError, EV_PER_A3_TO_GPA } from './eos.mjs'
+export { fitVinet, fitEOS, vinet } from './eos.mjs'
 
 export const DEFAULT_SCALES = [0.94, 0.97, 1.0, 1.03, 1.06]
 
@@ -43,26 +44,32 @@ export const eosAnalysis = {
   outputs: ['equation-of-state'],
   describe() {
     return {
-      description: 'Birch-Murnaghan（三阶）状态方程拟合：由 (V, E) 序列给出 ' +
-                   'E0 / V0 / B0 / B0′ 与体积模量（GPa）。序列应为固定体积的静态单点能量。',
+      description: '状态方程拟合（Birch-Murnaghan 三阶 或 Vinet）：由 (V, E) 序列给出 '
+        + 'E0 / V0 / B0 / B0′ 与体积模量（GPa）。序列应为固定体积的静态单点能量。',
       parameters: {
         series: 'Array<{ volume: Å³, energy: eV }>，至少 4 点',
         B0p0: 'B0′ 初值（数字，默认 4）',
+        equation: "'birch-murnaghan' | 'vinet'（默认 birch-murnaghan）",
       },
     }
   },
-  async run({ series, B0p0 } = {}, rt) {
+  async run({ series, B0p0, equation = 'birch-murnaghan' } = {}, rt) {
     if (!Array.isArray(series)) {
       throw analysisError('ANALYSIS_INPUT_MISSING',
         'analysis.eos requires a series of { volume, energy } points (ev-series)')
     }
+    if (equation !== 'birch-murnaghan' && equation !== 'vinet') {
+      throw analysisError('EOS_BAD_EQUATION', `equation must be 'birch-murnaghan' or 'vinet'; got "${equation}"`)
+    }
+    const opts = B0p0 === undefined ? {} : { B0p0 }
     const t0 = Date.now()
-    const result = fitBirchMurnaghan(series, B0p0 === undefined ? {} : { B0p0 })
+    const result = { ...fitEOS(series, equation === 'vinet' ? vinet : birchMurnaghan, opts), equation }
     // 谱系登记：分析结果也是事实，落 append-only Trajectory（§4.4 冻结点）
     if (rt?.appendTrajectory) {
       await rt.appendTrajectory({
         type: 'analysis_complete',
         analysis: 'eos',
+        equation: result.equation,
         converged: result.converged,
         result: {
           E0: result.params.E0,
@@ -123,6 +130,11 @@ export default {
           default: 4,
           description: 'B0′ 初值（常见区间 4–6）',
         },
+        equation: {
+          type: 'string',
+          default: 'birch-murnaghan',
+          description: "状态方程：'birch-murnaghan'（三阶）或 'vinet'（普适指数，宽体积域更稳）",
+        },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -157,7 +169,7 @@ export default {
             series.push({ volume: cellVolume(variant.cell), energy: r.energy, scale })
           }
         }
-        return eosAnalysis.run({ series, B0p0: args.B0p0 }, rt)
+        return eosAnalysis.run({ series, B0p0: args.B0p0, equation: args.equation }, rt)
       },
     })
 
