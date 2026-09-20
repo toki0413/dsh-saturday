@@ -72,23 +72,24 @@ export function assembleStiffness(plus, minus, eps) {
   return C.map((row, i) => row.map((v, j) => 0.5 * (v + C[j][i])))
 }
 
-/** 对称矩阵 Jacobi 特征值（旋转扫掠，确定性；6×6 成本可忽略） */
+/** 对称矩阵 Jacobi 特征值（循环扫掠，确定性；与 phonon/lj 同款 NR 稳定小根式） */
 export function jacobiEigenvalues(Ain) {
   const n = Ain.length
   const A = Ain.map(r => [...r])
-  const off = () => {
+  const scale = Math.max(...A.map((r, i) => Math.abs(r[i])), 1e-300)
+  const offNorm = () => {
     let s = 0
     for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) s += A[i][j] * A[i][j]
     return Math.sqrt(2 * s)
   }
-  const scale = Math.max(...A.map((r, i) => Math.abs(r[i])), 1e-300)
-  for (let sweep = 0; sweep < 100; sweep++) {
-    if (off() < 1e-12 * scale) break
-    for (let p = 0; p < n; p++) {
+  for (let sweep = 0; sweep < 120; sweep++) {
+    if (offNorm() < 1e-13 * scale) break
+    for (let p = 0; p < n - 1; p++) {
       for (let q = p + 1; q < n; q++) {
-        if (Math.abs(A[p][q]) < 1e-300) continue
-        const theta = 0.5 * Math.atan2(2 * A[p][q], A[p][p] - A[q][q])
-        const c = Math.cos(theta), s = Math.sin(theta)
+        if (Math.abs(A[p][q]) < 1e-18 * scale) continue
+        const theta = (A[q][q] - A[p][p]) / (2 * A[p][q])
+        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
+        const c = 1 / Math.sqrt(t * t + 1), s = t * c
         for (let k = 0; k < n; k++) {
           const akp = A[k][p], akq = A[k][q]
           A[k][p] = c * akp - s * akq
@@ -102,7 +103,7 @@ export function jacobiEigenvalues(Ain) {
       }
     }
   }
-  return Array.from({ length: n }, (_, i) => A[i][i]).sort((a, b) => a - b)
+  return A.map((r, i) => r[i]).sort((a, b) => a - b)
 }
 
 /** Voigt-Reuss-Hill 多晶聚合 + 派生量（输入 C 单位 eV/Å³，输出同单位 + GPa 换算） */

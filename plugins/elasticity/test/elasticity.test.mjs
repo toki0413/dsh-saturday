@@ -77,6 +77,9 @@ test('3. Jacobi 特征值：对角阵排序正确；迹不变量（旋转不变�
   const tr = A.reduce((s, row, i) => s + row[i], 0)
   const evs = jacobiEigenvalues(A)
   assert.ok(Math.abs(evs.reduce((s, v) => s + v, 0) - tr) < 1e-9, '迹不变')
+  // 强耦合锚点（旧 atan2 变体在此不收敛，NR 稳定式必须对角化）：iso Γ（四舍五入到 0.8667/0.4667）解析特征值 {0.4,0.4,1.8001}
+  const strong = [[0.8667, 0.4667, 0.4667], [0.4667, 0.8667, 0.4667], [0.4667, 0.4667, 0.8667]]
+  assert.deepEqual(jacobiEigenvalues(strong).map(v => +v.toFixed(3)), [0.4, 0.4, 1.8], '强耦合对称阵收敛到解析特征值')
 })
 
 test('4. 端到端 elasticStiffness：fake 应力源从形变恢复应变，12 次调用、C 与解析一致', async () => {
