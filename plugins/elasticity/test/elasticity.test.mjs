@@ -9,6 +9,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { Material, PrototypeLibResolver, PotentialRegistry } from '@toki0413/core'
 import plugin, {
   strainedGraph, assembleStiffness, deriveModuli, jacobiEigenvalues, elasticStiffness,
+  densityFromGraph, acousticFromModuli,
 } from '../src/index.mjs'
 
 const LAME = { lambda: 1.0, mu: 0.4 } // eV/Å³
@@ -174,6 +175,9 @@ test('5. 工具门禁：引擎声明 calculate+stress → 12 次调用出 C；�
     assert.ok(Math.abs(out.C[0][0] - 1.8) < 1e-6, '工具层与解析对账：C11=λ+2μ')
     assert.equal(out.bornStable, true)
     assert.ok(out.units.gpaConversion.includes('160.2176634'), 'GPa 换算显式声明')
+    assert.ok(Number.isFinite(out.acoustic.debyeTemperature_K) && out.acoustic.debyeTemperature_K > 0, '弹性 Debye θ_D 随分析产出')
+    assert.ok(out.acoustic.vL_ms > out.acoustic.vT_ms, '纵波快于横波')
+    assert.ok(out.density.rho_kg_m3 > 0 && out.density.number_density_m3 > 0, '质密/数密度随产出')
   } finally {
     await ok.fiber.dispose(); await ok.coreFiber.dispose()
   }
@@ -186,4 +190,20 @@ test('5. 工具门禁：引擎声明 calculate+stress → 12 次调用出 C；�
   } finally {
     await bad.fiber.dispose(); await bad.coreFiber.dispose()
   }
+})
+
+test('6. 密度与声速/弹性 Debye 温度：Cu fcc 对账实验值（闭式、CODATA）', () => {
+  // 密度：Cu 常规六方fcc胞 a=3.615，4 原子 → 实验 8960 kg/m³
+  const cu = { cell: [[3.615, 0, 0], [0, 3.615, 0], [0, 0, 3.615]], nodes: Array.from({ length: 4 }, () => ({ number: 29, position: [0, 0, 0] })) }
+  const d = densityFromGraph(cu)
+  assert.ok(d.rho_kg_m3 > 8500 && d.rho_kg_m3 < 9200, `Cu 密度 ${d.rho_kg_m3.toFixed(0)} 应近 8960`)
+  assert.ok(d.number_density_m3 > 8.2e28 && d.number_density_m3 < 8.7e28, `数密度 ${d.number_density_m3.toExponential(2)}`)
+  // 声速 + θ_D：用实验 K/G/ρ/n 代入（与 Cu 实验值对账，非引擎回算）
+  const ac = acousticFromModuli({ K_GPa: 137.8, G_GPa: 48.3, density_kg_m3: 8960, number_density_m3: 8.49e28 })
+  assert.ok(ac.vL_kms > 4.5 && ac.vL_kms < 4.9, `vL ${ac.vL_kms.toFixed(2)} km/s`)
+  assert.ok(ac.vT_kms > 2.2 && ac.vT_kms < 2.45, `vT ${ac.vT_kms.toFixed(2)} km/s`)
+  assert.ok(ac.debyeTemperature_K > 310 && ac.debyeTemperature_K < 370, `θ_D ${ac.debyeTemperature_K.toFixed(0)} K 应近 Cu 实验 343 K`)
+  // 守卫：零模 / 零密度 / 非周期胞 各显式错
+  assert.throws(() => acousticFromModuli({ K_GPa: 0, G_GPa: 1, density_kg_m3: 1, number_density_m3: 1 }), e => e.code === 'ELASTICITY_ACOUSTIC_BAD_INPUT')
+  assert.throws(() => densityFromGraph({ cell: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], nodes: [{ number: 29, position: [0, 0, 0] }] }), e => e.code === 'ELASTICITY_NEEDS_CELL')
 })

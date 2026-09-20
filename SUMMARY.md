@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-20T10:21:12.498Z
+生成时间：2026-09-20T11:17:32.137Z
 
-**回归基线：561/561**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：562/562**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -16,7 +16,7 @@
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-branch` | Saturday 会话分支账本插件：fork/record/compare/trunk——把模拟当可回退的规划树，add-only 对照分叉决策线，非破坏式合并。 | 9/9 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
-| `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 5/5 |
+| `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 6/6 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 8/8 |
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 29/29 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，115 条）
+## 实证条款（契约文档附录 A，116 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -152,6 +152,7 @@
 - **#113** XYZ 结构摄取 structure.fromXyz（输入侧，复用 core/codecs 新增 readXyz）：补 readXyz 与 writeXyz 对称（首行原子数必须与后续行匹配，元素符号→Z，坐标直接为绝对 Å），xyz codec 从只写升级为可读写。工具读 XYZ 文本 → 分子 Material（零胞 + pbc=false，与 structure.fromSmiles 同非周期语义），materialId 入 materialService；空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、非有限坐标 XYZ_BAD_COORD 全显式报错。与 #110 写侧、#112 POSCAR 摄取合成三格式读写 + 两格式摄取闭环（SMILES 走 RDKit、POSCAR/XYZ 零依赖）（证据：packages/core descriptor 测试 test10（writeXyz→readXyz 往返 numbers/positions 守恒、首行计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、getCodec xyz 现为可读写）+ packages/bridge poscar-ingest 测试 test3（fromXyz 摄 Cu-Ag → materialId/nAtoms 2/formula 含两者、空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED；金属二聚体无 SMILES 在 ASE 档 relax 触发 rdDetermineBonds 失败，故不测下游，周期性摄取由 POSCAR Cu2 relax 用例覆盖）+ bridge 工具基线 9→10 + mcp 工具面 50→51）
 - **#114** CIF 结构摄取 structure.fromCif（输入侧最大通用格式，bridge 复用 core/codecs 新增 readCif/writeCif）：补 CIF P1 子集读写——cellFromParams/paramsFromCell 做晶胞参数(a,b,c,α,β,γ)↔行向量互逆（a 沿 x、b 在 xy 平面标准约定），writeCif 出 P1 CIF（_cell 参数 + _atom_site 环分数坐标），readCif 解析 _cell + _atom_site 环 fract_/cartn_ 坐标。诚实子集：对称性操作（非 P1）报 CIF_SYMMETRY_UNSUPPORTED、部分占位报 CIF_OCCUPANCY_UNSUPPORTED、缺 tag、无环、非有限坐标各显式错，绝不自动展开对称或补 disorder。工具摄 CIF → 周期 Material pbc=true，materialId 供下游 relax/calculate/phonon/xrd/筛选；至此 SMILES(RDKit) 与 POSCAR/XYZ/CIF（零依赖）四路结构输入 + 三格式读写齐（证据：packages/core descriptor 测试 test11（writeCif→readCif 立方与三斜往返 positions 守恒、cellFromParams/paramsFromCell 参数↔向量互逆、对称 CIF_SYMMETRY_UNSUPPORTED、部分占位 CIF_OCCUPANCY_UNSUPPORTED、缺 cell tag CIF_MISSING_TAG、getCodec cif 读写齐）+ packages/bridge poscar-ingest 测试 test4（fromCif 摄周期 Cu2 → materialId/formula Cu2/cell 正确、下游 potential.relax 真跑给有限能量、对称操作 CIF_SYMMETRY_UNSUPPORTED、空文本 CIF_INPUT_MISSING）+ bridge 工具基线 10→11 + mcp 工具面 51→52）
 - **#115** 探索/主动学习闭环接可插拔提议器（explore 消费 sampler seam）：workflow.explore 与 workflow.activeLearning 的 sampler 从焊死 reference-perturbation 改为可选 sampler 名称参数（缺省仍 reference-perturbation），解析 sampler 服务——ergodic 已有的模式补齐到探索/AL 两工具。至此 ou-perturbation、affine-flow、rss 等生成式提议器都能喂进采样→回算→择优闭环（纯函数 runActiveLearning、exploreCandidates 本就对任意 sampler 泛化，这次是把选择权暴露给消费端）。诚实边界：sigma 仅对微扰类 sampler 生效；缺该具名服务与另两依赖同式显式报错、不静默降级；生成式提议器仍须从参考生成以保组成，loop 的 formula 沿用参考（证据：packages/explore 测试 test6（stub-core 只提 alt-perturb：选它 workflow.explore 成功走闭环 ranked 非空、activeLearning rounds1 评 3 次；缺省 reference-perturbation 与未知名 ghost 各显式错并含服务名）+ 既有 explore/AL 契约测不变（纯函数层本就 sampler 泛化）+ 工具数不变（explore 4 工具，mcp 52））
+- **#116** 弹性到声速与 Debye 温度 analysis.elasticity 结果丰富（elasticity 纯层，无新工具）：新增 densityFromGraph（graph cell 体积 + ATOMIC_MASS 按符号查质量得质量密度 kg/m³ 与数密度每立方米，退化胞或缺质量显式错 ELASTICITY_NEEDS_CELL/ELEMENT_DATA_MISSING）与 acousticFromModuli（多晶 VRH K/G 加密度 → v_L=√((K+4G/3)/ρ)、v_T=√(G/ρ)、v_m 三次调和均值、θ_D=(ħ/kB)(6π²n)^(1/3)·v_m，常数走 CODATA 显式声明）；analysis.elasticity 输出附 acoustic 与 density 字段，零额外引擎调用。闭式对账 Cu：密度 8936 约等实验 8960 kg/m³、θ_D 341 约等实验 343 K（<1%）；与声子 BZ Debye 成一个独立交叉核对（证据：packages/elasticity 测试 test6（densityFromGraph Cu fcc 得 ρ 与 n 落在实验区间；acousticFromModuli 用实验 K/G/ρ/n 得 vL 约 4.7、vT 约 2.3 km/s、θ_D 在 310-370 K 对 343；零模与非周期胞各显式报错）+ test5 断言工具输出附 acoustic 与 density（vL 大于 vT、θ_D 大于 0）+ 工具数不变（52））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

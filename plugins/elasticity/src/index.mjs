@@ -7,9 +7,10 @@
 
 import { createCordisAdapter } from '@toki0413/kernel'
 import { Material } from '@toki0413/core'
-import { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA } from './elasticity.mjs'
+import { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA, densityFromGraph, acousticFromModuli } from './elasticity.mjs'
 
 export { elasticStiffness, elasticityError, EV_PER_A3_TO_GPA, strainedGraph, assembleStiffness, deriveModuli, jacobiEigenvalues } from './elasticity.mjs'
+export { densityFromGraph, acousticFromModuli, AMU_KG, HBAR_OVER_KB_KS } from './elasticity.mjs'
 
 export default {
   name: 'saturday-elasticity',
@@ -61,13 +62,21 @@ export default {
           return r.stress
         }
         const result = await elasticStiffness({ graph: material.graph, calculateStress, eps: args.eps })
+        const density = densityFromGraph(material.graph)
+        const acoustic = acousticFromModuli({
+          K_GPa: result.K_GPa, G_GPa: result.G_GPa,
+          density_kg_m3: density.rho_kg_m3, number_density_m3: density.number_density_m3,
+        })
         return {
           ...result,
-          units: { stiffness: 'eV/Å³', gpaConversion: `1 eV/Å³ = ${EV_PER_A3_TO_GPA} GPa (CODATA-derived, explicit)` },
+          acoustic,
+          density,
+          units: { stiffness: 'eV/Å³', gpaConversion: `1 eV/Å³ = ${EV_PER_A3_TO_GPA} GPa (CODATA-derived, explicit)`, acoustic: 'v km/s、θ_D K' },
           engine: provider.name,
           formula: material.formula,
           note: 'C_ij 由 ±ε 中心差分（12 次引擎应力计算，拉正约定）；Born 判据=C 正定（Jacobi 特征值，自带实现）；' +
                 '仿射应变不含内部弛豫（高对称/单质精确，一般结构声明边界）；' +
+                'acoustic 附带多晶声速 vL/vT/v_m 与弹性 Debye 温度 θ_D=(ħ/kB)(6π²n)¹ᐟ³·v_m（常数走 CODATA，与实验 Cu θ_D 343 K 同量级）；' +
                 '多晶 K/G 为 VRH 均值，单晶各向异性看 A 与特征值谱',
         }
       },

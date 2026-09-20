@@ -17,6 +17,8 @@
 //
 // Born 稳定性 = C 正定：对称 6×6 Jacobi 特征分解（自带，确定性，零外部依赖）。
 
+import { ATOMIC_MASS, SYMBOL } from '@toki0413/core/elements'
+
 export function elasticityError(code, message) {
   const e = new Error(`${message} (${code})`)
   e.code = code
@@ -154,6 +156,65 @@ function invert6(A) {
     }
   }
   return M.map(row => row.slice(n))
+}
+
+/** CODATA-2018 基本常数：amu(kg)、ħ/kB(K·s)。1 Å³ = 1e-30 m³。 */
+export const AMU_KG = 1.66053906660e-27
+export const HBAR_OVER_KB_KS = 7.638233314e-12
+
+/** 3×3 行向量行列式绝对值 = 胞体积（Å³）。 */
+function cellVolumeA3(cell) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = cell
+  const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+  return Math.abs(det)
+}
+
+/**
+ * 由 AtomGraph 算质量密度与数密度（均 SI：kg/m³ 与 m⁻³）。
+ * 周期胞必需：零胞/退化胞（分子）报 ELASTICITY_NEEDS_CELL（与仿射应变同族需周期性的拒接）。
+ */
+export function densityFromGraph(graph) {
+  const cell = graph?.cell
+  if (!Array.isArray(cell) || cell.length !== 3) throw elasticityError('ELASTICITY_NEEDS_CELL', 'density requires a 3×3 periodic cell')
+  const volA3 = cellVolumeA3(cell)
+  if (!Number.isFinite(volA3) || volA3 <= 1e-9) throw elasticityError('ELASTICITY_NEEDS_CELL', `cell volume degenerate (${volA3}); density undefined for non-periodic systems`)
+  const nodes = graph.nodes ?? []
+  if (nodes.length === 0) throw elasticityError('ELASTICITY_NEEDS_CELL', 'density requires at least one atom')
+  let massAru = 0
+  for (const n of nodes) {
+    const el = SYMBOL[n.number]
+    const m = el ? ATOMIC_MASS[el] : undefined
+    if (m == null) throw elasticityError('ELEMENT_DATA_MISSING', `no atomic mass for Z=${n.number} (${el ?? 'unknown symbol'}); extend core/elements ATOMIC_MASS`)
+    massAru += m
+  }
+  const volM3 = volA3 * 1e-30
+  const rhoKgM3 = massAru * AMU_KG / volM3
+  const numberDensityM3 = nodes.length / volM3
+  return { rho_kg_m3: rhoKgM3, number_density_m3: numberDensityM3, cellVolume_A3: volA3, massTotal_amu: massAru }
+}
+
+/**
+ * 多晶 VRH K/G + 质量密度 → 声速与弹性 Debye 温度（均 SI，km/s 与 K）。
+ * v_L=√((K+4G/3)/ρ)，v_T=√(G/ρ)；v_m=[(1/3)(v_L⁻³+2v_T⁻³)]⁻¹ᐟ³；θ_D=(ħ/kB)(6π²·n_a)¹ᐟ³·v_m。
+ * 文献对锚（Cu：K=137.8, G=48.3 GPa, ρ=8960 kg/m³, n_a=8.49e28 m⁻³ → θ_D≈341 K，与 343 K 内差）
+ * 已在纯函数测试固定。非正模/非正密度/非正 K/G 显式报错，不静默 NaN。
+ */
+export function acousticFromModuli({ K_GPa, G_GPa, density_kg_m3, number_density_m3 } = {}) {
+  const pos = (v) => Number.isFinite(v) && v > 0
+  if (!pos(K_GPa)) throw elasticityError('ELASTICITY_ACOUSTIC_BAD_INPUT', `K_GPa must be > 0; got ${K_GPa}`)
+  if (!pos(G_GPa)) throw elasticityError('ELASTICITY_ACOUSTIC_BAD_INPUT', `G_GPa must be > 0; got ${G_GPa}`)
+  if (!pos(density_kg_m3)) throw elasticityError('ELASTICITY_ACOUSTIC_BAD_INPUT', `density_kg_m3 must be > 0; got ${density_kg_m3}`)
+  if (!pos(number_density_m3)) throw elasticityError('ELASTICITY_ACOUSTIC_BAD_INPUT', `number_density_m3 must be > 0; got ${number_density_m3}`)
+  const K = K_GPa * 1e9, G = G_GPa * 1e9, rho = density_kg_m3
+  const vL = Math.sqrt((K + 4 * G / 3) / rho)
+  const vT = Math.sqrt(G / rho)
+  const vMean = Math.pow((1 / 3) * (Math.pow(vL, -3) + 2 * Math.pow(vT, -3)), -1 / 3)
+  const thetaD = HBAR_OVER_KB_KS * Math.cbrt(6 * Math.PI * Math.PI * number_density_m3) * vMean
+  return {
+    vL_ms: vL, vT_ms: vT, vMean_ms: vMean,
+    vL_kms: vL / 1000, vT_kms: vT / 1000, vMean_kms: vMean / 1000,
+    debyeTemperature_K: thetaD,
+  }
 }
 
 /**
