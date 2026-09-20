@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-20T11:17:32.137Z
+生成时间：2026-09-20T11:53:33.168Z
 
-**回归基线：562/562**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：569/569**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -21,7 +21,7 @@
 | `@toki0413/plugin-ergodic` | Saturday 遍历对账工作流插件（契约 §4.5 oracle 条款）：采样系综平均对同一能量函数恒温 MD 时间平均；判定强度随采样器似然声明诚实分级。 | 14/14 |
 | `@toki0413/plugin-explore` | Saturday 采样 → 回算闭环工作流插件（契约 §4.5 oracle 条款 + §4.3）：候选经引擎回算验证后排序，候选不自证，全程谱系可溯源。 | 29/29 |
 | `@toki0413/plugin-free-energy` | Saturday 热力学第二档：构型自由能曲线（热力学积分，d(βF_conf)/dβ = ⟨U⟩，逐温度网格点恒温 MD + 显式锚点）。 | 12/12 |
-| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 23/23 |
+| `@toki0413/plugin-lammps` | Saturday 引擎插件：LAMMPS 批处理引擎（契约 §4.2，事件粒度 job） | 30/30 |
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。 | 19/19 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，116 条）
+## 实证条款（契约文档附录 A，117 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -153,6 +153,7 @@
 - **#114** CIF 结构摄取 structure.fromCif（输入侧最大通用格式，bridge 复用 core/codecs 新增 readCif/writeCif）：补 CIF P1 子集读写——cellFromParams/paramsFromCell 做晶胞参数(a,b,c,α,β,γ)↔行向量互逆（a 沿 x、b 在 xy 平面标准约定），writeCif 出 P1 CIF（_cell 参数 + _atom_site 环分数坐标），readCif 解析 _cell + _atom_site 环 fract_/cartn_ 坐标。诚实子集：对称性操作（非 P1）报 CIF_SYMMETRY_UNSUPPORTED、部分占位报 CIF_OCCUPANCY_UNSUPPORTED、缺 tag、无环、非有限坐标各显式错，绝不自动展开对称或补 disorder。工具摄 CIF → 周期 Material pbc=true，materialId 供下游 relax/calculate/phonon/xrd/筛选；至此 SMILES(RDKit) 与 POSCAR/XYZ/CIF（零依赖）四路结构输入 + 三格式读写齐（证据：packages/core descriptor 测试 test11（writeCif→readCif 立方与三斜往返 positions 守恒、cellFromParams/paramsFromCell 参数↔向量互逆、对称 CIF_SYMMETRY_UNSUPPORTED、部分占位 CIF_OCCUPANCY_UNSUPPORTED、缺 cell tag CIF_MISSING_TAG、getCodec cif 读写齐）+ packages/bridge poscar-ingest 测试 test4（fromCif 摄周期 Cu2 → materialId/formula Cu2/cell 正确、下游 potential.relax 真跑给有限能量、对称操作 CIF_SYMMETRY_UNSUPPORTED、空文本 CIF_INPUT_MISSING）+ bridge 工具基线 10→11 + mcp 工具面 51→52）
 - **#115** 探索/主动学习闭环接可插拔提议器（explore 消费 sampler seam）：workflow.explore 与 workflow.activeLearning 的 sampler 从焊死 reference-perturbation 改为可选 sampler 名称参数（缺省仍 reference-perturbation），解析 sampler 服务——ergodic 已有的模式补齐到探索/AL 两工具。至此 ou-perturbation、affine-flow、rss 等生成式提议器都能喂进采样→回算→择优闭环（纯函数 runActiveLearning、exploreCandidates 本就对任意 sampler 泛化，这次是把选择权暴露给消费端）。诚实边界：sigma 仅对微扰类 sampler 生效；缺该具名服务与另两依赖同式显式报错、不静默降级；生成式提议器仍须从参考生成以保组成，loop 的 formula 沿用参考（证据：packages/explore 测试 test6（stub-core 只提 alt-perturb：选它 workflow.explore 成功走闭环 ranked 非空、activeLearning rounds1 评 3 次；缺省 reference-perturbation 与未知名 ghost 各显式错并含服务名）+ 既有 explore/AL 契约测不变（纯函数层本就 sampler 泛化）+ 工具数不变（explore 4 工具，mcp 52））
 - **#116** 弹性到声速与 Debye 温度 analysis.elasticity 结果丰富（elasticity 纯层，无新工具）：新增 densityFromGraph（graph cell 体积 + ATOMIC_MASS 按符号查质量得质量密度 kg/m³ 与数密度每立方米，退化胞或缺质量显式错 ELASTICITY_NEEDS_CELL/ELEMENT_DATA_MISSING）与 acousticFromModuli（多晶 VRH K/G 加密度 → v_L=√((K+4G/3)/ρ)、v_T=√(G/ρ)、v_m 三次调和均值、θ_D=(ħ/kB)(6π²n)^(1/3)·v_m，常数走 CODATA 显式声明）；analysis.elasticity 输出附 acoustic 与 density 字段，零额外引擎调用。闭式对账 Cu：密度 8936 约等实验 8960 kg/m³、θ_D 341 约等实验 343 K（<1%）；与声子 BZ Debye 成一个独立交叉核对（证据：packages/elasticity 测试 test6（densityFromGraph Cu fcc 得 ρ 与 n 落在实验区间；acousticFromModuli 用实验 K/G/ρ/n 得 vL 约 4.7、vT 约 2.3 km/s、θ_D 在 310-370 K 对 343；零模与非周期胞各显式报错）+ test5 断言工具输出附 acoustic 与 density（vL 大于 vT、θ_D 大于 0）+ 工具数不变（52））
+- **#117** descriptor 端到端接 POSCAR 引擎实证（SDK 收口，纯测试无新代码/工具）：把 #110 写侧、#112 摄侧、descriptor-provider 三者串成完整闭环——一个 inputFormat 为 poscar 的 VASP 系引擎描述符 poscarcli，仅填描述符 + 选 poscar codec（provider 装配逻辑复用不改），makeDescriptorProvider 走 getCodec(inputFormat).write 用 writePoscar 写出结构文件；注入的伪引擎 spawnImpl 真去读回该文件并用 readPoscar 解析（产物非合法 POSCAR 即失败），据原子数回总能量。过 conformanceReport 与同一份 potentialProviderContract（与 ase/lammps/mace/xyzcli 同一入口）。证明"零代码接一个 VASP 系引擎"不只是 codec 存在、而是端到端可回算（证据：packages/lammps poscar-engine 测试（poscar 描述符过 conformance；relax 端到端伪引擎读回合法 POSCAR 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE 全过；共 6 子测）+ 工具数不变（52））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

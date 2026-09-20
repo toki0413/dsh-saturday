@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T11:17:32.139Z",
-  "totalPass": 562,
+  "generatedAt": "2026-09-20T11:53:33.170Z",
+  "totalPass": 569,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -114,7 +114,7 @@
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
       "version": "0.3.9",
-      "pass": 23,
+      "pass": 30,
       "fail": 0
     },
     {
@@ -782,6 +782,11 @@
       "index": 116,
       "clause": "弹性到声速与 Debye 温度 analysis.elasticity 结果丰富（elasticity 纯层，无新工具）：新增 densityFromGraph（graph cell 体积 + ATOMIC_MASS 按符号查质量得质量密度 kg/m³ 与数密度每立方米，退化胞或缺质量显式错 ELASTICITY_NEEDS_CELL/ELEMENT_DATA_MISSING）与 acousticFromModuli（多晶 VRH K/G 加密度 → v_L=√((K+4G/3)/ρ)、v_T=√(G/ρ)、v_m 三次调和均值、θ_D=(ħ/kB)(6π²n)^(1/3)·v_m，常数走 CODATA 显式声明）；analysis.elasticity 输出附 acoustic 与 density 字段，零额外引擎调用。闭式对账 Cu：密度 8936 约等实验 8960 kg/m³、θ_D 341 约等实验 343 K（<1%）；与声子 BZ Debye 成一个独立交叉核对",
       "evidence": "packages/elasticity 测试 test6（densityFromGraph Cu fcc 得 ρ 与 n 落在实验区间；acousticFromModuli 用实验 K/G/ρ/n 得 vL 约 4.7、vT 约 2.3 km/s、θ_D 在 310-370 K 对 343；零模与非周期胞各显式报错）+ test5 断言工具输出附 acoustic 与 density（vL 大于 vT、θ_D 大于 0）+ 工具数不变（52）"
+    },
+    {
+      "index": 117,
+      "clause": "descriptor 端到端接 POSCAR 引擎实证（SDK 收口，纯测试无新代码/工具）：把 #110 写侧、#112 摄侧、descriptor-provider 三者串成完整闭环——一个 inputFormat 为 poscar 的 VASP 系引擎描述符 poscarcli，仅填描述符 + 选 poscar codec（provider 装配逻辑复用不改），makeDescriptorProvider 走 getCodec(inputFormat).write 用 writePoscar 写出结构文件；注入的伪引擎 spawnImpl 真去读回该文件并用 readPoscar 解析（产物非合法 POSCAR 即失败），据原子数回总能量。过 conformanceReport 与同一份 potentialProviderContract（与 ase/lammps/mace/xyzcli 同一入口）。证明\"零代码接一个 VASP 系引擎\"不只是 codec 存在、而是端到端可回算",
+      "evidence": "packages/lammps poscar-engine 测试（poscar 描述符过 conformance；relax 端到端伪引擎读回合法 POSCAR 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE 全过；共 6 子测）+ 工具数不变（52）"
     }
   ]
 }
