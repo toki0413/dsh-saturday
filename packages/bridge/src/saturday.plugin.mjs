@@ -5,7 +5,7 @@
 import { createCordisAdapter } from '@toki0413/kernel'
 import { loadClusters } from '@toki0413/python-bridge'
 import { PrototypeLibResolver, MaterialService, PotentialRegistry, Material, composeFormula } from '@toki0413/core'
-import { readPoscar } from '@toki0413/core/codecs'
+import { readPoscar, readXyz } from '@toki0413/core/codecs'
 import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
@@ -169,6 +169,32 @@ export default {
           type: 'structure_from_poscar', material: { id: material.id, formula: material.formula }, nAtoms: material.nAtoms,
         })
         return { materialId: material.id, formula: material.formula, nAtoms: material.nAtoms, cell }
+      },
+    })
+
+    rt.registerTool({
+      name: 'structure.fromXyz',
+      description: 'XYZ 文本 → Material（分子/非周期：零胞 + pbc=false，同 structure.fromSmiles 语义）。'
+        + '首行原子数与后续行不匹配、未知元素、非有限坐标显式报错不猜。零依赖不需 sidecar。'
+        + '产物 materialId 供 relaxation/calculate/声子等下游（分子体系无周期性分析）。',
+      parameters: {
+        text: { type: 'string', required: true, description: 'XYZ 结构文本（count / comment / "符号 x y z" …）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ text } = {}) {
+        if (typeof text !== 'string' || text.trim() === '') throw runtimeErr('XYZ_INPUT_MISSING', 'structure.fromXyz 需要非空 XYZ 文本')
+        const { nodes, comment } = readXyz(text)
+        const numbers = nodes.map(n => n.number)
+        const graph = { cell: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], pbc: [false, false, false], nodes }
+        const material = new Material({ modalities: { graph, formula: composeFormula(numbers) } }, graph)
+        materialService.store.set(material.id, material)
+        await rt.appendTrajectory({
+          type: 'structure_from_xyz', material: { id: material.id, formula: material.formula }, nAtoms: material.nAtoms,
+        })
+        return { materialId: material.id, formula: material.formula, nAtoms: material.nAtoms, comment }
       },
     })
 

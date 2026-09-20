@@ -41,3 +41,19 @@ test('2. 空文本 / 未知元素 显式报错', async () => {
     await core.dispose()
   }
 })
+
+test('3. structure.fromXyz 摄取 → 分子 material（零胞 pbc=false）+ 下游 relax + 错误', async () => {
+  const ctx = new Context()
+  const core = await ctx.registry.plugin({ name: 'saturday', apply: (c) => bridgePlugin.apply(c, { quiet: true }) })
+  const { rt } = core.store.saturday
+  try {
+    const ing = await rt.tools.call('structure.fromXyz', { text: '2\nwater-like\nCu 0.0 0.0 0.0\nAg 1.5 2.5 3.5\n' })
+    assert.equal(ing.nAtoms, 2)
+    assert.ok(ing.materialId)
+    assert.match(ing.formula, /Cu/, 'formula 含 Cu'); assert.match(ing.formula, /Ag/, 'formula 含 Ag')
+    // 不跑下游 relax：无 SMILES 的金属二聚体在 ASE 档会触发 rdDetermineBonds 失败（引擎对“金属当分子”的真实行为）；
+    // 周期性材料的摄取→下游已在 POSCAR 用例（Cu2 relax）验证，readXyz 正确性在 core 测验证
+    await assert.rejects(() => rt.tools.call('structure.fromXyz', { text: '  ' }), e => e.code === 'XYZ_INPUT_MISSING')
+    await assert.rejects(() => rt.tools.call('structure.fromXyz', { text: '3\nc\nCu 0 0 0' }), e => e.code === 'XYZ_TRUNCATED')
+  } finally { await core.dispose() }
+})

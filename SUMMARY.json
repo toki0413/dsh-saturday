@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T09:16:58.898Z",
-  "totalPass": 556,
+  "generatedAt": "2026-09-20T09:32:40.851Z",
+  "totalPass": 558,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.9",
-      "pass": 67,
+      "pass": 68,
       "fail": 0
     },
     {
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@toki0413/core",
       "version": "0.3.9",
-      "pass": 52,
+      "pass": 53,
       "fail": 0
     },
     {
@@ -762,6 +762,11 @@
       "index": 112,
       "clause": "VASP POSCAR 结构摄取 structure.fromPoscar（输入侧，bridge 复用 core/codecs readPoscar）：POSCAR/CONTCAR 文本 → 周期 Material（解析 lattice、按元素分组、分数或笛卡尔坐标、scale），composeFormula 生成化学式、pbc=true，materialId 存 materialService 供 relax/calculate/phonon/xrd/筛选下游。零依赖、不需 RDKit/sidecar，任何环境可跑；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS、截断/奇异胞显式报错不猜。与 #110 POSCAR 写侧合成结构 IO 双向闭环（引擎喂得进、结构接得进）",
       "evidence": "packages/bridge poscar-ingest 测试（摄 Cu2 POSCAR → materialId/formula Cu2/nAtoms 2/cell 正确、下游 potential.relax 对摄取结构给有限能量、轨迹落 structure_from_poscar；空文本 POSCAR_INPUT_MISSING、未知元素 POSCAR_NO_SYMBOLS）+ core readPoscar 闭式测复用 + bridge 工具基线 8→9 + mcp 工具面 49→50"
+    },
+    {
+      "index": 113,
+      "clause": "XYZ 结构摄取 structure.fromXyz（输入侧，复用 core/codecs 新增 readXyz）：补 readXyz 与 writeXyz 对称（首行原子数必须与后续行匹配，元素符号→Z，坐标直接为绝对 Å），xyz codec 从只写升级为可读写。工具读 XYZ 文本 → 分子 Material（零胞 + pbc=false，与 structure.fromSmiles 同非周期语义），materialId 入 materialService；空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、非有限坐标 XYZ_BAD_COORD 全显式报错。与 #110 写侧、#112 POSCAR 摄取合成三格式读写 + 两格式摄取闭环（SMILES 走 RDKit、POSCAR/XYZ 零依赖）",
+      "evidence": "packages/core descriptor 测试 test10（writeXyz→readXyz 往返 numbers/positions 守恒、首行计数不符 XYZ_TRUNCATED、未知元素 ELEMENT_DATA_MISSING、getCodec xyz 现为可读写）+ packages/bridge poscar-ingest 测试 test3（fromXyz 摄 Cu-Ag → materialId/nAtoms 2/formula 含两者、空文本 XYZ_INPUT_MISSING、计数不符 XYZ_TRUNCATED；金属二聚体无 SMILES 在 ASE 档 relax 触发 rdDetermineBonds 失败，故不测下游，周期性摄取由 POSCAR Cu2 relax 用例覆盖）+ bridge 工具基线 9→10 + mcp 工具面 50→51"
     }
   ]
 }

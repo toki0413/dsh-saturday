@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { writeLammpsData, writePoscar, readPoscar, getCodec } from '../src/codecs.mjs'
+import { writeLammpsData, writePoscar, readPoscar, writeXyz, readXyz, getCodec } from '../src/codecs.mjs'
 import { ATOMIC_MASS, SYMBOL } from '../src/elements.mjs'
 import { makeDescriptorProvider, renderTemplate, parseByRegex, checkGoldens } from '../src/descriptor-provider.mjs'
 
@@ -120,4 +120,14 @@ test('9. 非正交胞 POSCAR 往返 + poscar codec 可被 provider 用', () => {
   const graph = { cell, nodes: [{ number: 29, position: [0, 0, 0] }, { number: 29, position: [s * 1.5, s * 1.5, s * 0.5] }] }
   const back = readPoscar(writePoscar(graph))
   for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) close(back.nodes[i].position[k], graph.nodes[i].position[k], 1e-6, `atom${i}.${k}`)
+})
+
+test('10. XYZ 写入→读取往返 + 计数不符/未知元素报错 + getCodec xyz 有 read', () => {
+  const graph = { cell: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], nodes: [{ number: 29, position: [0, 0, 0] }, { number: 47, position: [1.5, 2.5, 3.5] }] }
+  const back = readXyz(writeXyz(graph, { comment: 'm' }))
+  assert.deepEqual(back.nodes.map(n => n.number), [29, 47])
+  close(back.nodes[1].position[1], 2.5, 1e-6); assert.equal(back.comment, 'm')
+  assert.ok(typeof getCodec('xyz').read === 'function', 'xyz codec 现为可读写')
+  assert.throws(() => readXyz('5\nc\nCu 0 0 0'), e => e.code === 'XYZ_TRUNCATED')
+  assert.throws(() => readXyz('1\nc\nZz 0 0 0'), e => e.code === 'ELEMENT_DATA_MISSING')
 })

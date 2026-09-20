@@ -71,6 +71,30 @@ export function writeXyz(graph, { comment = 'generated-by-saturday' } = {}) {
   return lines.join('\n') + '\n'
 }
 
+/**
+ * XYZ 读取→ {nodes:[{number,position(Å)}], comment}。与 writeXyz 对称。
+ * xyz 无晶胞（分子/非周期）；首行原子数必须与后续行匹配。未知元素/非有限坐标显式报错。
+ */
+export function readXyz(text) {
+  const lines = String(text).split(/\r?\n/)
+  if (lines.length < 2) throw codecError('XYZ_TRUNCATED', 'xyz needs at least a count line and a comment line')
+  const n = Number.parseInt(lines[0].trim(), 10)
+  if (!Number.isFinite(n) || n < 0) throw codecError('XYZ_BAD_COUNT', `xyz first line must be atom count, got "${lines[0]}"`)
+  const comment = lines[1]
+  const coordLines = lines.slice(2).filter(s => s.trim().length > 0)
+  if (coordLines.length < n) throw codecError('XYZ_TRUNCATED', `xyz expected ${n} atoms, got ${coordLines.length}`)
+  const nodes = []
+  for (let i = 0; i < n; i++) {
+    const t = coordLines[i].trim().split(/\s+/)
+    const z = Z_BY_SYMBOL[t[0]]
+    if (!Number.isFinite(z)) throw codecError('ELEMENT_DATA_MISSING', `unknown element "${t[0]}" in xyz line ${i}`)
+    const pos = [Number(t[1]), Number(t[2]), Number(t[3])]
+    if (pos.some(v => !Number.isFinite(v))) throw codecError('XYZ_BAD_COORD', `xyz atom ${i}: non-finite coordinate "${coordLines[i]}"`)
+    nodes.push({ number: z, position: pos })
+  }
+  return { nodes, comment }
+}
+
 /** 3×3 逆矩阵（行向量约定），奇异即报错。 */
 function invert3(m) {
   const [[a, b, c], [d, e, f], [g, h, i]] = m
@@ -139,7 +163,7 @@ export function readPoscar(text) {
 /** 格式名 → codec。描述符用 structure.inputFormat 选它。 */
 export const CODECS = {
   'lammps-data': { name: 'lammps-data', write: writeLammpsData },
-  'xyz': { name: 'xyz', write: writeXyz },
+  'xyz': { name: 'xyz', write: writeXyz, read: readXyz },
   'poscar': { name: 'poscar', write: writePoscar, read: readPoscar },
 }
 
