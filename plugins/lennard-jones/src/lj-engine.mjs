@@ -368,38 +368,9 @@ export function ljMd(structure, symbols, {
 }
 
 // ── 谐波锚点：弛豫 + 有限差分 Hessian + Jacobi 对角化 ────────
-function jacobiEigenvalues(matrix) {
-  // 对称矩阵特征值（循环 Jacobi 旋转）；n ≤ 30 量级，性能充裕
-  const a = matrix.map(row => [...row])
-  const n = a.length
-  for (let sweep = 0; sweep < 60; sweep++) {
-    let off = 0
-    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += a[p][q] ** 2
-    if (off < 1e-20) break
-    for (let p = 0; p < n; p++) {
-      for (let q = p + 1; q < n; q++) {
-        if (Math.abs(a[p][q]) < 1e-14) continue
-        const theta = (a[q][q] - a[p][p]) / (2 * a[p][q])
-        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
-        const c = 1 / Math.sqrt(t * t + 1)
-        const s = t * c
-        for (let k = 0; k < n; k++) {
-          const akp = a[k][p]
-          const akq = a[k][q]
-          a[k][p] = c * akp - s * akq
-          a[k][q] = s * akp + c * akq
-        }
-        for (let k = 0; k < n; k++) {
-          const apk = a[p][k]
-          const aqk = a[q][k]
-          a[p][k] = c * apk - s * aqk
-          a[q][k] = s * apk + c * aqk
-        }
-      }
-    }
-  }
-  return Array.from({ length: n }, (_, i) => a[i][i])
-}
+// 对称矩阵特征值：用 @toki0413/core/eig 的 symmetricEigenvalues（全仓唯一实现；升序）。
+// ljHarmonic 逐 λ 分类 realFreqs/zeroModes/nImag 并末尾自排序，与特征值输入顺序无关 → 行为不变。
+import { symmetricEigenvalues } from '@toki0413/core/eig'
 
 /** 质量加权 Hessian 特征值 → 普通频率（THz）；与 ase_calc.harmonic 同款换算闭式 */
 export const FREQ_FACTOR_THZ = Math.sqrt(16.02176634 / 1.66053906892e-27) / (2 * Math.PI * 1e12)
@@ -446,7 +417,7 @@ export function ljHarmonic(structure, symbols, {
   // 质量加权：H' = H / sqrt(m_i m_j)
   const mw = hess.map((row, ia) => row.map((v, jb) =>
     v / Math.sqrt(masses[Math.floor(ia / 3)] * masses[Math.floor(jb / 3)])))
-  const eigvals = jacobiEigenvalues(mw)
+  const eigvals = symmetricEigenvalues(mw)
 
   let zeroModes = 0
   let nImag = 0

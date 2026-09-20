@@ -23,6 +23,7 @@ export {
 } from './thermo.mjs'
 export { PrototypeLibResolver, StructureNotFoundError } from './structure-resolver.mjs'
 export { Z, SYMBOL, composeFormula } from './elements.mjs'
+export { symmetricEigenvalues } from './eig.mjs'
 export {
   unitsError,
   UNIT_WHITELIST,

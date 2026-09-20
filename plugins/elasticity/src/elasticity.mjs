@@ -18,6 +18,7 @@
 // Born 稳定性 = C 正定：对称 6×6 Jacobi 特征分解（自带，确定性，零外部依赖）。
 
 import { ATOMIC_MASS, SYMBOL } from '@toki0413/core/elements'
+import { symmetricEigenvalues } from '@toki0413/core/eig'
 
 export function elasticityError(code, message) {
   const e = new Error(`${message} (${code})`)
@@ -72,39 +73,8 @@ export function assembleStiffness(plus, minus, eps) {
   return C.map((row, i) => row.map((v, j) => 0.5 * (v + C[j][i])))
 }
 
-/** 对称矩阵 Jacobi 特征值（循环扫掠，确定性；与 phonon/lj 同款 NR 稳定小根式） */
-export function jacobiEigenvalues(Ain) {
-  const n = Ain.length
-  const A = Ain.map(r => [...r])
-  const scale = Math.max(...A.map((r, i) => Math.abs(r[i])), 1e-300)
-  const offNorm = () => {
-    let s = 0
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) s += A[i][j] * A[i][j]
-    return Math.sqrt(2 * s)
-  }
-  for (let sweep = 0; sweep < 120; sweep++) {
-    if (offNorm() < 1e-13 * scale) break
-    for (let p = 0; p < n - 1; p++) {
-      for (let q = p + 1; q < n; q++) {
-        if (Math.abs(A[p][q]) < 1e-18 * scale) continue
-        const theta = (A[q][q] - A[p][p]) / (2 * A[p][q])
-        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
-        const c = 1 / Math.sqrt(t * t + 1), s = t * c
-        for (let k = 0; k < n; k++) {
-          const akp = A[k][p], akq = A[k][q]
-          A[k][p] = c * akp - s * akq
-          A[k][q] = s * akp + c * akq
-        }
-        for (let k = 0; k < n; k++) {
-          const apk = A[p][k], aqk = A[q][k]
-          A[p][k] = c * apk - s * aqk
-          A[q][k] = s * apk + c * aqk
-        }
-      }
-    }
-  }
-  return A.map((r, i) => r[i]).sort((a, b) => a - b)
-}
+/** 对称矩阵特征值（升序）——全仓唯一实现在 @toki0413/core/eig；此处保留历史导出名 jacobiEigenvalues 作别名。 */
+export const jacobiEigenvalues = symmetricEigenvalues
 
 /** Voigt-Reuss-Hill 多晶聚合 + 派生量（输入 C 单位 eV/Å³，输出同单位 + GPa 换算） */
 export function deriveModuli(C) {

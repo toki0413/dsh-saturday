@@ -11,6 +11,7 @@
     "./structure-resolver": "./src/structure-resolver.mjs",
     "./elements": "./src/elements.mjs",
     "./units": "./src/units.mjs",
+    "./eig": "./src/eig.mjs",
     "./thermo": "./src/thermo.mjs",
     "./gp": "./src/gp.mjs",
     "./codecs": "./src/codecs.mjs",

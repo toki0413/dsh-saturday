@@ -14,6 +14,7 @@
 // - 本模块不触碰引擎，Φ_{ij}(R) 由调用方（工具层）从超胞力响应提取后注入。
 
 import { SQRT_EV_A2_AMU_TO_THZ, THZ_TO_MEV } from './phonon.mjs'
+import { symmetricEigenvalues } from '@toki0413/core/eig'
 
 /** k_B（meV/K，CODATA-2018：8.617333262e-5 eV/K） */
 export const KB_MEV_PER_K = 8.617_333_262e-2
@@ -22,39 +23,7 @@ export const R_J_PER_MOL_K = 8.314_462_618
 
 const bzError = (code, msg) => Object.assign(new Error(`${msg} (${code})`), { code })
 
-// ── 实对称矩阵特征值（Jacobi 旋转扫掠，确定性，只回本征值升序）──────
-function jacobiEigenvalues(Ain, n) {
-  const A = Ain.map((r) => [...r])
-  const scale = Math.max(...A.map((row, i) => Math.abs(row[i])), 1e-300)
-  const offNorm = () => {
-    let s = 0
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) s += A[i][j] * A[i][j]
-    return Math.sqrt(2 * s)
-  }
-  for (let sweep = 0; sweep < 120; sweep++) {
-    if (offNorm() < 1e-13 * scale) break
-    for (let p = 0; p < n - 1; p++) {
-      for (let q = p + 1; q < n; q++) {
-        if (Math.abs(A[p][q]) < 1e-18 * scale) continue
-        const theta = (A[q][q] - A[p][p]) / (2 * A[p][q])
-        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
-        const c = 1 / Math.sqrt(t * t + 1)
-        const s = t * c
-        for (let k = 0; k < n; k++) {
-          const akp = A[k][p], akq = A[k][q]
-          A[k][p] = c * akp - s * akq
-          A[k][q] = s * akp + c * akq
-        }
-        for (let k = 0; k < n; k++) {
-          const apk = A[p][k], aqk = A[q][k]
-          A[p][k] = c * apk - s * aqk
-          A[q][k] = s * apk + c * aqk
-        }
-      }
-    }
-  }
-  return A.map((row, i) => row[i]).sort((a, b) => a - b)
-}
+// ── 实对称矩阵特征值：用 @toki0413/core/eig 的 symmetricEigenvalues（全仓唯一实现）──────
 
 /**
  * 复 Hermitian C+iS（C 实对称、S 实反对称）的本征值（升序，实数）。
@@ -71,7 +40,7 @@ export function hermitianEigenvalues(C, S) {
       M[n + i][j] = S[i][j]
     }
   }
-  const ev = jacobiEigenvalues(M, 2 * n)
+  const ev = symmetricEigenvalues(M)
   // 每个本征值出现两次（升序排列相邻成对）→ 取偶下标
   const out = []
   for (let i = 0; i < n; i++) out.push(ev[2 * i])
