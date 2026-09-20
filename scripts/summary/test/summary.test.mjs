@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：119 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：120 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 119, '附录 A 当前应为 119 条实证映射')
+  assert.equal(rows.length, 120, '附录 A 当前应为 120 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(120).clause.includes('接 CIF') && at(120).evidence.includes('cif-engine'),
+      '第 120 条证据指向 descriptor 端到端接 CIF 引擎')
   assert.ok(at(119).clause.includes('去重') && at(119).evidence.includes('EIG_NOT_SQUARE'),
       '第 119 条证据指向特征值去重进 core/eig')
   assert.ok(at(118).clause.includes('各向异性声速') && at(118).evidence.includes('eig3Symmetric'),

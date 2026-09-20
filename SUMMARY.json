@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-20T15:51:49.289Z",
-  "totalPass": 574,
+  "generatedAt": "2026-09-20T16:00:57.969Z",
+  "totalPass": 581,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -114,7 +114,7 @@
       "dir": "plugins\\lammps",
       "name": "@toki0413/plugin-lammps",
       "version": "0.3.10",
-      "pass": 30,
+      "pass": 37,
       "fail": 0
     },
     {
@@ -797,6 +797,11 @@
       "index": 119,
       "clause": "实对称矩阵特征值去重进 core/eig（全仓唯一实现，行为等价）：新增 @toki0413/core/eig 的 symmetricEigenvalues（n×n NR 稳定小根循环 Jacobi、升序、scale 相对阈值），elasticity（jacobiEigenvalues 保留为别名导出）、phonon-bz（复 Hermitian 2n×2n 实对称嵌入取偶下标）、lj-engine（质量加权 Hessian）三份拷贝全改调它。此前 elasticity 那份是较弱 atan2 变体（#118 坐实强耦合不收敛），phonon/lj 是各自独立 NR 拷贝。行为不变守卫：elasticity、phonon、lj 各自特征值/声子色散/谐波频率测全绿（lj 逐 λ 分类末尾自排序与特征值顺序无关；phonon 取升序偶下标；elasticity 取升序 [0] 做 Born 判据）。eig3Symmetric（3×3 闭式，仅弹性声学方向声速用、非重复）留 elasticity",
       "evidence": "packages/core eig.test（已知阵升序+迹不变；强耦合与二重零根收敛；入参不改、非方阵/空显式错 EIG_EMPTY/EIG_NOT_SQUARE；6×6 分块已知解）+ 消费者回归 core58/elasticity7/phonon29/lj15 全绿（行为等价）+ 工具数不变（52）"
+    },
+    {
+      "index": 120,
+      "clause": "descriptor 端到端接 CIF 引擎实证（SDK 收口，纯测试无新代码/工具）：与 #117 POSCAR 成对——inputFormat 为 cif 的引擎描述符 cifcli 仅填描述符 + 选 cif codec，makeDescriptorProvider 走 getCodec cif 的 write=writeCif 写出 CIF 结构文件；注入伪引擎 spawnImpl 真读回并用 readCif 解析（产物非合法 CIF 即失败），据原子数回能量。过 conformanceReport 与同一份 potentialProviderContract。至此 POSCAR 与 CIF 两大周期结构交换格式都端到端可回算（SMILES/POSCAR/XYZ/CIF 四路输入齐）",
+      "evidence": "packages/lammps cif-engine 测试（cif 描述符过 conformance；relax 端到端伪引擎读回合法 CIF 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE；共 7 子测）+ 工具数不变（52）"
     }
   ]
 }
