@@ -1,6 +1,6 @@
 {
   "name": "@toki0413/plugin-sdk",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "Saturday 引擎插件脚手架：给一份引擎描述符，生成过契约（potentialProviderContract）+ 过 conformance 的引擎插件包（descriptor + codec 装配，作者不写 provider 代码）。",
   "type": "module",
   "main": "src/index.mjs",
