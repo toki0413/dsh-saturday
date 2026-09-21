@@ -14,6 +14,40 @@ and composes them freely.
 The plugin interface specification lives in
 `packages/bridge/docs/plugin-contract-v0.md` (Chinese original, with an English digest alongside).
 
+## Get started in 60 seconds
+
+No Python, no solver install needed — with Node ≥ 22 an Agent can get real, engine-recomputed
+materials numbers (with no ASE it falls back to the zero-dependency lj-js engine; energies are
+de-computed by the engine, not placeholder fakes).
+
+**Path A: wire into any MCP client** (Claude Desktop / Cursor / Cherry Studio) — add to its config:
+
+```json
+{
+  "mcpServers": {
+    "saturday-materials": { "command": "npx", "args": ["-y", "@toki0413/mcp-server"] }
+  }
+}
+```
+
+Save and restart the client, then say "relax Cu and give me the per-atom energy" — it calls
+`potential.relax` and returns `energyPerAtom` (eV); all 52 tools (`material.load`,
+`workflow.screen`, `analysis.phonon`, …) are exposed. For real EMT/LAMMPS physics, add Python ≥ 3.10 +
+ASE (see the Environment Matrix); the engine upgrades by declared capability while the plugin contract
+and unit/fingerprint gates stay identical.
+
+**Path B: run it locally**
+
+```bash
+git clone https://github.com/toki0413/dsh-saturday && cd dsh-saturday
+npm install && npm test        # full regression (pure Node is enough)
+npm run demo                   # one ten-stage end-to-end chain, environment-adaptive
+npm run demo:agent             # a single prompt drives the whole discovery chain (mock LLM, no deps)
+```
+
+Not sure which tool to call → see [`docs/recipes.md`](packages/bridge/docs/recipes.md) (find tools by
+intent); for a 5-minute walkthrough and the refuse-to-fabricate demo → [`docs/agent-e2e-demo.md`](packages/bridge/docs/agent-e2e-demo.md).
+
 ## Core Paradigm
 
 ### Spatiotemporal Composability
@@ -115,8 +149,9 @@ enthalpy. Measured Cu doping screening:
 
 ## Environment Matrix
 
-Out of the box: after `git clone → npm install`, **all 12 demos run on a pure Node environment**
-(no extra dependencies). The data plane adapts to the environment and the startup banner reports
+Out of the box: after `git clone → npm install`, **all demos and the full regression run on a pure
+Node environment** (no extra deps; without ASE it uses the zero-dependency lj-js engine).
+The data plane adapts to the environment and the startup banner reports
 it truthfully (not a silent degradation: the fallback engine is an explicitly registered engine).
 
 | Environment | Data plane / engines | Notes |

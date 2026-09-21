@@ -11,6 +11,38 @@
 
 插件接口规范见 `packages/bridge/docs/plugin-contract-v0.md`（中文原本，英文摘要版同目录）。
 
+## 60 秒上手
+
+不需要 Python、不需要装任何求解器——有 Node ≥ 22 就能让 Agent 拿到真实的材料回算数值
+（无 ASE 时自动走零依赖 lj-js 引擎；能量由引擎回算，非玩具占位假数）。
+
+**路径 A：接进任意 MCP 客户端**（Claude Desktop / Cursor / Cherry Studio 等）——在客户端配置里加：
+
+```json
+{
+  "mcpServers": {
+    "saturday-materials": { "command": "npx", "args": ["-y", "@toki0413/mcp-server"] }
+  }
+}
+```
+
+存盘重启客户端，对它说一句“把 Cu 弛豫一下并给出每原子能量”，它会调 `potential.relax` 返回
+`energyPerAtom`（eV）；`material.load` / `workflow.screen`（掺杂筛选）/ `analysis.phonon`（声子）
+等 52 个工具都在。想要真实 EMT/LAMMPS 物理，再装 Python≥3.10 + ASE（见下“环境矩阵”），
+引擎按能力自动升级，插件面契约与单位/指纹门禁不变。
+
+**路径 B：本地跑起来看全链**
+
+```bash
+git clone https://github.com/toki0413/dsh-saturday && cd dsh-saturday
+npm install && npm test        # 全量回归（纯 Node 即可）
+npm run demo                   # 一条十阶段端到端：加载→采样→筛选→声子→回算，环境自适应
+npm run demo:agent             # 一个 prompt 驱动整个发现链（mock LLM，无外部依赖）
+```
+
+想知道“我该调哪个工具”→ 见 [`docs/recipes.md`](packages/bridge/docs/recipes.md)（按意图找工具与参数）；
+5 分钟上手与拒绝伪造证据的演示 → [`docs/agent-e2e-demo.md`](packages/bridge/docs/agent-e2e-demo.md)。
+
 ## 核心范式
 
 ### 时空可组合性（Spatiotemporal Composability）
@@ -118,7 +150,7 @@ EMT 能量零点为各元素平衡 fcc 晶体，energyPerAtom 近似形成焓。
 
 ## 环境矩阵
 
-开箱即用：`git clone → npm install` 后，**纯 Node 环境即可跑全部 12 个演示**（无额外依赖）。
+开箱即用：`git clone → npm install` 后，**纯 Node 环境即可跑全部演示与全量回归**（无额外依赖；无 ASE 时走零依赖 lj-js）。
 数据面形态随环境自适应，启动横幅如实呈报（非静默降级：回退引擎是显式注册的独立引擎）。
 
 | 环境 | 数据面 / 可用引擎 | 说明 |
