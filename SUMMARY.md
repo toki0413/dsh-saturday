@@ -1,12 +1,12 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-21T00:10:04.490Z
+生成时间：2026-09-21T00:26:14.160Z
 
-**回归基线：583/583**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：585/585**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 69/69 |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 71/71 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
 | `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 58/58 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，122 条）
+## 实证条款（契约文档附录 A，123 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -159,6 +159,7 @@
 - **#120** descriptor 端到端接 CIF 引擎实证（SDK 收口，纯测试无新代码/工具）：与 #117 POSCAR 成对——inputFormat 为 cif 的引擎描述符 cifcli 仅填描述符 + 选 cif codec，makeDescriptorProvider 走 getCodec cif 的 write=writeCif 写出 CIF 结构文件；注入伪引擎 spawnImpl 真读回并用 readCif 解析（产物非合法 CIF 即失败），据原子数回能量。过 conformanceReport 与同一份 potentialProviderContract。至此 POSCAR 与 CIF 两大周期结构交换格式都端到端可回算（SMILES/POSCAR/XYZ/CIF 四路输入齐）（证据：packages/lammps cif-engine 测试（cif 描述符过 conformance；relax 端到端伪引擎读回合法 CIF 得能量 −3.7×原子数；potentialProviderContract manifest 形状/事件粒度/relax 真执行/幂等/ENGINE_UNAVAILABLE；共 7 子测）+ 工具数不变（52））
 - **#121** 弹性方向力学各向异性：杨氏模量 E(n) 与通用指数 A^U（analysis.elasticity 附 mechanicalAnisotropy，无新工具）：directionYoungsModulus 由柔量 S=invert6(C) 出 1/E(n)=a(n)ᵀS a(n)，a=[l1²,l2²,l3²,l2l3,l1l3,l1l2]（剪切项不带因子 2——Voigt 柔量 S44=2·S_tensor 已含对称双计，首版误加 2 致各向同性 E 竟方向相关，被"方向无关"守卫当场拦下改对）；universalAnisotropy 给 A^U=5(G_V/G_R)+(K_V/K_R)−6（Ørehøj 2009，复用 deriveModuli 的 VRH 界，各向同性=0）。与 #118 声速成对，弹性各向异性从波速扩到力学模量。E[100]=1/S11、E[111] 立方解析；工具输出附 mechanicalAnisotropy（[100]/[110]/[111] E + universalIndex）（证据：packages/elasticity test8（各向同性 λ=1,μ=0.4：E 方向无关 =μ(3λ+2μ)/(λ+μ)、A^U=0；立方 C11=3,C12=1,C44=0.6：E[100]=2.5、E[111] 约 1.607、A^U 大于 0；零方向与非正界 ELASTICITY_BAD_INPUT/AU_BAD_INPUT）+ test5 acousticAnisotropy 不变 + 工具数不变（52））
 - **#122** EOS 多方程：Vinet 普适状态方程并入 analysis.eos（无新工具，加 equation 选式参数）：把 fitBirchMurnaghan 的 LM 核抽成通用 fitEOS(series, model)，新增 vinet 模型与 fitVinet；analysis.eos 加 equation 参数取 birch-murnaghan 或 vinet（默认 BM，行为不变）。Vinet 能量由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0′−1)、E=E0−∫P dV 积分闭式 E=E0+(9B0V0/η²)[1−(1−ηs)e^{ηs}]、s=1−(V/V0)^(1/3)（宽体积域比 BM 更稳，热压数据首选）。教训：凭记忆初写的 Vinet 二阶导给出 −2·B0（符号/幂错），被"V0 处 V0·d²E/dV²=B0"物理校验当场拦下——自洽 fit 会掩盖错公式，故新 EOS 模型必带曲率回 B0 硬验（证据：packages/eos test9（vinet 在 V0 处 E0、一阶导零、二阶导回 B0 误差<0.1%；合成 vinet 序列 fitVinet 还原四参数 r²≈1）+ fitBirchMurnaghan 委托 fitEOS 行为不变（既有 BM/契约测全绿）+ equation 默认 BM 向后兼容 + 工具数不变（52））
+- **#123** 旗舰端到端：生成式提议器喂进 explore 可插拔 sampler 闭环（一份 sampler seam、两种生成器：RSS + 仿射耦合流；demo:generative）：承 #115 的 sampler 参数，workflow.explore 以 sampler=rss 或 affine-flow 换提议器，候选不自证、逐候选引擎回算弛豫、能量排序、参考结构在环内作 dE 基线、失败不吞错、generative 谱系可溯。RSS（成分约束随机 + 最小间距门禁）候选有低于参考者由引擎回算说话，affine-flow（参考邻域双射输运）绕弛豫参考小位移、参考居首——同一闭环两种生成语义。零新增工具（复用 sampler.rss / sampler.flow 与 workflow.explore）（证据：packages/bridge generative-explore 测试（同 Context 挂 core+rss+flow+explore，两生成器分别过 workflow.explore：ranked 非空、energyPerAtom 有限、generative 谱系、参考在环 some kind=reference、failed=0、按能量升序）+ demo:generative 端到端跑通（lj-js/emt 自适应）+ 工具数不变（52））
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

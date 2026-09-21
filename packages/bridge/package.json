@@ -20,6 +20,7 @@
     "demo:availability": "node demo-availability.mjs",
     "demo:mixture-sampling": "node demo-mixture-sampling.mjs",
     "demo:rss": "node demo-rss.mjs",
+    "demo:generative": "node demo-generative.mjs",
     "demo:anchor-guided": "node demo-anchor-guided.mjs",
     "demo:anchor-auto": "node demo-anchor-auto.mjs",
     "demo:anchor-resume": "node demo-anchor-resume.mjs"

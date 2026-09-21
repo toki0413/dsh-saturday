@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-21T00:10:04.491Z",
-  "totalPass": 583,
+  "generatedAt": "2026-09-21T00:26:14.161Z",
+  "totalPass": 585,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.11",
-      "pass": 69,
+      "pass": 71,
       "fail": 0
     },
     {
@@ -812,6 +812,11 @@
       "index": 122,
       "clause": "EOS 多方程：Vinet 普适状态方程并入 analysis.eos（无新工具，加 equation 选式参数）：把 fitBirchMurnaghan 的 LM 核抽成通用 fitEOS(series, model)，新增 vinet 模型与 fitVinet；analysis.eos 加 equation 参数取 birch-murnaghan 或 vinet（默认 BM，行为不变）。Vinet 能量由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0′−1)、E=E0−∫P dV 积分闭式 E=E0+(9B0V0/η²)[1−(1−ηs)e^{ηs}]、s=1−(V/V0)^(1/3)（宽体积域比 BM 更稳，热压数据首选）。教训：凭记忆初写的 Vinet 二阶导给出 −2·B0（符号/幂错），被\"V0 处 V0·d²E/dV²=B0\"物理校验当场拦下——自洽 fit 会掩盖错公式，故新 EOS 模型必带曲率回 B0 硬验",
       "evidence": "packages/eos test9（vinet 在 V0 处 E0、一阶导零、二阶导回 B0 误差<0.1%；合成 vinet 序列 fitVinet 还原四参数 r²≈1）+ fitBirchMurnaghan 委托 fitEOS 行为不变（既有 BM/契约测全绿）+ equation 默认 BM 向后兼容 + 工具数不变（52）"
+    },
+    {
+      "index": 123,
+      "clause": "旗舰端到端：生成式提议器喂进 explore 可插拔 sampler 闭环（一份 sampler seam、两种生成器：RSS + 仿射耦合流；demo:generative）：承 #115 的 sampler 参数，workflow.explore 以 sampler=rss 或 affine-flow 换提议器，候选不自证、逐候选引擎回算弛豫、能量排序、参考结构在环内作 dE 基线、失败不吞错、generative 谱系可溯。RSS（成分约束随机 + 最小间距门禁）候选有低于参考者由引擎回算说话，affine-flow（参考邻域双射输运）绕弛豫参考小位移、参考居首——同一闭环两种生成语义。零新增工具（复用 sampler.rss / sampler.flow 与 workflow.explore）",
+      "evidence": "packages/bridge generative-explore 测试（同 Context 挂 core+rss+flow+explore，两生成器分别过 workflow.explore：ranked 非空、energyPerAtom 有限、generative 谱系、参考在环 some kind=reference、failed=0、按能量升序）+ demo:generative 端到端跑通（lj-js/emt 自适应）+ 工具数不变（52）"
     }
   ]
 }
