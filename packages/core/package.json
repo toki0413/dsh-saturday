@@ -12,6 +12,7 @@
     "./elements": "./src/elements.mjs",
     "./units": "./src/units.mjs",
     "./eig": "./src/eig.mjs",
+    "./rank": "./src/rank.mjs",
     "./thermo": "./src/thermo.mjs",
     "./gp": "./src/gp.mjs",
     "./codecs": "./src/codecs.mjs",

@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-21T02:33:18.166Z
+生成时间：2026-09-21T07:29:10.294Z
 
-**回归基线：587/587**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：595/595**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
-| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 71/71 |
+| `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 74/74 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 58/58 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 63/63 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 11/11 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -35,7 +35,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，124 条）
+## 实证条款（契约文档附录 A，125 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -161,6 +161,7 @@
 - **#122** EOS 多方程：Vinet 普适状态方程并入 analysis.eos（无新工具，加 equation 选式参数）：把 fitBirchMurnaghan 的 LM 核抽成通用 fitEOS(series, model)，新增 vinet 模型与 fitVinet；analysis.eos 加 equation 参数取 birch-murnaghan 或 vinet（默认 BM，行为不变）。Vinet 能量由 P(V)=3B0(1−x)/x²·exp[η(1−x)]、η=1.5(B0′−1)、E=E0−∫P dV 积分闭式 E=E0+(9B0V0/η²)[1−(1−ηs)e^{ηs}]、s=1−(V/V0)^(1/3)（宽体积域比 BM 更稳，热压数据首选）。教训：凭记忆初写的 Vinet 二阶导给出 −2·B0（符号/幂错），被"V0 处 V0·d²E/dV²=B0"物理校验当场拦下——自洽 fit 会掩盖错公式，故新 EOS 模型必带曲率回 B0 硬验（证据：packages/eos test9（vinet 在 V0 处 E0、一阶导零、二阶导回 B0 误差<0.1%；合成 vinet 序列 fitVinet 还原四参数 r²≈1）+ fitBirchMurnaghan 委托 fitEOS 行为不变（既有 BM/契约测全绿）+ equation 默认 BM 向后兼容 + 工具数不变（52））
 - **#123** 旗舰端到端：生成式提议器喂进 explore 可插拔 sampler 闭环（一份 sampler seam、两种生成器：RSS + 仿射耦合流；demo:generative）：承 #115 的 sampler 参数，workflow.explore 以 sampler=rss 或 affine-flow 换提议器，候选不自证、逐候选引擎回算弛豫、能量排序、参考结构在环内作 dE 基线、失败不吞错、generative 谱系可溯。RSS（成分约束随机 + 最小间距门禁）候选有低于参考者由引擎回算说话，affine-flow（参考邻域双射输运）绕弛豫参考小位移、参考居首——同一闭环两种生成语义。零新增工具（复用 sampler.rss / sampler.flow 与 workflow.explore）（证据：packages/bridge generative-explore 测试（同 Context 挂 core+rss+flow+explore，两生成器分别过 workflow.explore：ranked 非空、energyPerAtom 有限、generative 谱系、参考在环 some kind=reference、failed=0、按能量升序）+ demo:generative 端到端跑通（lj-js/emt 自适应）+ 工具数不变（52））
 - **#124** 无头一次性 CLI 入口（降使用门槛，mcp-server cli.mjs 无头分支 + bin 别名 saturday）：复用 bootSaturday 全插件 boot，--tools 列当前环境工具、--call <tool> json 一次调用任一工具、--relax formula 一步"加载→弛豫→打印每原子能量与所用引擎"（本机有 MACE 走 mace:medium 真物理、否则 lj-js）；结果走 stdout、横幅走 stderr，与 stdio/http 并存。零配置尝鲜不再需要配 MCP 客户端：npx -y @toki0413/mcp-server --relax Cu。README 60 秒上手块与 recipes.md 食谱同步。工具数不变（52）（证据：packages/mcp-server cli.test（spawn cli.mjs 排除需 Python 插件保快/确定：--tools 解析为工具 JSON 数组≥20 且含 potential.relax/material.load；--call material.load Cu 返回 materialId）+ README/en 60 秒上手加"最快一行"CLI + 无新工具）
+- **#125** 跨引擎排序一致性 runtime.engine.rank（新工具，52→53；core/rank 纯层）：对一批 materialId 在两/多引擎回算 energyPerAtom，两两报 Spearman ρ（averageRanks+pearson，并列取均值秩）、前 k 重合（k 个最小值索引交除 k）、平均绝对差；可比性只按单位三元组判不自动换算；不足两引擎/两材料/无能量/无能力/未知名各显式报错 RANK_*。回答筛选里的实用问题“便宜引擎挑的最低能集合与参考引擎一致吗”（#111 A/B 的排序版延伸）。core/rank 是通用统计（spearman/topKOverlap/meanAbsDelta），非引擎专有（证据：packages/core rank.test（averageRanks 并列；spearman 同序1、逆序-1、教科书并列0.9487；topKOverlap；meanAbsDelta；长度不等 RANK_LENGTH）+ packages/bridge engine-rank 测试（同序 ρ1 topK1 meanAbsDelta 5.75 comparable；逆序 ρ-1 topK0；三引擎两两3对；不足两引擎/两材料/未知名 RANK_*）+ mcp 工具面 52→53）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

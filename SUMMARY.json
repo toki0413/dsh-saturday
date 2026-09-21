@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-21T02:33:18.169Z",
-  "totalPass": 587,
+  "generatedAt": "2026-09-21T07:29:10.297Z",
+  "totalPass": 595,
   "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
@@ -9,7 +9,7 @@
       "dir": "packages\\bridge",
       "name": "@toki0413/bridge",
       "version": "0.3.12",
-      "pass": 71,
+      "pass": 74,
       "fail": 0
     },
     {
@@ -23,7 +23,7 @@
       "dir": "packages\\core",
       "name": "@toki0413/core",
       "version": "0.3.12",
-      "pass": 58,
+      "pass": 63,
       "fail": 0
     },
     {
@@ -822,6 +822,11 @@
       "index": 124,
       "clause": "无头一次性 CLI 入口（降使用门槛，mcp-server cli.mjs 无头分支 + bin 别名 saturday）：复用 bootSaturday 全插件 boot，--tools 列当前环境工具、--call <tool> json 一次调用任一工具、--relax formula 一步\"加载→弛豫→打印每原子能量与所用引擎\"（本机有 MACE 走 mace:medium 真物理、否则 lj-js）；结果走 stdout、横幅走 stderr，与 stdio/http 并存。零配置尝鲜不再需要配 MCP 客户端：npx -y @toki0413/mcp-server --relax Cu。README 60 秒上手块与 recipes.md 食谱同步。工具数不变（52）",
       "evidence": "packages/mcp-server cli.test（spawn cli.mjs 排除需 Python 插件保快/确定：--tools 解析为工具 JSON 数组≥20 且含 potential.relax/material.load；--call material.load Cu 返回 materialId）+ README/en 60 秒上手加\"最快一行\"CLI + 无新工具"
+    },
+    {
+      "index": 125,
+      "clause": "跨引擎排序一致性 runtime.engine.rank（新工具，52→53；core/rank 纯层）：对一批 materialId 在两/多引擎回算 energyPerAtom，两两报 Spearman ρ（averageRanks+pearson，并列取均值秩）、前 k 重合（k 个最小值索引交除 k）、平均绝对差；可比性只按单位三元组判不自动换算；不足两引擎/两材料/无能量/无能力/未知名各显式报错 RANK_*。回答筛选里的实用问题“便宜引擎挑的最低能集合与参考引擎一致吗”（#111 A/B 的排序版延伸）。core/rank 是通用统计（spearman/topKOverlap/meanAbsDelta），非引擎专有",
+      "evidence": "packages/core rank.test（averageRanks 并列；spearman 同序1、逆序-1、教科书并列0.9487；topKOverlap；meanAbsDelta；长度不等 RANK_LENGTH）+ packages/bridge engine-rank 测试（同序 ρ1 topK1 meanAbsDelta 5.75 comparable；逆序 ρ-1 topK0；三引擎两两3对；不足两引擎/两材料/未知名 RANK_*）+ mcp 工具面 52→53"
     }
   ]
 }

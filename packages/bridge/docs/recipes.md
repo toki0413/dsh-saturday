@@ -63,6 +63,7 @@
 | 我想… | 工具 | 关键入参 | 前提 |
 |---|---|---|---|
 | 同一材料两引擎回算、逐对差与可比性 | `runtime.engine.crossCheck` | `materialId`, `engines`（≥2）, `kind`（calculate/relax） | — |
+| 一批候选在两引擎下排序是否一致（便宜引擎能否代贵引擎） | `runtime.engine.rank` | `materialIds`（≥2）, `engines`（≥2，缺省=在册全部）, `kind`, `k` | — |
 | 有哪些引擎/能力 | `runtime.capability.list`, `engine.availability` | — | — |
 | 热插拔引擎 | `runtime.engine.attach`, `runtime.engine.detach` | 见 schema | — |
 | 登记推导 / 查失效 / 触发重算 | `derivation.record`, `derivation.status`, `derivation.invalidate` | 见 schema | — |

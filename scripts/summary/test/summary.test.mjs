@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：124 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：125 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 124, '附录 A 当前应为 124 条实证映射')
+  assert.equal(rows.length, 125, '附录 A 当前应为 125 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(125).clause.includes('排序一致性') && at(125).evidence.includes('rank.test'),
+      '第 125 条证据指向跨引擎排序一致性 runtime.engine.rank')
   assert.ok(at(124).clause.includes('无头') && at(124).evidence.includes('cli.test'),
       '第 124 条证据指向无头一次性 CLI')
   assert.ok(at(123).clause.includes('生成式提议器') && at(123).evidence.includes('generative-explore'),

@@ -10,6 +10,7 @@ import { EmtMockProvider } from './compute/emt-provider.mjs'
 import { PythonBridge } from '@toki0413/python-bridge'
 import { LjProvider } from '@toki0413/plugin-lj'
 import { crossCompare } from './cross-check.mjs'
+import { spearman, topKOverlap, meanAbsDelta } from '@toki0413/core/rank'
 
 export default {
   name: 'saturday',
@@ -562,6 +563,66 @@ export default {
           kind, engines: runs.map(r => r.engine), allComparable: cmp.allComparable,
         })
         return cmp
+      },
+    })
+
+    // 跨引擎排序一致性：同一批候选在两引擎回算的能量排序是否一致（筛选“便宜引擎能否代贵引擎”）。
+    rt.registerTool({
+      name: 'runtime.engine.rank',
+      description: '跨引擎排序一致性：对一批 materialId 在两个（或多个）引擎回算 energyPerAtom，'
+        + '报两两 Spearman ρ、前 k 重合（取 k 个最小值的索引交/k）、平均绝对差。'
+        + '可比性只按单位三元组判（不自动换算）；不足两引擎/两材料/无能量/无能力显式报错。需 materialId、engines≥2。',
+      parameters: {
+        materialIds: { type: 'array', items: { type: 'string' }, required: true, description: '候选材料 ID（≥2，同一批）' },
+        engines: { type: 'array', items: { type: 'string' }, description: '引擎名（≥2；缺省=在册全部具该能力引擎）' },
+        kind: { type: 'string', default: 'calculate', description: 'calculate | relax' },
+        k: { type: 'integer', description: '前 k 重合的 k（缺省 min(3, 材料数)）' },
+      },
+      output: {
+        schema: { type: 'object', additionalProperties: true },
+        render(_args, value) { return [{ type: 'text', text: JSON.stringify(value) }] },
+      },
+      async execute({ materialIds, engines, kind = 'calculate', k } = {}) {
+        if (kind !== 'calculate' && kind !== 'relax') throw runtimeErr('RANK_BAD_KIND', `kind must be calculate|relax; got "${kind}"`)
+        if (!Array.isArray(materialIds) || materialIds.length < 2) throw runtimeErr('RANK_NEEDS_MATERIALS', `需要 ≥2 个 materialId；got ${materialIds?.length ?? 0}`)
+        const cands = (Array.isArray(engines) && engines.length ? engines : [...potential.providers.keys()])
+        if (cands.length < 2) throw runtimeErr('RANK_NEEDS_TWO', `需要 ≥2 引擎做排序一致性；当前候选 [${cands.join(', ') || '无'}]`)
+        const materials = []
+        for (const id of materialIds) materials.push(await materialService.get(id))
+        const perEngine = {}, units = {}
+        for (const name of cands) {
+          const provider = potential.providers.get(name)
+          if (!provider) throw runtimeErr('RANK_ENGINE_UNAVAILABLE', `引擎 "${name}" 未在册`)
+          if (typeof provider[kind] !== 'function') throw runtimeErr('RANK_CAPABILITY_MISSING', `引擎 "${name}" 无 ${kind}() 方法`)
+          const u = provider._units
+          units[name] = { energy: u.energy, length: u.length, time: u.time }
+          const arr = []
+          for (const m of materials) {
+            const r = await provider[kind](m, {})
+            if (!Number.isFinite(r?.energy)) throw runtimeErr('RANK_ENERGY_MISSING', `引擎 "${name}" 未返回有限 energy`)
+            arr.push(r.energy / m.nAtoms)
+          }
+          perEngine[name] = arr
+        }
+        const sameUnits = (a, b) => a.energy === b.energy && a.length === b.length && a.time === b.time
+        const kk = k ?? Math.min(3, materialIds.length)
+        const pairs = []
+        for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) {
+          const a = perEngine[cands[i]], b = perEngine[cands[j]]
+          pairs.push({
+            a: cands[i], b: cands[j],
+            comparable: sameUnits(units[cands[i]], units[cands[j]]),
+            spearman: spearman(a, b), topK: topKOverlap(a, b, kk).overlap, k: Math.max(1, Math.min(kk, a.length)),
+            meanAbsDelta: meanAbsDelta(a, b),
+          })
+        }
+        await rt.appendTrajectory({
+          type: 'runtime_engine_rank', kind, engines: cands, nMaterials: materialIds.length,
+          primaryPairs: pairs.map(p => ({ a: p.a, b: p.b, spearman: p.spearman, topK: p.topK })),
+        })
+        return { kind, materialIds, engines: cands, units, perEngine, pairs,
+          note: '跨引擎排序一致性：spearman 接近 1 且 topK 高表示便宜引擎与参考引擎选法一致；comparable=false 仅表单位三元组不一致，不自动换算。' +
+            '能量为引擎回算；两两均报，不仅第一对。' }
       },
     })
 
