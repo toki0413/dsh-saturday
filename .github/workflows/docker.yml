@@ -52,6 +52,14 @@ jobs:
           grep -q potential.relax /tmp/tools.json
 
       # 3) 仅打 tag 时推 GHCR（缓存命中→快）
+      # 版本号必须经 step output 传递：YAML 里写 ${GITHUB_REF_NAME#v} 不是 Actions 表达式，
+      # 会原样拼进镜像标签并触发 invalid reference format（已于 v0.3.13 实跑撞过）。
+      - name: Resolve image tag
+        id: resolve-tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Push (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/build-push-action@v6
@@ -60,6 +68,6 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${GITHUB_REF_NAME#v}
+            ${{ env.IMAGE }}:${{ steps.resolve-tag.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
