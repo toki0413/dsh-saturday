@@ -56,6 +56,7 @@
 | 准谐热膨胀 α(T) | `analysis.quasiharmonic` | `materialId`, 温度区间 | 🐍 |
 | XRD 粉末衍射谱 | `analysis.xrd` | `materialId`, 波长/角度窗 | — |
 | 相鉴定（实测谱↔候选库） | `analysis.xrd.phaseIdentify` | 实测峰, 候选结构, 容差 | — |
+| 实测峰位→点阵参数精修（含 σ 与残差） | `analysis.xrd.latticeFromPeaks` | `peaks`=[{twoThetaDeg, hkl}], `lambdaA`, `system`（triclinic/cubic） | — |
 | 弹性张量 + VRH K/G/E/ν + Born 稳定 + 声速/θ_D + 单晶各向异性 | `analysis.elasticity` | `materialId`, `engine`（须声明 stress）, `eps` | 🐍（需应力输出） |
 | 状态方程拟合 E(V)→E0/V0/B0 | `analysis.eos` | `materialId` 或 `series`, `scales`, `equation`（`birch-murnaghan` / `vinet`） | — |
 | 逐原子配位数 / 键长分布 / 短程有序富聚判据 | `analysis.coordination` | `materialId`, `rCut`（省略=自动壳层间隙） | — |

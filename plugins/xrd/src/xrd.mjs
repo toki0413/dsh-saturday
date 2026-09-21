@@ -23,12 +23,12 @@ export const CU_KA_A = 1.54056
 export const TWO_PI = 2 * Math.PI
 
 // ── 3×3 矩阵工具（零依赖）──────────────────────────────────────
-function det3(m) {
+export function det3(m) {
   return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
     - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
     + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
 }
-function inv3(m) {
+export function inv3(m) {
   const d = det3(m)
   if (Math.abs(d) < 1e-18) throw xrdError('XRD_SINGULAR_CELL', `cell metric determinant ≈0; got ${d}`)
   const c = (i, j) => {

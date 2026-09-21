@@ -8,9 +8,11 @@
 import { createCordisAdapter } from '@toki0413/kernel'
 import { powderPeaks, xrdError, CU_KA_A } from './xrd.mjs'
 import { identifyPhase } from './phase-match.mjs'
+import { latticeFromPeaks } from './lattice-solve.mjs'
 
 export { powderPeaks, structureFactor, dSpacing, toFractional, realMetric, reciprocalMetric, braggTheta, xrdError, CU_KA_A } from './xrd.mjs'
 export { identifyPhase, matchPattern, normalizePeaks } from './phase-match.mjs'
+export { latticeFromPeaks, latticeDesign, yFromTwoTheta, cellFromGstar, gstarMatrix } from './lattice-solve.mjs'
 
 /** §4.4 AnalysisPlugin 形态：name + inputs/outputs 类型声明 + describe + run */
 export const xrdAnalysis = {
@@ -126,6 +128,39 @@ export default {
           result: { best: result.best, nCandidates: candidates.length, topScore: result.ranked[0]?.score ?? null, tolDeg: result.params.tolDeg },
         })
         await rt.emit?.('saturday/analysis/complete', { type: 'saturday/analysis/complete', payload: { analysis: 'xrd-phase-identify', best: result.best } })
+        return result
+      },
+    })
+
+    rt.registerTool({
+      name: 'analysis.xrd.latticeFromPeaks',
+      description: '点阵参数精修：给已指派的实测粉末峰（peaks=[{twoThetaDeg, hkl:[h,k,l]}]）与波长，'
+        + '对倒易度规 G* 作一次线性最小二乘（三斜 6 参数或立方约束 1 参数），交付胞参数'
+        + '(a,b,c,α,β,γ) 与高斯-马尔可夫标准不确定度、体积、逐峰 2θ 残差与 R²。'
+        + '不自动指标化（hkl 由调用方给定），不含强度加权与系统误差校准（零点/样品位移/Kα2 等）；'
+        + '峰数不足、指派退化、拟合非正定均显式报错不给伪解。纯几何，不需 material/引擎。',
+      parameters: {
+        peaks: { type: 'array', items: { type: 'object' }, description: '[{twoThetaDeg, hkl:[h,k,l]}]，三斜需 >6 根' },
+        lambdaA: { type: 'number', default: CU_KA_A, description: 'X 射线波长（Å，默认 Cu Kα）' },
+        system: { type: 'string', default: 'triclinic', description: "'triclinic'（6 参数）| 'cubic'（1 参数）" },
+      },
+      output: { schema: { type: 'object', additionalProperties: true } },
+      async execute(args) {
+        const result = latticeFromPeaks({
+          peaks: args.peaks, lambdaA: args.lambdaA, system: args.system,
+        })
+        await rt.appendTrajectory?.({
+          type: 'analysis_complete', analysis: 'xrd-lattice-from-peaks',
+          result: {
+            system: result.system, nPeaks: result.nPeaks, lambdaA: result.lambdaA,
+            cell: result.cell, sigmaA: result.cellSigma.a,
+            rmsDeg: result.residualsDeg.rms, r2: result.goodness.r2,
+          },
+        })
+        await rt.emit?.('saturday/analysis/complete', {
+          type: 'saturday/analysis/complete',
+          payload: { analysis: 'xrd-lattice-from-peaks', system: result.system, nPeaks: result.nPeaks },
+        })
         return result
       },
     })

@@ -18,7 +18,7 @@
 
 **最快一行**（连客户端都不配）：`npx -y @toki0413/mcp-server --relax Cu` 直接打印 Cu 的每原子能量与所用引擎（装了 MACE/ASE 会自动升真物理）。
 
-**免装 Node/Python（全保真容器）**：`docker run --rm ghcr.io/toki0413/saturday --relax Cu` 一行拿 EMT 真值，镜像已内含 Node + Python + ASE（构建/推镜像由 GitHub Actions + GHCR 承担，本地不装工具链）。
+**免装 Node/Python（全保真容器）**：`docker run --rm ghcr.io/toki0413/saturday --relax Cu` 一行拿 EMT 真值，镜像已内含 Node + Python + ASE（构建/推镜像由 GitHub Actions + GHCR 承担，本地不装工具链）。当前状态：镜像构建与容器内冒烟已在 CI 跑通，但 GHCR 推送只在打 `v*` tag 时发生，因此该命令自 **v0.3.14** 起可拉；现在就要零安装跑用上面那行 `npx`。
 
 **路径 A：接进任意 MCP 客户端**（Claude Desktop / Cursor / Cherry Studio 等）——在客户端配置里加：
 
@@ -32,7 +32,7 @@
 
 存盘重启客户端，对它说一句“把 Cu 弛豫一下并给出每原子能量”，它会调 `potential.relax` 返回
 `energyPerAtom`（eV）；`material.load` / `workflow.screen`（掺杂筛选）/ `analysis.phonon`（声子）
-等 54 个工具都在。想要真实 EMT/LAMMPS 物理，再装 Python≥3.10 + ASE（见下“环境矩阵”），
+等 55 个工具都在。想要真实 EMT/LAMMPS 物理，再装 Python≥3.10 + ASE（见下“环境矩阵”），
 引擎按能力自动升级，插件面契约与单位/指纹门禁不变。
 
 **路径 B：本地跑起来看全链**
@@ -112,8 +112,8 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（54 工具，
-stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 53 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（55 工具，
+stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 54 工具，
 环境不可用的引擎/结构源挂载即跳过并显式报告，不展示注定失败的能力）：
 Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。
