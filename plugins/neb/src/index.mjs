@@ -26,10 +26,11 @@ export const nebAnalysis = {
         springK: '弹性带弹簧常数',
         ftol: '力收敛阈值',
         maxSteps: '最大优化步数',
+        climb: '是否启用 climbing-image NEB（鞍点由 CI 像元给出，而非带内最高点）',
       },
     }
   },
-  async run({ energyModel, start, end, nImages, springK, ftol, maxSteps } = {}, rt) {
+  async run({ energyModel, start, end, nImages, springK, ftol, maxSteps, climb } = {}, rt) {
     // 缺输入显式报错，不静默降级（契约纪律）
     if (!energyModel || typeof energyModel.energy !== 'function' ||
         typeof energyModel.gradient !== 'function') {
@@ -39,7 +40,7 @@ export const nebAnalysis = {
     const t0 = Date.now()
     const result = neb({
       energy: energyModel.energy, gradient: energyModel.gradient,
-      start, end, nImages, springK, ftol, maxSteps,
+      start, end, nImages, springK, ftol, maxSteps, climb,
     })
     // 谱系登记：分析结果也是事实，落 append-only Trajectory（§4.4 冻结点）
     if (rt?.appendTrajectory) {
@@ -52,6 +53,10 @@ export const nebAnalysis = {
           barrierReverse: result.barrierReverse,
           nSteps: result.nSteps,
           nImages: result.nImages,
+          method: result.method,
+          saddleSource: result.saddleSource,
+          maxForce: result.convergence.maxForce,
+          stepLimitReached: result.convergence.stepLimitReached,
         },
         wallSeconds: (Date.now() - t0) / 1000,
       })
@@ -83,11 +88,14 @@ export default {
       name: 'analysis.neb',
       description: 'NEB 最小能量路径与过渡态势垒。内置玩具体系 lj-double-well' +
                    '（吸附原子双位跳跃，对称双阱）：端点自动 quench 到两侧极小。' +
-                   '真实势请经编程 API 注入能量/梯度 callable。',
+                   'climb=true 走 climbing-image NEB（鞍点由 CI 像元给出）。' +
+                   '结果附收敛报告（maxForce/逐像元力/maxForce 历史/stepLimitReached）——' +
+                   '未收敛时不把带内最高点当成已求得的过渡态。真实势请经编程 API 注入能量/梯度 callable。',
       parameters: {
         system: { type: 'string', default: 'lj-double-well', description: '玩具体系名（v0 仅支持 lj-double-well）' },
         nImages: { type: 'integer', default: 7, description: '像元总数（含端点）' },
         springK: { type: 'number', default: 1, description: '弹性带弹簧常数' },
+        climb: { type: 'boolean', default: false, description: '启用 climbing-image NEB（鞍点由 CI 像元给出）' },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -110,6 +118,7 @@ export default {
           end: right.x,
           nImages: args.nImages,
           springK: args.springK,
+          climb: args.climb,
         }, rt)
       },
     })

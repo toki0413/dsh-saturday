@@ -11,6 +11,12 @@ export function analysisError(code, message) {
   return e
 }
 
+/** 像元间距摘要用的小统计量（min/max/mean） */
+function stats(xs) {
+  if (!xs.length) return { min: null, max: null, mean: null }
+  return { min: Math.min(...xs), max: Math.max(...xs), mean: xs.reduce((a, b) => a + b, 0) / xs.length }
+}
+
 // ── LJ 双阱玩具体系 ──────────────────────────────────────────────
 // E(x) = Σ_S LJ(|x − S|) + k(y² + z²)/2，S ∈ {−d/2, +d/2} 为固定吸附位。
 // 默认 d = 4σ：阱心约在 ±(d/2 − 2^(1/6)σ)，鞍点在（对称）原点。
@@ -106,6 +112,7 @@ export function quench({ x0, energy, gradient, ftol = 1e-8, maxSteps = 5000, dt0
 export function neb({
   energy, gradient, start, end,
   nImages = 7, springK = 1.0, ftol = 1e-6, maxSteps = 3000, dt0 = 0.05, dtMax = 0.2,
+  climb = false, historyEvery = 10, initialBand = null,
 } = {}) {
   if (typeof energy !== 'function' || typeof gradient !== 'function') {
     throw analysisError('ANALYSIS_INPUT_MISSING',
@@ -117,23 +124,61 @@ export function neb({
   if (!Number.isInteger(nImages) || nImages < 3) {
     throw analysisError('NEB_BAD_INPUT', 'nImages must be an integer >= 3')
   }
+  // 收敛判据本身也是输入：容差/步数/弹簧常数/抽样间隔非法时显式拒，不静默给"永不收敛"的循环
+  if (!Number.isFinite(ftol) || ftol <= 0) {
+    throw analysisError('NEB_BAD_INPUT', `ftol must be a positive finite number; got ${ftol}`)
+  }
+  if (!Number.isInteger(maxSteps) || maxSteps < 1) {
+    throw analysisError('NEB_BAD_INPUT', `maxSteps must be an integer >= 1; got ${maxSteps}`)
+  }
+  if (!Number.isFinite(springK) || springK <= 0) {
+    throw analysisError('NEB_BAD_INPUT', `springK must be a positive finite number; got ${springK}`)
+  }
+  if (!Number.isInteger(historyEvery) || historyEvery < 1) {
+    throw analysisError('NEB_BAD_INPUT', `historyEvery must be a positive integer; got ${historyEvery}`)
+  }
 
   const dims = start.length
   const images = []
-  for (let i = 0; i < nImages; i++) {
-    const t = i / (nImages - 1)
-    images.push(start.map((s, j) => s + t * (end[j] - s)))
+  if (initialBand != null) {
+    // 真实 NEB 需要聪明的初始路径；线性插值是最弱默认（共线均匀带会直接落在驻定解上）
+    if (!Array.isArray(initialBand) || initialBand.length !== nImages) {
+      throw analysisError('NEB_BAD_INPUT', `initialBand must be an array of nImages (${nImages}) coordinates`)
+    }
+    const near = (a, b) => a.length === b.length && a.every((v, j) => Math.abs(v - b[j]) < 1e-8)
+    if (!near(initialBand[0], start) || !near(initialBand[nImages - 1], end)) {
+      throw analysisError('NEB_BAD_INPUT', 'initialBand endpoints must coincide with start/end (端点固定是 NEB 的定义部分)')
+    }
+    for (const x of initialBand) {
+      if (!Array.isArray(x) || x.length !== dims || x.some(v => !Number.isFinite(v))) {
+        throw analysisError('NEB_BAD_INPUT', `initialBand 每项必须是 ${dims} 个有限数`)
+      }
+    }
+    images.push(...initialBand.map(x => [...x]))
+  } else {
+    for (let i = 0; i < nImages; i++) {
+      const t = i / (nImages - 1)
+      images.push(start.map((s, j) => s + t * (end[j] - s)))
+    }
   }
 
   let converged = false
   let nSteps = 0
   let dt = dt0
   let prevMaxF = Infinity
+  let maxF = 0
+  let climbIndex = 0
+  let perImage = []
+  const history = []
 
   for (; nSteps < maxSteps; nSteps++) {
     const energies = images.map(energy)
     const forces = []
-    let maxF = 0
+    maxF = 0
+    // 带内最高能的自由像元（climbing image 候选）
+    climbIndex = 1
+    for (let i = 2; i < nImages - 1; i++) if (energies[i] > energies[climbIndex]) climbIndex = i
+    perImage = new Array(nImages - 2).fill(0)
 
     for (let i = 1; i < nImages - 1; i++) {
       const xp = images[i - 1], xi = images[i], xn = images[i + 1]
@@ -164,20 +209,27 @@ export function neb({
       }
       const fSpring = springK * (Math.sqrt(d2n) - Math.sqrt(d2p))
 
-      // nudged 力：弹力沿切向 + 真力垂直分量（F = kΔd·τ̂ − ∇E + (∇E·τ̂)τ̂）
+      // nudged 力：弹力沿切向 + 真力垂直分量（F = kΔd·τ̂ − ∇E + (∇E·τ̂)τ̂）；
+      // climbing 像元：取消弹力，切向梯度反向（F = −∇E + 2(∇E·τ̂)τ̂）——沿带向上坡走
       const g = gradient(xi)
       let gTau = 0
       for (let j = 0; j < dims; j++) gTau += g[j] * tau[j]
+      const isClimb = climb === true && i === climbIndex
       const f = new Array(dims)
       let f2 = 0
       for (let j = 0; j < dims; j++) {
-        f[j] = fSpring * tau[j] - g[j] + gTau * tau[j]
+        f[j] = isClimb
+          ? -g[j] + 2 * gTau * tau[j]
+          : fSpring * tau[j] - g[j] + gTau * tau[j]
         f2 += f[j] * f[j]
       }
       const ff = Math.sqrt(f2)
       if (ff > maxF) maxF = ff
+      perImage[i - 1] = ff
       forces.push(f)
     }
+
+    if (nSteps % historyEvery === 0) history.push({ step: nSteps, maxForce: maxF })
 
     if (maxF < ftol) { converged = true; break }
 
@@ -193,8 +245,16 @@ export function neb({
   }
 
   const energies = images.map(energy)
-  let saddleIndex = 1
-  for (let i = 2; i < nImages - 1; i++) if (energies[i] > energies[saddleIndex]) saddleIndex = i
+  // 末次 maxF 一定进历史（抽样不丢收敛时刻那一帧）
+  if (history.length === 0 || history[history.length - 1].step !== nSteps) {
+    history.push({ step: nSteps, maxForce: maxF })
+  }
+  // 鞍点：climb 模式用 climbing 像元（已沿带上坡推到位），否则用带内最高点
+  const saddleIndex = climb === true ? climbIndex : (() => {
+    let best = 1
+    for (let i = 2; i < nImages - 1; i++) if (energies[i] > energies[best]) best = i
+    return best
+  })()
   const saddleEnergy = energies[saddleIndex]
 
   return {
@@ -207,5 +267,29 @@ export function neb({
     saddle: images[saddleIndex],
     barrierForward: saddleEnergy - energies[0],
     barrierReverse: saddleEnergy - energies[nImages - 1],
+    method: climb === true ? 'neb+climbing-image' : 'neb',
+    saddleSource: climb === true ? 'climbing-image' : 'band-max-image',
+    convergence: {
+      ftol,
+      maxForce: maxF,
+      maxForcePerImage: perImage,
+      stepLimitReached: !converged,
+      // 初帧就满足判据：一步优化也没做（典型成因：共线等距带的 nudged 力恒为零）。
+      // 与"跑了 N 步收敛到驻定"分开报，不把未发生优化说成已弛豫。
+      trivialStationary: converged && nSteps === 0,
+      maxForceAtStart: history[0]?.maxForce ?? maxF,
+      forceDrop: history[0]?.maxForce > 0 ? maxF / history[0].maxForce : null,
+      spacing: (() => {
+        const sp = []
+        for (let i = 1; i < nImages; i++) sp.push(Math.hypot(...images[i].map((v, j) => v - images[i - 1][j])))
+        return { ...stats(sp), uniform: sp.every(v => Math.abs(v - sp[0]) < 1e-12) }
+      })(),
+      maxSteps,
+      historyEvery,
+      history,          // [{step, maxForce}] 抽样（含末帧）
+      forceCriterion: '收敛判据：自由像元（含 climbing 像元）的 nudged/CI 力模长最大值 < ftol',
+    },
+    note: '势垒为鞍点像元能量与两端像元能量之差；未收敛（stepLimitReached=true）时'
+      + '带内最高点只是真实势垒的上界估计（climb 模式下仍可能未到位），不作过渡态结论。',
   }
 }

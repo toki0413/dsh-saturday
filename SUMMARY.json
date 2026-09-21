@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-21T13:28:44.557Z",
-  "totalPass": 615,
+  "generatedAt": "2026-09-21T14:32:31.623Z",
+  "totalPass": 620,
   "totalFail": 0,
   "packageCount": 29,
   "testedCount": 28,
@@ -149,7 +149,7 @@
       "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
       "version": "0.3.13",
-      "pass": 8,
+      "pass": 13,
       "fail": 0
     },
     {
@@ -844,6 +844,11 @@
       "index": 127,
       "clause": "实测峰位 → 点阵参数精修 analysis.xrd.latticeFromPeaks（plugin-xrd 新工具，54→55；lattice-solve 纯层）：Bragg 给 y≡1/d²=(2sinθ/λ)²，三斜倒易度规 G* 的六个独立元使 y=Hᵀ G* H 对其线性，所以精修是一次普通最小二乘（法方程 N=AᵀA 走 core/gp 的 cholesky + 本模块回代与求逆，不迭代、确定性）；s²=RSS/(n−p)、cov=N⁻¹s²，σ(G*) 经 G*→胞参数的有限差分雅可比传播到 (a,b,c,α,β,γ)；立方约束同一形态单参数（σ 解析传播，三角为约束值 0）。由 G* 回实胞：g=G*⁻¹，取 g 的 Cholesky 因子行矢量为基矢，与 core/codecs 的 cellFromParams/paramsFromCell 同标准约定（六方 γ=120 等非正交胞由数据自然给出，不预先强制）。诚实边界：hkl 指派由调用方给定、本法不自动指标化（错指派可由残差暴露但不被纠正）；等权最小二乘不含强度加权与零点/样品位移/Kα2 等系统误差校准；n≤p、法方程奇异、G* 非正定各显式报错不给伪解",
       "evidence": "plugins/xrd lattice-solve.test（无噪声回收：立方 a=3.615 到 1e-9 且 rss<1e-24、σ≈0；六方 a=b=4.913、c=5.405、γ=120 与一般三斜 5/6/7 Å、82/95/101° 六参数各 1e-7 内回收；拟合 G* 复算的 d 与既有 dSpacing 逐峰一致到 1e-9——正演与精修走两条独立数学路径，非自洽拟合；注入 0.01° 与 0.05° 噪声后 a 偏差 <5e-3 且 σ 随噪声同阶放大（比值 2.5~8）、最大残差不超注入量级；峰数≤p 报 LP_UNDERDETERMINED、全 l=0 平面峰集报 LP_DEGENERATE_PEAKS、空峰集/非整 hkl/零波长/非法 system 各报 LP_BAD_PEAKS、LP_BAD_HKL、LP_BAD_WAVELENGTH、LP_SYSTEM_UNSUPPORTED，cellFromGstar 对非正定 G* 报 LP_NOT_PHYSICAL_CELL）+ lattice-tool 测试（工具出口立方精修回收 a 且 σ/残差/R²/单位随交付、谱系落 analysis_complete(xrd-lattice-from-peaks)、同批峰走三斜要么回收同一胞要么显式报错、缺 peaks 报错、卸载回收工具）+ mcp 工具面 54→55"
+    },
+    {
+      "index": 128,
+      "clause": "NEB 收敛加固与 climbing-image（plugin-neb，无新工具，工具面 55 不变）：analysis.neb 加 climb 选式（HU 1998：带内最高能自由像元取消弹力、切向梯度反向 F=−∇E+2(∇E·τ̂)τ̂，鞍点即该像元，saddleSource=climbing-image）；收敛报告从单一 converged 布尔扩为 convergence 对象（ftol、maxForce、maxForcePerImage、history 按 historyEvery 抽样且必含末帧、stepLimitReached、trivialStationary、maxForceAtStart/forceDrop、spacing 的 min/max/mean 与 uniform）；纯函数层新增 initialBand 入口（校验长度/端点吻合/有限坐标）。实测暴露两个既有事实：① neb() 原本只会线性插值成带，而共线等距带就是 NEB 力的驻定解（切向真力被投影掉、等距使弹力差为 0），内置 lj-double-well 默认路径初帧 maxF 即为 0、nSteps=0 却报 converged——现以 trivialStationary=true 如实区分\"未发生优化\"与\"跑了 N 步收敛\"；② 既有步长控制（升则折半、降则 1.02×，下限 1e-5）在弯曲带下 3000 步内不收敛（maxF 2.4e-1→7.4e-2、势垒 0.9375 对 oracle 0.8840），stepLimitReached 与势垒偏高均如实报，不假装到位；优化器改进（FIRE/回溯线搜索）另立一片",
+      "evidence": "plugins/neb 测 9（CI 鞍点命中对称性 oracle 原点 <1e-6、势垒对 E(0,0,0)−阱底 一致 <1e-6、正反向势垒差 <1e-9、CI 不劣于带内最高点）+ 测 10（maxForce=max(maxForcePerImage)、末帧步号=nSteps 且在 history 内、步号递增、直线带 trivialStationary=true 且 nSteps=0 且 spacing.uniform=true、maxForceAtStart=0）+ 测 10b（弯曲带 trivialStationary=false、nSteps>0、maxForceAtStart>maxForce、不收敛时 stepLimitReached=true、converged=false、barrier 高于 oracle、spacing 非均匀）+ 测 10c/11（initialBand 长度与端点不吻合、非有限坐标、ftol/maxSteps/springK/historyEvery 非法一律 NEB_BAD_INPUT）+ 既有 8 测一字不改全过（向后兼容，工具数不变）"
     }
   ]
 }
