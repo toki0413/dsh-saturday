@@ -1,8 +1,8 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-21T07:29:10.294Z
+生成时间：2026-09-21T09:17:22.621Z
 
-**回归基线：595/595**（28 个包，其中 27 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：607/607**（29 个包，其中 28 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
@@ -15,6 +15,7 @@
 | `@toki0413/plugin-sdk` | Saturday 引擎插件脚手架：给一份引擎描述符，生成过契约（potentialProviderContract）+ 过 conformance 的引擎插件包（descriptor + codec 装配，作者不写 provider 代码）。 | 9/9 |
 | `@toki0413/plugin-ase` | Saturday 通用 ASE 计算器引擎插件：计算器显式指定（lj|emt），自带 Python sidecar 数据面，缺失显式报错绝不隐式替换。 | 12/12 |
 | `@toki0413/plugin-branch` | Saturday 会话分支账本插件：fork/record/compare/trunk——把模拟当可回退的规划树，add-only 对照分叉决策线，非破坏式合并。 | 9/9 |
+| `@toki0413/plugin-coordination` | Saturday 分析插件（契约 §4.4 analysis seam）：局域配位与短程有序分析。逐原子配位数（显式 rCut 或自动壳层间隙双定义并存 + 模糊邻居计数）、分种对键长分布、Warren–Cowley 短程有序参数 α（对称归一 + 有限尺寸超几何随机参照）。仅需 material 服务（引擎无关、零依赖、任何环境可跑）；周期体系按镜像枚举并满足 ΣCN=2·键数，非周期分子不用镜像（配位缺失是几何事实，不与体相对照）。 | 12/12 |
 | `@toki0413/plugin-derivation` | Saturday 推导登记簿插件（契约 §8.2 首个实证）：谱系驱动的失效传播与惰性重算（活性上下文地基）；冻结结果只追加修正、不重算。 | 15/15 |
 | `@toki0413/plugin-elasticity` | Saturday 弹性张量分析插件：6 种独立 Voigt 应变 ± 中心差分 → 完整 C_ij 6×6（应力源引擎提供），派生 VRH 多晶 K/G/E/ν、Born 正定稳定性判据与各向异性因子 A；零运行时外部依赖（Jacobi 特征分解自带）。 | 8/8 |
 | `@toki0413/plugin-eos` | Saturday 分析插件（契约 §4.4 analysis seam 第二个实证）：Birch-Murnaghan 状态方程拟合，纯 Node 实现；支持显式 (V,E) 序列或经 material/potential 服务按缩放体积静态单点取数。 | 9/9 |
@@ -35,7 +36,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 17/17 |
 
-## 实证条款（契约文档附录 A，125 条）
+## 实证条款（契约文档附录 A，126 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -162,6 +163,7 @@
 - **#123** 旗舰端到端：生成式提议器喂进 explore 可插拔 sampler 闭环（一份 sampler seam、两种生成器：RSS + 仿射耦合流；demo:generative）：承 #115 的 sampler 参数，workflow.explore 以 sampler=rss 或 affine-flow 换提议器，候选不自证、逐候选引擎回算弛豫、能量排序、参考结构在环内作 dE 基线、失败不吞错、generative 谱系可溯。RSS（成分约束随机 + 最小间距门禁）候选有低于参考者由引擎回算说话，affine-flow（参考邻域双射输运）绕弛豫参考小位移、参考居首——同一闭环两种生成语义。零新增工具（复用 sampler.rss / sampler.flow 与 workflow.explore）（证据：packages/bridge generative-explore 测试（同 Context 挂 core+rss+flow+explore，两生成器分别过 workflow.explore：ranked 非空、energyPerAtom 有限、generative 谱系、参考在环 some kind=reference、failed=0、按能量升序）+ demo:generative 端到端跑通（lj-js/emt 自适应）+ 工具数不变（52））
 - **#124** 无头一次性 CLI 入口（降使用门槛，mcp-server cli.mjs 无头分支 + bin 别名 saturday）：复用 bootSaturday 全插件 boot，--tools 列当前环境工具、--call <tool> json 一次调用任一工具、--relax formula 一步"加载→弛豫→打印每原子能量与所用引擎"（本机有 MACE 走 mace:medium 真物理、否则 lj-js）；结果走 stdout、横幅走 stderr，与 stdio/http 并存。零配置尝鲜不再需要配 MCP 客户端：npx -y @toki0413/mcp-server --relax Cu。README 60 秒上手块与 recipes.md 食谱同步。工具数不变（52）（证据：packages/mcp-server cli.test（spawn cli.mjs 排除需 Python 插件保快/确定：--tools 解析为工具 JSON 数组≥20 且含 potential.relax/material.load；--call material.load Cu 返回 materialId）+ README/en 60 秒上手加"最快一行"CLI + 无新工具）
 - **#125** 跨引擎排序一致性 runtime.engine.rank（新工具，52→53；core/rank 纯层）：对一批 materialId 在两/多引擎回算 energyPerAtom，两两报 Spearman ρ（averageRanks+pearson，并列取均值秩）、前 k 重合（k 个最小值索引交除 k）、平均绝对差；可比性只按单位三元组判不自动换算；不足两引擎/两材料/无能量/无能力/未知名各显式报错 RANK_*。回答筛选里的实用问题“便宜引擎挑的最低能集合与参考引擎一致吗”（#111 A/B 的排序版延伸）。core/rank 是通用统计（spearman/topKOverlap/meanAbsDelta），非引擎专有（证据：packages/core rank.test（averageRanks 并列；spearman 同序1、逆序-1、教科书并列0.9487；topKOverlap；meanAbsDelta；长度不等 RANK_LENGTH）+ packages/bridge engine-rank 测试（同序 ρ1 topK1 meanAbsDelta 5.75 comparable；逆序 ρ-1 topK0；三引擎两两3对；不足两引擎/两材料/未知名 RANK_*）+ mcp 工具面 52→53）
+- **#126** 局域配位与短程有序 analysis.coordination（新插件 plugin-coordination，契约 §4.4 analysis seam，53→54）：逐原子配位数（显式 rCut 与自动壳层间隙判据两定义并存、模糊邻居逐原子计数如实上报）、最近与平均邻居距离、分种对（A–A、A–B、B–B）键长分布、Warren–Cowley 短程有序参数 α（对称归一 + 不重复抽样超几何随机参照；+1=相分离富聚、负=有序交替、0=与随机参照无偏离）。仅需 material 服务，引擎无关、零依赖、任何环境可跑（含分子与非周期体系，形态同 plugin-xrd：inputs/outputs 声明 + 谱系落 Trajectory + 广播 saturday/analysis/complete）。周期体系按镜像枚举并满足恒等式 ΣCN=2·键数（自镜像键取规范半集不双计）；元素符号取自 core 的 15 元素子集，表外 Z 标为 Z&lt;number&gt; 不猜符号。动机来自同日潜空间转移预测探针的否证：全局几何描述子在同成分取代异构上 R²=−0.26（不及单点 E_init），缺的正是局域化学环境原语（证据：plugins/coordination coordination.test（理想 fcc CN=12、bcc CN=8、金刚石 CN=4、岩盐型 CN=6 且键全异种；自动切点=√(d_min·下一壳层) 闭式锚定；ΣCN=2M 恒等式；岩盐 α 精确等于解析下限 1−N(N−1)/(2N_A N_B)=−0.75、64 原子超胞 −0.96875 且随 N 单调趋 −1；相分离 α=+1 精确、单根异种键 α=0；rCut=2.6 与 3.7 给 CN 12 与 18 的截断依赖、rCut 贴壳层时 ambiguous=12；两水分子相距 15 Å 不跨连；表外 Z 回退 Z11-Z17；空图/非有限坐标/rCut≤0/孤立原子各显式报错 COORD_BAD_GRAPH、COORD_BAD_CUTOFF、COORD_NO_NEIGHBORS）+ coordination-tool 测试（material.load Cu 全链 CN=12 且 declaration 随交付、单质不编 α、缺 materialId 报 ANALYSIS_INPUT_MISSING、analysis_complete(coordination) 落 Trajectory；writePoscar→structure.fromPoscar→配位分析端到端读出岩盐有序 α=−0.75）+ mcp 工具面 53→54）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。

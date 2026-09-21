@@ -22,6 +22,7 @@
     "@toki0413/kernel": "^0.3.0",
     "@toki0413/plugin-ase": "^0.3.0",
     "@toki0413/plugin-branch": "^0.3.0",
+    "@toki0413/plugin-coordination": "^0.3.0",
     "@toki0413/plugin-derivation": "^0.3.0",
     "@toki0413/plugin-elasticity": "^0.3.0",
     "@toki0413/plugin-eos": "^0.3.0",

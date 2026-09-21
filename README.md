@@ -32,7 +32,7 @@
 
 存盘重启客户端，对它说一句“把 Cu 弛豫一下并给出每原子能量”，它会调 `potential.relax` 返回
 `energyPerAtom`（eV）；`material.load` / `workflow.screen`（掺杂筛选）/ `analysis.phonon`（声子）
-等 53 个工具都在。想要真实 EMT/LAMMPS 物理，再装 Python≥3.10 + ASE（见下“环境矩阵”），
+等 54 个工具都在。想要真实 EMT/LAMMPS 物理，再装 Python≥3.10 + ASE（见下“环境矩阵”），
 引擎按能力自动升级，插件面契约与单位/指纹门禁不变。
 
 **路径 B：本地跑起来看全链**
@@ -112,8 +112,8 @@ Saturday 把论文的两个正交维度落到材料计算域：
 
 ### MCP server：任意 MCP 宿主接入
 
-上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（53 工具，
-stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 52 工具，
+上述工具面经 `@toki0413/mcp-server` 以 Model Context Protocol 全量暴露（54 工具，
+stdio 传输；工具面随环境如实收缩——无 `MP_API_KEY` 时 `structure.resolve` 不注册 = 53 工具，
 环境不可用的引擎/结构源挂载即跳过并显式报告，不展示注定失败的能力）：
 Claude Desktop / Cursor / Cline 等任何 MCP 宿主零代码接入，
 参数 schema 由各工具的契约声明直通，工具失败以 MCP isError 携带结构化错误码。

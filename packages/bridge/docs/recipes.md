@@ -48,7 +48,7 @@
 | 构型自由能曲线 | `workflow.freeEnergy` | 见 schema | — |
 | 采样↔时间平均遍历对账 | `workflow.ergodic` | 见 schema | 🐍 |
 
-## 6. 声子 / 热力学 / 状态方程 / 衍射 / 弹性
+## 6. 声子 / 热力学 / 状态方程 / 衍射 / 弹性 / 局域配位
 | 我想… | 工具 | 关键入参 | 前提 |
 |---|---|---|---|
 | Γ 点声子（稳定性） | `analysis.phonon` | `materialId`, `engine`（全保真需声明力的引擎） | 🐍 |
@@ -58,6 +58,7 @@
 | 相鉴定（实测谱↔候选库） | `analysis.xrd.phaseIdentify` | 实测峰, 候选结构, 容差 | — |
 | 弹性张量 + VRH K/G/E/ν + Born 稳定 + 声速/θ_D + 单晶各向异性 | `analysis.elasticity` | `materialId`, `engine`（须声明 stress）, `eps` | 🐍（需应力输出） |
 | 状态方程拟合 E(V)→E0/V0/B0 | `analysis.eos` | `materialId` 或 `series`, `scales`, `equation`（`birch-murnaghan` / `vinet`） | — |
+| 逐原子配位数 / 键长分布 / 短程有序富聚判据 | `analysis.coordination` | `materialId`, `rCut`（省略=自动壳层间隙） | — |
 
 ## 7. 跨引擎对账 / 信任 / 失效传播
 | 我想… | 工具 | 关键入参 | 前提 |
