@@ -68,7 +68,7 @@ export const PLUGIN_MANIFEST = [
   { name: 'plugin-xrd', apply: pluginXrd.apply },
 ]
 
-const SERVER_INFO = { name: 'saturday', version: '0.3.13' }
+const SERVER_INFO = { name: 'saturday', version: '0.3.14' }
 
 /** 单个参数定义 → Zod（类型集有限，未知类型显式报错） */
 function zodFor(def, key) {
