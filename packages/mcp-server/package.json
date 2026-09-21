@@ -5,7 +5,8 @@
   "type": "module",
   "main": "src/index.mjs",
   "bin": {
-    "saturday-mcp-server": "src/cli.mjs"
+    "saturday-mcp-server": "src/cli.mjs",
+    "saturday": "src/cli.mjs"
   },
   "exports": {
     ".": "./src/index.mjs"

@@ -20,6 +20,9 @@ No Python, no solver install needed — with Node ≥ 22 an Agent can get real, 
 materials numbers (with no ASE it falls back to the zero-dependency lj-js engine; energies are
 de-computed by the engine, not placeholder fakes).
 
+**Fastest one-liner** (no client config at all): `npx -y @toki0413/mcp-server --relax Cu` prints Cu's
+per-atom energy and the engine used (it auto-upgrades to real physics if MACE/ASE are installed).
+
 **Path A: wire into any MCP client** (Claude Desktop / Cursor / Cherry Studio) — add to its config:
 
 ```json

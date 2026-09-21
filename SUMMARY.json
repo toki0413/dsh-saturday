@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-21T00:26:14.161Z",
-  "totalPass": 585,
-  "totalFail": 0,
+  "generatedAt": "2026-09-21T00:58:47.530Z",
+  "totalPass": 587,
+  "totalFail": 1,
   "packageCount": 28,
   "testedCount": 27,
   "packages": [
@@ -10,7 +10,7 @@
       "name": "@toki0413/bridge",
       "version": "0.3.11",
       "pass": 71,
-      "fail": 0
+      "fail": 1
     },
     {
       "dir": "packages\\contract-tests",
@@ -37,7 +37,7 @@
       "dir": "packages\\mcp-server",
       "name": "@toki0413/mcp-server",
       "version": "0.3.11",
-      "pass": 9,
+      "pass": 11,
       "fail": 0
     },
     {
@@ -817,6 +817,11 @@
       "index": 123,
       "clause": "旗舰端到端：生成式提议器喂进 explore 可插拔 sampler 闭环（一份 sampler seam、两种生成器：RSS + 仿射耦合流；demo:generative）：承 #115 的 sampler 参数，workflow.explore 以 sampler=rss 或 affine-flow 换提议器，候选不自证、逐候选引擎回算弛豫、能量排序、参考结构在环内作 dE 基线、失败不吞错、generative 谱系可溯。RSS（成分约束随机 + 最小间距门禁）候选有低于参考者由引擎回算说话，affine-flow（参考邻域双射输运）绕弛豫参考小位移、参考居首——同一闭环两种生成语义。零新增工具（复用 sampler.rss / sampler.flow 与 workflow.explore）",
       "evidence": "packages/bridge generative-explore 测试（同 Context 挂 core+rss+flow+explore，两生成器分别过 workflow.explore：ranked 非空、energyPerAtom 有限、generative 谱系、参考在环 some kind=reference、failed=0、按能量升序）+ demo:generative 端到端跑通（lj-js/emt 自适应）+ 工具数不变（52）"
+    },
+    {
+      "index": 124,
+      "clause": "无头一次性 CLI 入口（降使用门槛，mcp-server cli.mjs 无头分支 + bin 别名 saturday）：复用 bootSaturday 全插件 boot，--tools 列当前环境工具、--call <tool> json 一次调用任一工具、--relax formula 一步\"加载→弛豫→打印每原子能量与所用引擎\"（本机有 MACE 走 mace:medium 真物理、否则 lj-js）；结果走 stdout、横幅走 stderr，与 stdio/http 并存。零配置尝鲜不再需要配 MCP 客户端：npx -y @toki0413/mcp-server --relax Cu。README 60 秒上手块与 recipes.md 食谱同步。工具数不变（52）",
+      "evidence": "packages/mcp-server cli.test（spawn cli.mjs 排除需 Python 插件保快/确定：--tools 解析为工具 JSON 数组≥20 且含 potential.relax/material.load；--call material.load Cu 返回 materialId）+ README/en 60 秒上手加\"最快一行\"CLI + 无新工具"
     }
   ]
 }

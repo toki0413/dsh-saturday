@@ -16,6 +16,8 @@
 不需要 Python、不需要装任何求解器——有 Node ≥ 22 就能让 Agent 拿到真实的材料回算数值
 （无 ASE 时自动走零依赖 lj-js 引擎；能量由引擎回算，非玩具占位假数）。
 
+**最快一行**（连客户端都不配）：`npx -y @toki0413/mcp-server --relax Cu` 直接打印 Cu 的每原子能量与所用引擎（装了 MACE/ASE 会自动升真物理）。
+
 **路径 A：接进任意 MCP 客户端**（Claude Desktop / Cursor / Cherry Studio 等）——在客户端配置里加：
 
 ```json
