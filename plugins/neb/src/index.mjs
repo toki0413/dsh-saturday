@@ -5,11 +5,13 @@
 // 谱系登记（结果落 Trajectory，同时广播 saturday/analysis/complete）。
 
 import { createCordisAdapter } from '@toki0413/kernel'
-import { neb, quench, ljDoubleWell, analysisError } from './neb.mjs'
+import { quench, ljDoubleWell, analysisError } from './neb.mjs'
 import { saddleSearch, quarticDoubleWell } from './saddle.mjs'
+import { nebRefined } from './band-to-saddle.mjs'
 
 export { neb, quench, ljDoubleWell, analysisError } from './neb.mjs'
 export { saddleSearch, quarticDoubleWell, finiteDifferenceHessian, SADDLE_DEFAULTS, QUARTIC_DOUBLE_WELL_DEFAULTS } from './saddle.mjs'
+export { nebRefined } from './band-to-saddle.mjs'
 
 /** §4.4 AnalysisPlugin 形态：name + inputs/outputs 类型声明 + describe + run */
 export const saddleAnalysis = {
@@ -78,10 +80,11 @@ export const nebAnalysis = {
         ftol: '力收敛阈值',
         maxSteps: '最大优化步数',
         climb: '是否启用 climbing-image NEB（鞍点由 CI 像元给出，而非带内最高点）',
+        refine: '是否用 QMM 鞍点搜索复核带最高点（默认开；势垒取复核后的鞍点能量）',
       },
     }
   },
-  async run({ energyModel, start, end, nImages, springK, ftol, maxSteps, climb } = {}, rt) {
+  async run({ energyModel, start, end, nImages, springK, ftol, maxSteps, climb, refine } = {}, rt) {
     // 缺输入显式报错，不静默降级（契约纪律）
     if (!energyModel || typeof energyModel.energy !== 'function' ||
         typeof energyModel.gradient !== 'function') {
@@ -89,9 +92,11 @@ export const nebAnalysis = {
         'analysis.neb requires an energyModel with pointwise energy() and gradient()')
     }
     const t0 = Date.now()
-    const result = neb({
+    const result = nebRefined({
       energy: energyModel.energy, gradient: energyModel.gradient,
+      hessian: typeof energyModel.hessian === 'function' ? energyModel.hessian : undefined,
       start, end, nImages, springK, ftol, maxSteps, climb,
+      refine: refine !== false,          // 默认开：带只当鞍点初值，势垒由 QMM 复核后给出
     })
     // 谱系登记：分析结果也是事实，落 append-only Trajectory（§4.4 冻结点）
     if (rt?.appendTrajectory) {
@@ -108,6 +113,10 @@ export const nebAnalysis = {
           saddleSource: result.saddleSource,
           maxForce: result.convergence.maxForce,
           stepLimitReached: result.convergence.stepLimitReached,
+          refined: result.refined,
+          saddleVerified: result.saddleVerified === true,
+          bandBarrierForward: result.bandBarrierForward,
+          refinementSteps: result.refinement?.nSteps ?? null,
         },
         wallSeconds: (Date.now() - t0) / 1000,
       })
@@ -179,13 +188,16 @@ export default {
       description: 'NEB 最小能量路径与过渡态势垒。内置玩具体系 lj-double-well' +
                    '（吸附原子双位跳跃，对称双阱）：端点自动 quench 到两侧极小。' +
                    'climb=true 走 climbing-image NEB（鞍点由 CI 像元给出）。' +
-                   '结果附收敛报告（maxForce/逐像元力/maxForce 历史/stepLimitReached）——' +
-                   '未收敛时不把带内最高点当成已求得的过渡态。真实势请经编程 API 注入能量/梯度 callable。',
+                   '默认 refine=true：带只当鞍点初值，势垒由 QMM 鞍点搜索（analysis.saddleSearch 同一实现）' +
+                   '复核并判 index-1；带自身估读保留在 bandBarrierForward。带未收敛与复核结果分开报。' +
+                   '结果附收敛报告（maxForce/逐像元力/历史/stepLimitReached/trivialStationary/间距）。' +
+                   '真实势请经编程 API 注入能量/梯度 callable。',
       parameters: {
         system: { type: 'string', default: 'lj-double-well', description: '玩具体系名（v0 仅支持 lj-double-well）' },
         nImages: { type: 'integer', default: 7, description: '像元总数（含端点）' },
         springK: { type: 'number', default: 1, description: '弹性带弹簧常数' },
         climb: { type: 'boolean', default: false, description: '启用 climbing-image NEB（鞍点由 CI 像元给出）' },
+        refine: { type: 'boolean', default: true, description: '用 QMM 鞍点搜索复核带最高点；false 则退回带内最高点估读' },
       },
       output: { schema: { type: 'object', additionalProperties: true } },
       async execute(args) {
@@ -209,6 +221,7 @@ export default {
           nImages: args.nImages,
           springK: args.springK,
           climb: args.climb,
+          refine: args.refine,
         }, rt)
       },
     })

@@ -44,7 +44,7 @@
 ## 5. 势垒 / 自由能 / 遍历对账
 | 我想… | 工具 | 关键入参 | 前提 |
 |---|---|---|---|
-| NEB 势垒 | `analysis.neb` | 见 schema | 🐍（需力/应力引擎） |
+| NEB 势垒（默认带 QMM 复核） | `analysis.neb` | `nImages`, `springK`, `climb`, `refine`（默认 true） | 🐍（需力/应力引擎；内置玩具体系零依赖） |
 | 鞍点搜索（QMM，不需带） | `analysis.saddleSearch` | `system`（`quartic-double-well` / `lj-double-well`）, `start`, `radius`, `c` | —（内置体系零依赖；真实势经 API 注入 callable） |
 | 构型自由能曲线 | `workflow.freeEnergy` | 见 schema | — |
 | 采样↔时间平均遍历对账 | `workflow.ergodic` | 见 schema | 🐍 |

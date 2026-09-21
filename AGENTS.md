@@ -38,7 +38,7 @@ plugins/           → 各独立插件（新插件必须过 contract-tests）
   replay/          →   Trajectory 回放与索引重建
   branch/          →   会话分支账本（fork/record/compare/trunk：可回退规划树，add-only 非破坏式）
   rss/             →   RSS 随机结构搜索采样（§4.5 非 flow 生成式第二实证）
-  neb/             →   NEB 势垒分析（含 climbing-image 与 QMM 鞍点搜索 analysis.saddleSearch）
+  neb/             →   NEB 势垒分析（climbing-image；带默认作初值、势垒由 QMM 鞍点搜索复核）
   eos/             →   Birch-Murnaghan 状态方程
   phonon/          →   Γ 点声子
   coordination/    →   局域配位数与 Warren-Cowley 短程有序（仅需 material，引擎无关）

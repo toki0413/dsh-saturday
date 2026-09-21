@@ -36,13 +36,15 @@ test('2. parseMilestoneTable：三列解析 + 条款内含竖线合并 + 空表�
   assert.throws(() => parseMilestoneTable('没有表'), /MILESTONE_TABLE_MISSING/)
 })
 
-test('3. parseMilestoneTable（真实契约文档）：129 条且摘要层条款可追溯', () => {
+test('3. parseMilestoneTable（真实契约文档）：130 条且摘要层条款可追溯', () => {
   const md = readFileSync(join(repoRoot, 'packages', 'bridge', 'docs', 'plugin-contract-v0.md'), 'utf8')
   const rows = parseMilestoneTable(md)
-  assert.equal(rows.length, 129, '附录 A 当前应为 129 条实证映射')
+  assert.equal(rows.length, 130, '附录 A 当前应为 130 条实证映射')
   // 绝对索引断言（第 k 条 = rows[k-1]）：插入新条目时只需改总数断言 + 顶部加新断言，
   // 历史断言不漂移（倒数索引链在条目插入时会整体漂移，已废弃——实证教训）
   const at = (k) => rows[k - 1]
+  assert.ok(at(130).clause.includes('带降为初值') && at(130).evidence.includes('band-to-saddle.test'),
+      '第 130 条证据指向 NEB 带作初值 + QMM 势垒复核')
   assert.ok(at(129).clause.includes('鞍点搜索') && at(129).evidence.includes('saddle.test'),
       '第 129 条证据指向 QMM 鞍点搜索 analysis.saddleSearch')
   assert.ok(at(128).clause.includes('climbing-image') && at(128).evidence.includes('trivialStationary'),

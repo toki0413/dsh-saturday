@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-21T17:29:45.335Z",
-  "totalPass": 629,
+  "generatedAt": "2026-09-21T18:09:11.728Z",
+  "totalPass": 634,
   "totalFail": 0,
   "packageCount": 29,
   "testedCount": 28,
@@ -149,7 +149,7 @@
       "dir": "plugins\\neb",
       "name": "@toki0413/plugin-neb",
       "version": "0.3.14",
-      "pass": 20,
+      "pass": 25,
       "fail": 0
     },
     {
@@ -854,6 +854,11 @@
       "index": 129,
       "clause": "QMM 鞍点搜索 analysis.saddleSearch（plugin-neb 新工具，55→56；saddle 纯层 + core/eig 新增对称分解）：方向取 F_eff = −∇E + 2(ĉ·∇E)ĉ，ĉ 为 Hessian 最小特征向量（软模上坡、其余下坡），步长按上一步与 F_eff 是否同向自适应（×1.15 / ×0.5）并以初值为中心的 trust region 约束；Hessian 可选解析 callable 或中心差分（只用 gradient，其求值计入代价）。动机是本轮实测的三条读数：① 半坡上用旋转猜出的“最软模”与反应坐标差 83°（dimer 沿它上坡必偏）；② 该面存在 ‖∇E‖→0 的逃向无穷通道（阱底 −1.27 < 鞍点 −0.126 < 无穷远 0，无约束 ‖g‖ 下降法实测逃到 ‖x‖=7.4~131 而 ‖g‖~1e-12）；③ λ 移位牛顿方向在 index-1 附近不是 ‖g‖² 的下坡方向，加线搜索会在第 0 步全拒。成功需三条同时成立并分开报：‖∇E‖<gtol、恰一个负特征值（index-1）、未越出区域；收敛到极小按失败报且不给势垒。core/eig 加 symmetricEigendecomposition（同一 Jacobi 循环累乘特征向量，symmetricEigenvalues 改为委托，不写两套循环）。Müller-Brown 曾考虑：本轮未从可靠源取到其系数与参考值，不凭记忆写数，改用闭式可判的解析四次双阱",
       "evidence": "plugins/neb saddle.test（四次双阱 E=c(x⁴+y⁴)+x²−y²：c=1 与 0.5 各 5 个初值全收敛，‖x‖<1e-6、E(鞍点)≈0、本征值精确 [−2,2]（1e-9）、势垒精确等于闭式 1/(4c)（1e-9）、两侧 quench 极小与 (0,±1/√(2c)) 一致且彼此不同；旋转 36° 坐标系同样收到原点且软模对齐 Rᵗ(0,1)；ljDoubleWell 三个近鞍初值收到对称性原点且势垒 0.883988 对独立 oracle 1e-6；壁上初值 [1,0,0] 把 ‖∇E‖ 压到 2.4e-8 但负特征值数=0 → converged=false、barriers=null（拦下只看梯度的误判）；省略 hessian 与解析 hessian 同一鞍点且求值次数可比较；alpha/beta/radius/maxSteps/start 非法与 gradient 非有限各报 SADDLE_BAD_INPUT/ANALYSIS_INPUT_MISSING/SADDLE_BAD_GRADIENT；两次运行 deepEqual 确定性）+ saddle-tool 测试（工具出口闭式基准逐位对账、exactReference 与 report.note 随交付、代价字段 costNote/energyGradientEvals、未收敛不给势垒、未知 system/维度不符报错、analysis_complete(saddle-search) 落 Trajectory、卸载回收工具与服务）+ packages/core eig.test 测 5/6（A·v=λ·v 残差 <1e-12、VᵀV=I、VᵀAV=diag、退化子空间、两出口本征值一致）+ mcp 工具面 55→56"
+    },
+    {
+      "index": 130,
+      "clause": "NEB 带降为初值、势垒由 QMM 复核（plugin-neb 组合层 band-to-saddle，无新工具，工具面 56 不变）：analysis.neb 默认 refine=true，先拉带取最高点，再以该点为初值调 #129 的 saddleSearch（同一实现），势垒取复核后鞍点能量并判 index-1；带自身估读原样保留在 bandBarrierForward/Reverse，refine=false 完全退回 #128 行为。分工依据是实测：弯带 kink=0.4 与 1.2 下带自身不收敛（maxF 7.35e-2 / 3.11e-1）、势垒 0.937545（偏 5.4e-2）与 1.343775（偏 4.6e-1），复核后两者均 0.883988、偏差 0.00e+0、负特征值数 1、复核点距对称鞍点 <1e-6；直带（默认路径）复核 nSteps=0 且 startedAtStationary=true，等于 oracle 不变。三态不合并：report 分开给 bandConverged / saddleConverged / indexOne，带未收敛不等于复核失败，带收敛也不等于鞍点成立。trust region 半径默认取带跨度，复核只做局部搜索不承诺找到连接两端那条路径上的鞍点",
+      "evidence": "plugins/neb band-to-saddle.test（三种弯带复核势垒对独立 oracle 1e-6 且正反向差 <1e-9、带自身偏高量级断言、refinement.nSteps>5 与 bandTopToSaddle 量级、直带 nSteps=0 且 startedAtStationary、refine=false 与纯 neb 的 barrier 与 convergence 字段逐位一致且不产生 refinedSaddle、省略 hessian 走中心差分与解析 hessian 同结果、缺 energy 报 ANALYSIS_INPUT_MISSING、nImages=2 报 NEB_BAD_INPUT、两次运行 deepEqual 确定性）+ 既有 neb 8 测与 saddle 6 测全过（25/25，向后兼容，工具数不变）"
     }
   ]
 }
