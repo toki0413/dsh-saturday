@@ -18,6 +18,8 @@
 
 **最快一行**（连客户端都不配）：`npx -y @toki0413/mcp-server --relax Cu` 直接打印 Cu 的每原子能量与所用引擎（装了 MACE/ASE 会自动升真物理）。
 
+**免装 Node/Python（全保真容器）**：`docker run --rm ghcr.io/toki0413/saturday --relax Cu` 一行拿 EMT 真值，镜像已内含 Node + Python + ASE（构建/推镜像由 GitHub Actions + GHCR 承担，本地不装工具链）。
+
 **路径 A：接进任意 MCP 客户端**（Claude Desktop / Cursor / Cherry Studio 等）——在客户端配置里加：
 
 ```json

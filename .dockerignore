@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.git
+.github
+.qoder
+*.log
+*.tgz
+saturday-data
+**/saturday-data
+SUMMARY.json
+dist
+**/dist
+__pycache__
+**/__pycache__
+*.tmp.mjs
+Dockerfile
+.dockerignore
