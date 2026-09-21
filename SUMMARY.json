@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-21T00:58:47.530Z",
+  "generatedAt": "2026-09-21T01:28:57.579Z",
   "totalPass": 587,
-  "totalFail": 1,
+  "totalFail": 0,
   "packageCount": 28,
   "testedCount": 27,
   "packages": [
@@ -10,7 +10,7 @@
       "name": "@toki0413/bridge",
       "version": "0.3.11",
       "pass": 71,
-      "fail": 1
+      "fail": 0
     },
     {
       "dir": "packages\\contract-tests",

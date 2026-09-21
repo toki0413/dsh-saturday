@@ -63,7 +63,8 @@ export default {
       potential.register(new LjProvider())
       await potential.activate('lj-js')
       if (!config.quiet) {
-        console.log(
+        // 启动提示走 stderr：stdio MCP 模式下 stdout 是协议通道，不得混入日志
+        console.error(
           `[saturday] Python 数据面不可用（${err.message.split('\n')[0]}）\n` +
           '[saturday] 已显式回退到零依赖纯 JS 引擎 lj-js（LJ 玩具势，指纹如实声明）；' +
           '安装 Python+ASE 可解锁 EMT 精度',

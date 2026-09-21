@@ -56,8 +56,8 @@ test('3. 横幅如实报告（非静默降级）：回退信息含引擎名与�
   await fiber.dispose()
   fiber = null
   const lines = []
-  const original = console.log
-  console.log = (...args) => lines.push(args.join(' '))
+  const original = console.error
+  console.error = (...args) => lines.push(args.join(' '))
   try {
     const ctx2 = new Context()
     const fiber2 = await ctx2.registry.plugin({
@@ -66,7 +66,7 @@ test('3. 横幅如实报告（非静默降级）：回退信息含引擎名与�
     })
     await fiber2.dispose()
   } finally {
-    console.log = original
+    console.error = original
   }
   const banner = lines.join('\n')
   assert.match(banner, /Python 数据面不可用/, '横幅必须如实报告数据面缺失')
