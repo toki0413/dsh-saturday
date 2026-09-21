@@ -21,7 +21,7 @@ packages/
   python-bridge/   → @toki0413/python-bridge  通用 Python sidecar 客户端
   contract-tests/  → @toki0413/contract-tests  五条 seam 契约测试套件
   bridge/          → @toki0413/bridge         dsh Bundle 主插件 + 全部演示脚本
-  mcp-server/      → @toki0413/mcp-server     MCP 协议 server（55 工具 stdio；--http 走 streamable-http）
+  mcp-server/      → @toki0413/mcp-server     MCP 协议 server（56 工具 stdio；--http 走 streamable-http）
   data/            → @toki0413/data           运行时数据（JSONL 轨迹等）
 
 plugins/           → 各独立插件（新插件必须过 contract-tests）
@@ -38,7 +38,7 @@ plugins/           → 各独立插件（新插件必须过 contract-tests）
   replay/          →   Trajectory 回放与索引重建
   branch/          →   会话分支账本（fork/record/compare/trunk：可回退规划树，add-only 非破坏式）
   rss/             →   RSS 随机结构搜索采样（§4.5 非 flow 生成式第二实证）
-  neb/             →   NEB 势垒分析
+  neb/             →   NEB 势垒分析（含 climbing-image 与 QMM 鞍点搜索 analysis.saddleSearch）
   eos/             →   Birch-Murnaghan 状态方程
   phonon/          →   Γ 点声子
   coordination/    →   局域配位数与 Warren-Cowley 短程有序（仅需 material，引擎无关）

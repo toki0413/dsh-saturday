@@ -23,7 +23,7 @@ export {
 } from './thermo.mjs'
 export { PrototypeLibResolver, StructureNotFoundError } from './structure-resolver.mjs'
 export { Z, SYMBOL, composeFormula } from './elements.mjs'
-export { symmetricEigenvalues } from './eig.mjs'
+export { symmetricEigenvalues, symmetricEigendecomposition } from './eig.mjs'
 export { averageRanks, pearson, spearman, topKOverlap, meanAbsDelta } from './rank.mjs'
 export {
   unitsError,

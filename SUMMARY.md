@@ -1,14 +1,14 @@
 # Saturday 项目摘要（自动生成，请勿手改）
 
-生成时间：2026-09-21T14:32:31.620Z
+生成时间：2026-09-21T17:07:24.851Z
 
-**回归基线：620/620**（29 个包，其中 28 个含独立测试；重跑 `npm run summary` 即可再生本文件）
+**回归基线：629/629**（29 个包，其中 28 个含独立测试；重跑 `npm run summary` 即可再生本文件）
 
 | 包 | 描述 | 测试 |
 |---|---|---|
 | `@toki0413/bridge` | Saturday dsh Bundle：saturday 主插件（material.load / potential.relax / trajectory）+ Python sidecar 桥 | 74/74 |
 | `@toki0413/contract-tests` | Saturday 契约测试套件（契约 §8.3）：新插件进入生态必须通过的 seam 一致性测试。兼容性由测试而非文档承诺。 | 31/31 |
-| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 63/63 |
+| `@toki0413/core` | Saturday 领域核心：Material / MaterialService / PotentialRegistry / StructureResolver（零运行时依赖） | 65/65 |
 | `@toki0413/kernel` | Saturday kernel —— cordis 防腐层（全仓唯一接触 cordis 的文件），暴露 SaturdayRuntime 接口 | — 无独立测试（由契约套件覆盖） |
 | `@toki0413/mcp-server` | Saturday MCP server —— 把 Saturday 材料计算工具面（结构/引擎/采样/筛选/分析/谱系）以 Model Context Protocol 全量暴露给任意 MCP 宿主；插件仍只依赖 @toki0413/kernel（防腐层纪律不变）。 | 11/11 |
 | `@toki0413/python-bridge` | Saturday Python sidecar 通用客户端：stdio JSON-lines、握手、超时、批量任务。任何插件可借此挂接自己的 Python 数据平面。 | 10/10 |
@@ -26,7 +26,7 @@
 | `@toki0413/plugin-lj` | Saturday 零依赖纯 JS Lennard-Jones 引擎插件：开箱即用的数据面（弛豫/单点/恒温 MD/谐波锚点/元素参考态），物理档位为玩具势如实声明，无外部进程、无可选依赖。 | 15/15 |
 | `@toki0413/plugin-mace` | Saturday ML 势引擎插件：MACE（mace-torch）Provider。一次性子进程形态（仅 relax）+ 常驻 batch 形态（relax/calculate/md，模型加载一次，可经 SshTransport 跑远程 GPU）；可用性预检失败显式报错，绝不静默降级。 | 19/19 |
 | `@toki0413/plugin-mp` | Saturday 结构源插件：Materials Project（契约 §4.1，远端 StructureResolver 实现） | 9/9 |
-| `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 13/13 |
+| `@toki0413/plugin-neb` | Saturday 分析插件（契约 §4.4 analysis seam 首个实证）：NEB 最小能量路径与过渡态势垒，纯 Node 实现、能量/梯度注入式；内置 LJ 双阱玩具体系。 | 20/20 |
 | `@toki0413/plugin-phonon` | Saturday 分析插件（契约 §4.4 analysis seam）：Γ 点声子分析，力注入式有限位移 + 声学和规则 + 质量加权动力学矩阵（纯 Node，零新依赖）；交付频率（THz）、虚频计数与显式阈值稳定性判定。 | 29/29 |
 | `@toki0413/plugin-replay` | Saturday Trajectory 回放插件：从 append-only 事件流重建材料计算索引，回放事件加防回灌前缀。时间维可组合性的读侧落地。 | 5/5 |
 | `@toki0413/plugin-rss` | Saturday RSS 随机结构搜索采样器（契约 §4.5 sampler seam 第二个生成式实现，非 flow 路线）：成分/原子数/晶胞约束下的均匀随机结构生成，最小间距门禁，种子确定性，候选可回算验证。 | 13/13 |
@@ -36,7 +36,7 @@
 | `@toki0413/plugin-screening` | Saturday 工作流插件：批量掺杂筛选（契约 §4.3，逐变体事件 + 不吞错） | 43/43 |
 | `@toki0413/plugin-xrd` | Saturday 分析插件（契约 §4.4 analysis seam）：X 射线粉末衍射谱。纯几何结构因子 + 倒格度规 d-spacing + Bragg 2θ + 系统消光；仅需 material 服务（引擎无关，零依赖，任何环境可跑）。峰位/消光精确，强度为 |F|² 相对值（f≈Z 前向近似，未含 LP/温度/织构因子，显式声明）。 | 25/25 |
 
-## 实证条款（契约文档附录 A，128 条）
+## 实证条款（契约文档附录 A，129 条）
 
 - **#1** 服务注册即 effect，卸载全回收（证据：测试 1、8）
 - **#2** formula-only 必须显式 resolver，来源写谱系（证据：测试 2、4）
@@ -166,6 +166,7 @@
 - **#126** 局域配位与短程有序 analysis.coordination（新插件 plugin-coordination，契约 §4.4 analysis seam，53→54）：逐原子配位数（显式 rCut 与自动壳层间隙判据两定义并存、模糊邻居逐原子计数如实上报）、最近与平均邻居距离、分种对（A–A、A–B、B–B）键长分布、Warren–Cowley 短程有序参数 α（对称归一 + 不重复抽样超几何随机参照；+1=相分离富聚、负=有序交替、0=与随机参照无偏离）。仅需 material 服务，引擎无关、零依赖、任何环境可跑（含分子与非周期体系，形态同 plugin-xrd：inputs/outputs 声明 + 谱系落 Trajectory + 广播 saturday/analysis/complete）。周期体系按镜像枚举并满足恒等式 ΣCN=2·键数（自镜像键取规范半集不双计）；元素符号取自 core 的 15 元素子集，表外 Z 标为 Z&lt;number&gt; 不猜符号。动机来自同日潜空间转移预测探针的否证：全局几何描述子在同成分取代异构上 R²=−0.26（不及单点 E_init），缺的正是局域化学环境原语（证据：plugins/coordination coordination.test（理想 fcc CN=12、bcc CN=8、金刚石 CN=4、岩盐型 CN=6 且键全异种；自动切点=√(d_min·下一壳层) 闭式锚定；ΣCN=2M 恒等式；岩盐 α 精确等于解析下限 1−N(N−1)/(2N_A N_B)=−0.75、64 原子超胞 −0.96875 且随 N 单调趋 −1；相分离 α=+1 精确、单根异种键 α=0；rCut=2.6 与 3.7 给 CN 12 与 18 的截断依赖、rCut 贴壳层时 ambiguous=12；两水分子相距 15 Å 不跨连；表外 Z 回退 Z11-Z17；空图/非有限坐标/rCut≤0/孤立原子各显式报错 COORD_BAD_GRAPH、COORD_BAD_CUTOFF、COORD_NO_NEIGHBORS）+ coordination-tool 测试（material.load Cu 全链 CN=12 且 declaration 随交付、单质不编 α、缺 materialId 报 ANALYSIS_INPUT_MISSING、analysis_complete(coordination) 落 Trajectory；writePoscar→structure.fromPoscar→配位分析端到端读出岩盐有序 α=−0.75）+ mcp 工具面 53→54）
 - **#127** 实测峰位 → 点阵参数精修 analysis.xrd.latticeFromPeaks（plugin-xrd 新工具，54→55；lattice-solve 纯层）：Bragg 给 y≡1/d²=(2sinθ/λ)²，三斜倒易度规 G* 的六个独立元使 y=Hᵀ G* H 对其线性，所以精修是一次普通最小二乘（法方程 N=AᵀA 走 core/gp 的 cholesky + 本模块回代与求逆，不迭代、确定性）；s²=RSS/(n−p)、cov=N⁻¹s²，σ(G*) 经 G*→胞参数的有限差分雅可比传播到 (a,b,c,α,β,γ)；立方约束同一形态单参数（σ 解析传播，三角为约束值 0）。由 G* 回实胞：g=G*⁻¹，取 g 的 Cholesky 因子行矢量为基矢，与 core/codecs 的 cellFromParams/paramsFromCell 同标准约定（六方 γ=120 等非正交胞由数据自然给出，不预先强制）。诚实边界：hkl 指派由调用方给定、本法不自动指标化（错指派可由残差暴露但不被纠正）；等权最小二乘不含强度加权与零点/样品位移/Kα2 等系统误差校准；n≤p、法方程奇异、G* 非正定各显式报错不给伪解（证据：plugins/xrd lattice-solve.test（无噪声回收：立方 a=3.615 到 1e-9 且 rss<1e-24、σ≈0；六方 a=b=4.913、c=5.405、γ=120 与一般三斜 5/6/7 Å、82/95/101° 六参数各 1e-7 内回收；拟合 G* 复算的 d 与既有 dSpacing 逐峰一致到 1e-9——正演与精修走两条独立数学路径，非自洽拟合；注入 0.01° 与 0.05° 噪声后 a 偏差 <5e-3 且 σ 随噪声同阶放大（比值 2.5~8）、最大残差不超注入量级；峰数≤p 报 LP_UNDERDETERMINED、全 l=0 平面峰集报 LP_DEGENERATE_PEAKS、空峰集/非整 hkl/零波长/非法 system 各报 LP_BAD_PEAKS、LP_BAD_HKL、LP_BAD_WAVELENGTH、LP_SYSTEM_UNSUPPORTED，cellFromGstar 对非正定 G* 报 LP_NOT_PHYSICAL_CELL）+ lattice-tool 测试（工具出口立方精修回收 a 且 σ/残差/R²/单位随交付、谱系落 analysis_complete(xrd-lattice-from-peaks)、同批峰走三斜要么回收同一胞要么显式报错、缺 peaks 报错、卸载回收工具）+ mcp 工具面 54→55）
 - **#128** NEB 收敛加固与 climbing-image（plugin-neb，无新工具，工具面 55 不变）：analysis.neb 加 climb 选式（HU 1998：带内最高能自由像元取消弹力、切向梯度反向 F=−∇E+2(∇E·τ̂)τ̂，鞍点即该像元，saddleSource=climbing-image）；收敛报告从单一 converged 布尔扩为 convergence 对象（ftol、maxForce、maxForcePerImage、history 按 historyEvery 抽样且必含末帧、stepLimitReached、trivialStationary、maxForceAtStart/forceDrop、spacing 的 min/max/mean 与 uniform）；纯函数层新增 initialBand 入口（校验长度/端点吻合/有限坐标）。实测暴露两个既有事实：① neb() 原本只会线性插值成带，而共线等距带就是 NEB 力的驻定解（切向真力被投影掉、等距使弹力差为 0），内置 lj-double-well 默认路径初帧 maxF 即为 0、nSteps=0 却报 converged——现以 trivialStationary=true 如实区分"未发生优化"与"跑了 N 步收敛"；② 既有步长控制（升则折半、降则 1.02×，下限 1e-5）在弯曲带下 3000 步内不收敛（maxF 2.4e-1→7.4e-2、势垒 0.9375 对 oracle 0.8840），stepLimitReached 与势垒偏高均如实报，不假装到位；优化器改进（FIRE/回溯线搜索）另立一片（证据：plugins/neb 测 9（CI 鞍点命中对称性 oracle 原点 <1e-6、势垒对 E(0,0,0)−阱底 一致 <1e-6、正反向势垒差 <1e-9、CI 不劣于带内最高点）+ 测 10（maxForce=max(maxForcePerImage)、末帧步号=nSteps 且在 history 内、步号递增、直线带 trivialStationary=true 且 nSteps=0 且 spacing.uniform=true、maxForceAtStart=0）+ 测 10b（弯曲带 trivialStationary=false、nSteps>0、maxForceAtStart>maxForce、不收敛时 stepLimitReached=true、converged=false、barrier 高于 oracle、spacing 非均匀）+ 测 10c/11（initialBand 长度与端点不吻合、非有限坐标、ftol/maxSteps/springK/historyEvery 非法一律 NEB_BAD_INPUT）+ 既有 8 测一字不改全过（向后兼容，工具数不变））
+- **#129** QMM 鞍点搜索 analysis.saddleSearch（plugin-neb 新工具，55→56；saddle 纯层 + core/eig 新增对称分解）：方向取 F_eff = −∇E + 2(ĉ·∇E)ĉ，ĉ 为 Hessian 最小特征向量（软模上坡、其余下坡），步长按上一步与 F_eff 是否同向自适应（×1.15 / ×0.5）并以初值为中心的 trust region 约束；Hessian 可选解析 callable 或中心差分（只用 gradient，其求值计入代价）。动机是本轮实测的三条读数：① 半坡上用旋转猜出的“最软模”与反应坐标差 83°（dimer 沿它上坡必偏）；② 该面存在 ‖∇E‖→0 的逃向无穷通道（阱底 −1.27 < 鞍点 −0.126 < 无穷远 0，无约束 ‖g‖ 下降法实测逃到 ‖x‖=7.4~131 而 ‖g‖~1e-12）；③ λ 移位牛顿方向在 index-1 附近不是 ‖g‖² 的下坡方向，加线搜索会在第 0 步全拒。成功需三条同时成立并分开报：‖∇E‖<gtol、恰一个负特征值（index-1）、未越出区域；收敛到极小按失败报且不给势垒。core/eig 加 symmetricEigendecomposition（同一 Jacobi 循环累乘特征向量，symmetricEigenvalues 改为委托，不写两套循环）。Müller-Brown 曾考虑：本轮未从可靠源取到其系数与参考值，不凭记忆写数，改用闭式可判的解析四次双阱（证据：plugins/neb saddle.test（四次双阱 E=c(x⁴+y⁴)+x²−y²：c=1 与 0.5 各 5 个初值全收敛，‖x‖<1e-6、E(鞍点)≈0、本征值精确 [−2,2]（1e-9）、势垒精确等于闭式 1/(4c)（1e-9）、两侧 quench 极小与 (0,±1/√(2c)) 一致且彼此不同；旋转 36° 坐标系同样收到原点且软模对齐 Rᵗ(0,1)；ljDoubleWell 三个近鞍初值收到对称性原点且势垒 0.883988 对独立 oracle 1e-6；壁上初值 [1,0,0] 把 ‖∇E‖ 压到 2.4e-8 但负特征值数=0 → converged=false、barriers=null（拦下只看梯度的误判）；省略 hessian 与解析 hessian 同一鞍点且求值次数可比较；alpha/beta/radius/maxSteps/start 非法与 gradient 非有限各报 SADDLE_BAD_INPUT/ANALYSIS_INPUT_MISSING/SADDLE_BAD_GRADIENT；两次运行 deepEqual 确定性）+ saddle-tool 测试（工具出口闭式基准逐位对账、exactReference 与 report.note 随交付、代价字段 costNote/energyGradientEvals、未收敛不给势垒、未知 system/维度不符报错、analysis_complete(saddle-search) 落 Trajectory、卸载回收工具与服务）+ packages/core eig.test 测 5/6（A·v=λ·v 残差 <1e-12、VᵀV=I、VᵀAV=diag、退化子空间、两出口本征值一致）+ mcp 工具面 55→56）
 
 > 本摘要由生成器从测试输出、package.json 与契约文档机械汇编，
 > 未包含在以上来源中的内容一律不出现；失败用例显式标记。
